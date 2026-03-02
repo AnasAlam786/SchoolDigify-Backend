@@ -10,12 +10,12 @@
   </div>
 
   <!-- Controls Section (Restored Original Layout) -->
-  <div class="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl shadow-2xl p-4 sm:p-6 mb-6 border border-gray-700">
+  <div class="bg-[#1A1A1A] rounded-xl shadow-2xl p-4 sm:p-6 mb-6 border border-gray-700">
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
       <!-- Class Selection -->
       <div>
         <label for="classSelect" class="block text-sm font-medium text-gray-300 mb-2">Select Class</label>
-        <select id="classSelect" class="w-full rounded-lg border border-gray-600 bg-gray-700/50 text-white py-3 px-4 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all duration-200 backdrop-blur-sm">
+        <select id="classSelect" class="w-full rounded-lg border border-gray-600 bg-gray-800/50 text-white py-3 px-4 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all duration-200 backdrop-blur-sm">
           <option value="" selected hidden disabled>Select Class</option>
           {% if classes %}
             {% for class in classes %}
@@ -28,13 +28,13 @@
       <!-- Exam Input -->
       <div>
         <label for="examInput" class="block text-sm font-medium text-gray-300 mb-2">Exam</label>
-        <input id="examInput" class="w-full rounded-lg border border-gray-600 bg-gray-700/50 text-white py-3 px-4 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all duration-200 backdrop-blur-sm" placeholder="e.g. Half Yearly" />
+        <input id="examInput" class="w-full rounded-lg border border-gray-600 bg-gray-800/50 text-white py-3 px-4 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all duration-200 backdrop-blur-sm" placeholder="e.g. Half Yearly" />
       </div>
 
       <!-- Year Input -->
       <div>
         <label for="yearInput" class="block text-sm font-medium text-gray-300 mb-2">Year</label>
-        <input id="yearInput" class="w-full rounded-lg border border-gray-600 bg-gray-700/50 text-white py-3 px-4 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all duration-200 backdrop-blur-sm" placeholder="e.g. 2025" />
+        <input id="yearInput" class="w-full rounded-lg border border-gray-600 bg-gray-800/50 text-white py-3 px-4 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all duration-200 backdrop-blur-sm" placeholder="e.g. 2025" />
       </div>
     </div>
 
@@ -42,15 +42,15 @@
     <div class="mb-6">
       <label class="block text-sm font-medium text-gray-300 mb-3">Select Output Type</label>
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div class="flex items-center bg-gray-700/30 rounded-lg p-3 border border-gray-600/50 hover:border-indigo-500/30 transition-colors duration-200">
+        <div class="flex items-center bg-gray-800/30 rounded-lg p-3 border border-gray-600/50 hover:border-indigo-500/30 transition-colors duration-200">
           <input id="examSchemeOnly" type="radio" name="outputType" value="SchemeOnly" class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-600 bg-gray-700">
           <label for="examSchemeOnly" class="ml-3 block text-sm text-gray-300">Exam Scheme Only</label>
         </div>
-        <div class="flex items-center bg-gray-700/30 rounded-lg p-3 border border-gray-600/50 hover:border-indigo-500/30 transition-colors duration-200">
+        <div class="flex items-center bg-gray-800/30 rounded-lg p-3 border border-gray-600/50 hover:border-indigo-500/30 transition-colors duration-200">
           <input id="admitCardOnly" type="radio" name="outputType" value="admitOnly" class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-600 bg-gray-700">
           <label for="admitCardOnly" class="ml-3 block text-sm text-gray-300">Admit Card Only</label>
         </div>
-        <div class="flex items-center bg-gray-700/30 rounded-lg p-3 border border-gray-600/50 hover:border-indigo-500/30 transition-colors duration-200">
+        <div class="flex items-center bg-gray-800/30 rounded-lg p-3 border border-gray-600/50 hover:border-indigo-500/30 transition-colors duration-200">
           <input id="both" type="radio" name="outputType" value="both" class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-600 bg-gray-700" checked>
           <label for="both" class="ml-3 block text-sm text-gray-300">Both</label>
         </div>
@@ -70,7 +70,7 @@
         
         <!-- Desktop Layout -->
         <div class="hidden lg:block">
-          <div class="bg-gray-700/50 rounded-t-lg border border-gray-600/50 p-4 grid grid-cols-12 gap-4 mb-2">
+          <div class="bg-gray-800/50 rounded-t-lg border border-gray-600/50 p-4 grid grid-cols-12 gap-4 mb-2">
             <div class="col-span-1 text-xs font-medium text-gray-400 uppercase tracking-wider text-center">Order</div>
             <div class="col-span-3 text-xs font-medium text-gray-400 uppercase tracking-wider">Date</div>
             <div class="col-span-3 text-xs font-medium text-gray-400 uppercase tracking-wider">Day</div>
@@ -79,18 +79,18 @@
           </div>
           
           <div id="examSchemeInputs" class="space-y-3">
-            <div class="exam-row bg-gray-700/30 rounded-lg border border-gray-600/30 p-4 grid grid-cols-12 gap-4 items-center transition-all duration-200 hover:border-gray-500/50 hover:bg-gray-700/40">
+            <div class="exam-row bg-gray-800/30 rounded-lg border border-gray-600/30 p-4 grid grid-cols-12 gap-4 items-center transition-all duration-200 hover:border-gray-500/50 hover:bg-gray-800/40">
               <div class="col-span-1 flex justify-center">
                 <span class="text-sm font-medium text-gray-300 order-display">1</span>
               </div>
               <div class="col-span-3">
-                <input type="text" class="exam-date w-full rounded-lg border border-gray-600 bg-gray-700/50 text-white py-2.5 px-3 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all duration-200" placeholder="DD/MM/YYYY" />
+                <input type="text" class="exam-date w-full rounded-lg border border-gray-600 bg-gray-800/50 text-white py-2.5 px-3 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all duration-200" placeholder="DD/MM/YYYY" />
               </div>
               <div class="col-span-3">
-                <input type="text" class="exam-day w-full rounded-lg border border-gray-600 bg-gray-700/50 text-white py-2.5 px-3 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all duration-200" placeholder="e.g. Monday" />
+                <input type="text" class="exam-day w-full rounded-lg border border-gray-600 bg-gray-800/50 text-white py-2.5 px-3 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all duration-200" placeholder="e.g. Monday" />
               </div>
               <div class="col-span-3">
-                <input type="text" class="exam-name w-full rounded-lg border border-gray-600 bg-gray-700/50 text-white py-2.5 px-3 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all duration-200" placeholder="e.g. English" />
+                <input type="text" class="exam-name w-full rounded-lg border border-gray-600 bg-gray-800/50 text-white py-2.5 px-3 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all duration-200" placeholder="e.g. English" />
               </div>
               <div class="col-span-2 flex justify-center space-x-2">
                 <button type="button" class="move-up inline-flex items-center p-2 border border-transparent rounded-lg text-white bg-blue-600/80 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 focus:ring-offset-gray-900 transition-all duration-200 shadow-sm">
@@ -116,7 +116,7 @@
         <!-- Mobile/Tablet Layout -->
         <div class="lg:hidden">
           <div id="examSchemeInputsMobile" class="space-y-4">
-            <div class="exam-row-mobile bg-gray-700/30 rounded-xl border border-gray-600/30 p-4 transition-all duration-200 hover:border-gray-500/50 hover:bg-gray-700/40">
+            <div class="exam-row-mobile bg-gray-800/30 rounded-xl border border-gray-600/30 p-4 transition-all duration-200 hover:border-gray-500/50 hover:bg-gray-800/40">
               <div class="flex items-center justify-between mb-3 pb-3 border-b border-gray-600/30">
                 <div class="flex items-center space-x-3">
                   <span class="text-sm font-medium text-gray-300 order-display">Exam 1</span>
@@ -143,15 +143,15 @@
               <div class="space-y-3">
                 <div>
                   <label class="block text-xs font-medium text-gray-400 mb-1">Date</label>
-                  <input type="text" class="exam-date w-full rounded-lg border border-gray-600 bg-gray-700/50 text-white py-2.5 px-3 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all duration-200" placeholder="DD/MM/YYYY" />
+                  <input type="text" class="exam-date w-full rounded-lg border border-gray-600 bg-gray-800/50 text-white py-2.5 px-3 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all duration-200" placeholder="DD/MM/YYYY" />
                 </div>
                 <div>
                   <label class="block text-xs font-medium text-gray-400 mb-1">Day</label>
-                  <input type="text" class="exam-day w-full rounded-lg border border-gray-600 bg-gray-700/50 text-white py-2.5 px-3 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all duration-200" placeholder="e.g. Monday" />
+                  <input type="text" class="exam-day w-full rounded-lg border border-gray-600 bg-gray-800/50 text-white py-2.5 px-3 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all duration-200" placeholder="e.g. Monday" />
                 </div>
                 <div>
                   <label class="block text-xs font-medium text-gray-400 mb-1">Subject</label>
-                  <input type="text" class="exam-name w-full rounded-lg border border-gray-600 bg-gray-700/50 text-white py-2.5 px-3 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all duration-200" placeholder="e.g. English" />
+                  <input type="text" class="exam-name w-full rounded-lg border border-gray-600 bg-gray-800/50 text-white py-2.5 px-3 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all duration-200" placeholder="e.g. English" />
                 </div>
               </div>
             </div>
@@ -184,7 +184,7 @@
   </div>
 
   <!-- Action Buttons -->
-  <div class="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl shadow-2xl p-4 mb-6 border border-gray-700">
+  <div class="bg-[#1A1A1A] rounded-xl shadow-2xl p-4 mb-6 border border-gray-700">
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
       <div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
         <button id="printBtn" class="inline-flex items-center justify-center px-5 py-2.5 border border-transparent text-sm font-medium rounded-lg text-white bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 focus:ring-offset-gray-900 shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 w-full sm:w-auto">
@@ -193,7 +193,7 @@
           </svg>
           Print All Pages
         </button>
-        <button id="downloadBtn" class="inline-flex items-center justify-center px-5 py-2.5 border border-gray-600 text-sm font-medium rounded-lg text-gray-300 bg-gray-700/50 hover:bg-gray-600/50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 focus:ring-offset-gray-900 shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 w-full sm:w-auto">
+        <button id="downloadBtn" class="inline-flex items-center justify-center px-5 py-2.5 border border-gray-600 text-sm font-medium rounded-lg text-gray-300 bg-gray-800/50 hover:bg-gray-800/50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 focus:ring-offset-gray-900 shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 w-full sm:w-auto">
           <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-8m-6-4l4 4m0 0l4-4m-4 4V2"></path>
           </svg>
@@ -205,7 +205,7 @@
   </div>
 
   <!-- Preview Area -->
-  <div class="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl shadow-2xl p-4 sm:p-6 border border-gray-700">
+  <div class="bg-[#1A1A1A] rounded-xl shadow-2xl p-4 sm:p-6 border border-gray-700">
     <h2 class="text-lg font-medium text-white mb-4">Preview</h2>
     <div id="AdmitPreview" class="border-2 border-dashed border-gray-600 rounded-xl p-4 min-h-[300px] bg-gray-900/50 max-h-[600px] overflow-y-auto"></div>
   </div>
@@ -394,19 +394,19 @@
     // Function to add a desktop row
     function addDesktopRow() {
       const newRow = document.createElement('div');
-      newRow.className = 'exam-row bg-gray-700/30 rounded-lg border border-gray-600/30 p-4 grid grid-cols-12 gap-4 items-center transition-all duration-200 hover:border-gray-500/50 hover:bg-gray-700/40';
+      newRow.className = 'exam-row bg-gray-800/30 rounded-lg border border-gray-600/30 p-4 grid grid-cols-12 gap-4 items-center transition-all duration-200 hover:border-gray-500/50 hover:bg-gray-800/40';
       newRow.innerHTML = `
         <div class="col-span-1 flex justify-center">
           <span class="text-sm font-medium text-gray-300 order-display">${examSchemeInputs.querySelectorAll('.exam-row').length + 1}</span>
         </div>
         <div class="col-span-3">
-          <input type="text" class="exam-date w-full rounded-lg border border-gray-600 bg-gray-700/50 text-white py-2.5 px-3 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all duration-200" placeholder="DD/MM/YYYY" />
+          <input type="text" class="exam-date w-full rounded-lg border border-gray-600 bg-gray-800/50 text-white py-2.5 px-3 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all duration-200" placeholder="DD/MM/YYYY" />
         </div>
         <div class="col-span-3">
-          <input type="text" class="exam-day w-full rounded-lg border border-gray-600 bg-gray-700/50 text-white py-2.5 px-3 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all duration-200" placeholder="e.g. Monday" />
+          <input type="text" class="exam-day w-full rounded-lg border border-gray-600 bg-gray-800/50 text-white py-2.5 px-3 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all duration-200" placeholder="e.g. Monday" />
         </div>
         <div class="col-span-3">
-          <input type="text" class="exam-name w-full rounded-lg border border-gray-600 bg-gray-700/50 text-white py-2.5 px-3 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all duration-200" placeholder="e.g. English" />
+          <input type="text" class="exam-name w-full rounded-lg border border-gray-600 bg-gray-800/50 text-white py-2.5 px-3 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all duration-200" placeholder="e.g. English" />
         </div>
         <div class="col-span-2 flex justify-center space-x-2">
           <button type="button" class="move-up inline-flex items-center p-2 border border-transparent rounded-lg text-white bg-blue-600/80 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 focus:ring-offset-gray-900 transition-all duration-200 shadow-sm">
@@ -434,7 +434,7 @@
     // Function to add a mobile row
     function addMobileRow() {
       const newRow = document.createElement('div');
-      newRow.className = 'exam-row-mobile bg-gray-700/30 rounded-xl border border-gray-600/30 p-4 transition-all duration-200 hover:border-gray-500/50 hover:bg-gray-700/40';
+      newRow.className = 'exam-row-mobile bg-gray-800/30 rounded-xl border border-gray-600/30 p-4 transition-all duration-200 hover:border-gray-500/50 hover:bg-gray-800/40';
       const position = examSchemeInputsMobile.querySelectorAll('.exam-row-mobile').length + 1;
       
       newRow.innerHTML = `
@@ -463,15 +463,15 @@
         <div class="space-y-3">
           <div>
             <label class="block text-xs font-medium text-gray-400 mb-1">Date</label>
-            <input type="text" class="exam-date w-full rounded-lg border border-gray-600 bg-gray-700/50 text-white py-2.5 px-3 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all duration-200" placeholder="DD/MM/YYYY" />
+            <input type="text" class="exam-date w-full rounded-lg border border-gray-600 bg-gray-800/50 text-white py-2.5 px-3 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all duration-200" placeholder="DD/MM/YYYY" />
           </div>
           <div>
             <label class="block text-xs font-medium text-gray-400 mb-1">Day</label>
-            <input type="text" class="exam-day w-full rounded-lg border border-gray-600 bg-gray-700/50 text-white py-2.5 px-3 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all duration-200" placeholder="e.g. Monday" />
+            <input type="text" class="exam-day w-full rounded-lg border border-gray-600 bg-gray-800/50 text-white py-2.5 px-3 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all duration-200" placeholder="e.g. Monday" />
           </div>
           <div>
             <label class="block text-xs font-medium text-gray-400 mb-1">Subject</label>
-            <input type="text" class="exam-name w-full rounded-lg border border-gray-600 bg-gray-700/50 text-white py-2.5 px-3 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all duration-200" placeholder="e.g. English" />
+            <input type="text" class="exam-name w-full rounded-lg border border-gray-600 bg-gray-800/50 text-white py-2.5 px-3 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all duration-200" placeholder="e.g. English" />
           </div>
         </div>
       `;

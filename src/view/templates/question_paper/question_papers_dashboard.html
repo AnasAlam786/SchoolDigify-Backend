@@ -760,12 +760,12 @@ endblock %} {% block content %}
                         <div class="h-2 bg-gradient-to-r from-primary to-secondary"></div>
                                                 <div class="absolute top-3 right-3">
                             <div class="relative">
-                                <button onclick="openMoreMenu(event, ${paper.id})"
+                                <button onclick="openThreeDot(event, ${paper.id})"
                                     class="p-2 hover:bg-gray-700/50 rounded-lg transition group"
                                     title="More options">
                                     <i class="fas fa-ellipsis-v text-gray-400 group-hover:text-white"></i>
                                 </button>
-                                <div id="menu-${paper.id}" class="hidden absolute right-0 mt-2 w-48 bg-navbg border border-gray-700 rounded-xl shadow-2xl z-20">
+                                <div id="threeDot-${paper.id}" class="hidden absolute right-0 mt-2 w-48 bg-navbg border border-gray-700 rounded-xl shadow-2xl z-20">
                                     <button onclick="duplicatePaper(${paper.id})"
                                         class="w-full text-left px-4 py-3 text-gray-300 hover:bg-gray-700/50 hover:text-white transition text-sm flex items-center gap-2">
                                         <i class="fas fa-copy"></i>Duplicate
@@ -1070,17 +1070,17 @@ endblock %} {% block content %}
         }, 3000);
     }
 
-    // More menu toggle
-    function openMoreMenu(event, paperId) {
+    // More threeDot toggle
+    function openThreeDot(event, paperId) {
         event.stopPropagation();
-        const menu = document.getElementById(`menu-${paperId}`);
-        menu.classList.toggle('hidden');
+        const threeDot = document.getElementById(`threeDot-${paperId}`);
+        threeDot.classList.toggle('hidden');
     }
 
-    // Close menu when clicking outside
+    // Close three dot menu when clicking outside
     document.addEventListener('click', () => {
-        document.querySelectorAll('[id^="menu-"]').forEach(menu => {
-            menu.classList.add('hidden');
+        document.querySelectorAll('[id^="threeDot-"]').forEach(threeDot => {
+            threeDot.classList.add('hidden');
         });
     });
 

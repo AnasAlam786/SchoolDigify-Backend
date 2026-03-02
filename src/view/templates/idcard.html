@@ -13,19 +13,34 @@
 <!-- Add this style for gradient animation -->
 <style>
     @keyframes gradient {
-        0% { background-position: 0% 50%; }
-        50% { background-position: 100% 50%; }
-        100% { background-position: 0% 50%; }
+        0% {
+            background-position: 0% 50%;
+        }
+
+        50% {
+            background-position: 100% 50%;
+        }
+
+        100% {
+            background-position: 0% 50%;
+        }
     }
+
     .animate-gradient {
         animation: gradient 3s ease infinite;
     }
 
     /* Skeleton animation */
     @keyframes shimmer {
-        0% { background-position: -468px 0; }
-        100% { background-position: 468px 0; }
+        0% {
+            background-position: -468px 0;
+        }
+
+        100% {
+            background-position: 468px 0;
+        }
     }
+
     .skeleton {
         background: linear-gradient(90deg, #2a2a2a 25%, #3a3a3a 50%, #2a2a2a 75%);
         background-size: 468px 100%;
@@ -55,122 +70,98 @@
                 </p>
             </div>
 
-            <!-- Controls Card -->
+            <!-- Premium Controls Card - Dark Theme, Ultra Responsive -->
             <div
-                class="rounded-2xl bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 shadow-2xl shadow-black/30 p-6 md:p-8 transition-all duration-300 hover:shadow-blue-900/20">
+                class="rounded-2xl bg-[#1A1A1A] border border-white/[0.05] shadow-2xl shadow-black/80 p-6 md:p-8 transition-all duration-300 hover:border-blue-500/20 hover:shadow-blue-500/5">
+
                 <!-- Controls Grid -->
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 mb-8">
+
                     <!-- Search -->
                     <div class="space-y-3">
-                        <label for="search" class="block text-sm font-semibold text-gray-200 flex items-center gap-2">
-                            <div
-                                class="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
-                                <i class="fas fa-search text-blue-400 text-sm"></i>
-                            </div>
+                        <label for="search"
+                            class="block text-xs font-semibold uppercase tracking-wider text-gray-400 flex items-center gap-2">
+                            <i class="fas fa-search text-blue-400/80 text-sm"></i>
                             Search Students
                         </label>
                         <div class="relative group">
-                            <input type="text" id="search" placeholder="Enter student name..."
-                                class="w-full px-4 py-3 bg-gray-900/70 border border-gray-600/50 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-200 group-hover:border-blue-500/30 shadow-inner shadow-black/20">
-                            <div
-                                class="absolute inset-0 rounded-xl ring-2 ring-blue-500/0 group-focus-within:ring-blue-500/30 transition-all duration-300 pointer-events-none">
-                            </div>
+                            <input type="text" id="search" placeholder="e.g., John Doe"
+                                class="w-full px-5 py-4 bg-black/40 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500/40 transition-all duration-200 group-hover:border-white/20 text-base">
+                            <!-- Optional subtle search icon inside input (can be added if desired) -->
                         </div>
                     </div>
 
                     <!-- Class Filter -->
                     <div class="space-y-3">
                         <label for="class-filter"
-                            class="block text-sm font-semibold text-gray-200 flex items-center gap-2">
-                            <div
-                                class="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
-                                <i class="fas fa-school text-blue-400 text-sm"></i>
-                            </div>
+                            class="block text-xs font-semibold uppercase tracking-wider text-gray-400 flex items-center gap-2">
+                            <i class="fas fa-school text-blue-400/80 text-sm"></i>
                             Filter by Class
                         </label>
                         <div class="relative group">
                             <select id="class-filter"
-                                class="w-full px-4 py-3 bg-gray-900/70 border border-gray-600/50 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 appearance-none cursor-pointer transition-all duration-200 group-hover:border-blue-500/30 shadow-inner shadow-black/20">
-                                <option value="" class="bg-gray-800">All Classes</option>
+                                class="w-full px-5 py-4 bg-black/40 border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500/40 appearance-none cursor-pointer transition-all duration-200 group-hover:border-white/20 text-base">
+                                <option value="" class="bg-[#1A1A1A] text-gray-300">All Classes</option>
                                 {% if classes %}
                                 {% for class in classes %}
-                                <option value="{{ class.id }}" class="bg-gray-800">{{ class.CLASS }}</option>
+                                <option value="{{ class.id }}" class="bg-[#1A1A1A]">{{ class.CLASS }}</option>
                                 {% endfor %}
                                 {% endif %}
                             </select>
-                            <div class="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                                <i class="fas fa-chevron-down text-gray-400" aria-hidden="true"></i>
-                            </div>
                             <div
-                                class="absolute inset-0 rounded-xl ring-2 ring-blue-500/0 group-focus-within:ring-blue-500/30 transition-all duration-300 pointer-events-none">
+                                class="absolute right-5 top-1/2 transform -translate-y-1/2 pointer-events-none text-gray-400">
+                                <i class="fas fa-chevron-down"></i>
                             </div>
                         </div>
                     </div>
 
                     <!-- Options -->
-                    <div class="space-y-3">
-                        <div class="flex items-center gap-2 mb-2">
-                            <div
-                                class="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
-                                <i class="fas fa-cog text-blue-400 text-sm"></i>
-                            </div>
-                            <label class="text-sm font-semibold text-gray-200">
-                                Display Options
-                            </label>
-                        </div>
-                        <div class="space-y-3 pl-10">
-                            <label class="flex items-center gap-3 cursor-pointer select-none">
+                    <div class="space-y-3 md:col-span-2 lg:col-span-1">
+                        <span
+                            class="block text-xs font-semibold uppercase tracking-wider text-gray-400 flex items-center gap-2">
+                            <i class="fas fa-cog text-blue-400/80 text-sm"></i>
+                            Display Options
+                        </span>
+                        <div class="flex flex-col gap-4 pt-1">
+                            <!-- Show only with images -->
+                            <label class="flex items-center gap-3 cursor-pointer group">
                                 <input type="checkbox" id="show-images" class="sr-only peer" checked>
-                                <div class="w-5 h-5 rounded-md border-2 border-gray-600
-                                    flex items-center justify-center
-                                    peer-checked:bg-blue-500 peer-checked:border-blue-500
-                                    transition-all duration-200">
-                                    <span class="w-2.5 h-1.5 border-b-2 border-l-2 border-white
-                                        rotate-[-45deg] mb-0.5 hidden peer-checked:block"></span>
+                                <div
+                                    class="w-5 h-5 rounded-md border border-white/20 bg-black/40 peer-checked:border-blue-500 peer-checked:bg-blue-500/20 transition-all duration-200 group-hover:border-white/40 flex items-center justify-center">
+                                    <span
+                                        class="w-2.5 h-1.5 border-b-2 border-l-2 border-white rotate-[-45deg] mb-0.5 hidden peer-checked:block"></span>
                                 </div>
-                                <span class="text-sm text-gray-300 peer-hover:text-gray-200">
-                                    Show only with images
-                                </span>
+                                <span class="text-sm text-gray-400 group-hover:text-white transition-colors">Show only
+                                    with images</span>
                             </label>
 
-                            <label class="flex items-center group cursor-pointer">
+                            <!-- Select all visible -->
+                            <label class="flex items-center gap-3 cursor-pointer group">
                                 <input type="checkbox" id="select-all" class="sr-only peer">
-                                <div class="w-5 h-5 rounded-md bg-gray-700 border-2 border-gray-600
-                                    peer-checked:border-blue-500 peer-checked:bg-blue-500/20
-                                    transition-all duration-200 group-hover:border-blue-400
-                                    flex items-center justify-center">
-                                    <i class="fas fa-check text-white text-xs opacity-0
-                                        peer-checked:opacity-100 transition-opacity duration-200"></i>
+                                <div
+                                    class="w-5 h-5 rounded-md border border-white/20 bg-black/40 peer-checked:border-blue-500 peer-checked:bg-blue-500/20 transition-all duration-200 group-hover:border-white/40 flex items-center justify-center">
+                                    <i
+                                        class="fas fa-check text-white text-xs opacity-0 peer-checked:opacity-100 transition-opacity"></i>
                                 </div>
-                                <span class="ml-3 text-sm text-gray-300 group-hover:text-gray-200 transition-colors">
-                                    Select all visible
-                                </span>
+                                <span class="text-sm text-gray-400 group-hover:text-white transition-colors">Select all
+                                    visible</span>
                             </label>
                         </div>
                     </div>
                 </div>
 
                 <!-- Actions -->
-                <div
-                    class="flex flex-col sm:flex-row items-center justify-center gap-4 pt-6 border-t border-gray-700/50">
+                <div class="flex flex-col sm:flex-row items-center justify-center gap-6 pt-6 border-t border-white/5">
                     <button id="download-images"
-                        class="group relative px-8 py-3.5 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-semibold rounded-xl transition-all duration-300 transform hover:-translate-y-0.5 active:translate-y-0 shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 flex items-center gap-3 min-w-[200px] justify-center">
-                        <span class="relative z-10 flex items-center gap-2">
-                            <i class="fas fa-print text-white"></i>
-                            Print ID Cards
-                        </span>
-                        <div
-                            class="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-700 to-cyan-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300 -z-0 pointer-events-none">
-                        </div>
+                        class="group relative px-8 py-4 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-semibold rounded-xl transition-all duration-300 transform hover:-translate-y-0.5 active:translate-y-0 shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 flex items-center gap-3 min-w-[240px] justify-center text-base">
+                        <i class="fas fa-print"></i>
+                        Print ID Cards
                     </button>
 
                     <div id="download-status"
-                        class="hidden ml-4 flex items-center gap-3 bg-gray-800/50 px-4 py-2.5 rounded-xl border border-gray-700/50">
-                        <div class="relative">
-                            <div class="w-5 h-5 border-2 border-gray-600 border-t-blue-400 rounded-full animate-spin">
-                            </div>
-                        </div>
-                        <span class="text-sm text-gray-300 font-medium">Preparing print layout...</span>
+                        class="hidden items-center gap-3 bg-black/40 px-5 py-4 rounded-xl border border-white/5">
+                        <div class="w-5 h-5 border-2 border-white/20 border-t-blue-400 rounded-full animate-spin"></div>
+                        <span class="text-sm text-gray-400 font-medium">Preparing print layout...</span>
                     </div>
                 </div>
             </div>
@@ -189,7 +180,7 @@
         </div>
 
         <!-- Status Bar -->
-        <div class="bg-gray-800 rounded-lg p-4 mb-6 border border-gray-700">
+        <div class="bg-[#1A1A1A] rounded-lg p-4 mb-6 border border-gray-700">
             <div class="flex justify-between items-center">
                 <div class="flex items-center gap-2 text-green-400">
                     <i class="fas fa-check-circle"></i>
@@ -205,12 +196,15 @@
         <!-- Cards Container with Dynamic States -->
         <div id="cards-container" class="relative" style="min-height: 400px;">
             <!-- Initial State (no class selected) -->
-            <div id="initial-state" class="flex flex-col items-center justify-center py-16 px-4 text-center glass-card rounded-2xl border border-white/5 hidden">
-                <div class="w-24 h-24 mb-6 rounded-full bg-gradient-to-br from-blue-500/20 to-cyan-500/20 flex items-center justify-center animate-soft-pulse">
+            <div id="initial-state"
+                class="flex flex-col items-center justify-center py-16 px-4 text-center glass-card rounded-2xl border border-white/5 hidden">
+                <div
+                    class="w-24 h-24 mb-6 rounded-full bg-gradient-to-br from-blue-500/20 to-cyan-500/20 flex items-center justify-center animate-soft-pulse">
                     <i class="fas fa-hand-pointer text-4xl text-blue-300"></i>
                 </div>
                 <h3 class="text-2xl font-bold text-white mb-2">Ready to create ID cards?</h3>
-                <p class="text-gray-400 mb-2 max-w-md">Please select a <span class="text-blue-400 font-semibold">class</span> from the dropdown above to view students.</p>
+                <p class="text-gray-400 mb-2 max-w-md">Please select a <span
+                        class="text-blue-400 font-semibold">class</span> from the dropdown above to view students.</p>
                 <p class="text-gray-500 text-sm mt-4">We'll show the list of students once you've made your choice.</p>
             </div>
 
@@ -221,26 +215,33 @@
             </div>
 
             <!-- Error State -->
-            <div id="error-state" class="flex flex-col items-center justify-center py-16 px-4 text-center glass-card rounded-2xl border border-white/5 hidden">
-                <div class="w-24 h-24 mb-6 rounded-full bg-gradient-to-br from-red-500/20 to-orange-500/20 flex items-center justify-center">
+            <div id="error-state"
+                class="flex flex-col items-center justify-center py-16 px-4 text-center glass-card rounded-2xl border border-white/5 hidden">
+                <div
+                    class="w-24 h-24 mb-6 rounded-full bg-gradient-to-br from-red-500/20 to-orange-500/20 flex items-center justify-center">
                     <i class="fas fa-exclamation-triangle text-4xl text-red-300"></i>
                 </div>
                 <h3 class="text-2xl font-bold text-white mb-2">Oops! Something went wrong</h3>
                 <p id="error-message" class="text-gray-400 mb-6 max-w-md">Failed to load students. Please try again.</p>
-                <button id="retry-button" class="inline-flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-blue-500/30 transform hover:-translate-y-1">
+                <button id="retry-button"
+                    class="inline-flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-blue-500/30 transform hover:-translate-y-1">
                     <i class="fas fa-sync-alt"></i>
                     <span>Retry</span>
                 </button>
             </div>
 
             <!-- Empty State (class has no students at all) -->
-            <div id="empty-state" class="flex flex-col items-center justify-center py-16 px-4 text-center glass-card rounded-2xl border border-white/5 hidden">
-                <div class="w-24 h-24 mb-6 rounded-full bg-gradient-to-br from-blue-500/20 to-cyan-500/20 flex items-center justify-center animate-gentle-bounce">
+            <div id="empty-state"
+                class="flex flex-col items-center justify-center py-16 px-4 text-center glass-card rounded-2xl border border-white/5 hidden">
+                <div
+                    class="w-24 h-24 mb-6 rounded-full bg-gradient-to-br from-blue-500/20 to-cyan-500/20 flex items-center justify-center animate-gentle-bounce">
                     <i class="fas fa-user-slash text-4xl text-blue-300"></i>
                 </div>
                 <h3 class="text-2xl font-bold text-white mb-2">No students found</h3>
-                <p class="text-gray-400 mb-8 max-w-md">This class doesn't have any students yet. Add a new student to start creating ID cards.</p>
-                <a href="/admission" class="inline-flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-blue-500/30 transform hover:-translate-y-1">
+                <p class="text-gray-400 mb-8 max-w-md">This class doesn't have any students yet. Add a new student to
+                    start creating ID cards.</p>
+                <a href="/admission"
+                    class="inline-flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-blue-500/30 transform hover:-translate-y-1">
                     <i class="fas fa-plus-circle"></i>
                     <span>Add Student</span>
                     <i class="fas fa-arrow-right"></i>
@@ -248,17 +249,21 @@
             </div>
 
             <!-- No Results State (filters yield zero) -->
-            <div id="no-results-state" class="flex flex-col items-center justify-center py-16 px-4 text-center glass-card rounded-2xl border border-white/5 hidden">
-                <div class="w-24 h-24 mb-6 rounded-full bg-gradient-to-br from-blue-500/20 to-cyan-500/20 flex items-center justify-center">
+            <div id="no-results-state"
+                class="flex flex-col items-center justify-center py-16 px-4 text-center glass-card rounded-2xl border border-white/5 hidden">
+                <div
+                    class="w-24 h-24 mb-6 rounded-full bg-gradient-to-br from-blue-500/20 to-cyan-500/20 flex items-center justify-center">
                     <i class="fas fa-filter text-4xl text-blue-300"></i>
                 </div>
                 <h3 class="text-2xl font-bold text-white mb-2">No matching students</h3>
                 <p class="text-gray-400 mb-2 max-w-md">No students match your current search or filter criteria.</p>
-                <p class="text-gray-500 text-sm mt-4">Try adjusting your search or disabling the "Show only with images" filter.</p>
+                <p class="text-gray-500 text-sm mt-4">Try adjusting your search or disabling the "Show only with images"
+                    filter.</p>
             </div>
 
             <!-- Cards Grid (shown when students exist) -->
-            <div id="cards-grid" class="flex flex-wrap justify-center gap-6" style="max-width: 1300px; margin: 0 auto;"></div>
+            <div id="cards-grid" class="flex flex-wrap justify-center gap-6" style="max-width: 1300px; margin: 0 auto;">
+            </div>
         </div>
     </main>
 </div>

@@ -271,3 +271,19 @@ def process_marks(
     )
 
     return student_marks_df.to_dict(orient="records")
+
+
+
+def process_marks2(students, add_grades=True, add_grand_total=True):
+    for student in students:
+        exams = student["marks"]
+
+        add_term_totals(exams)
+
+        if add_grades:
+            add_grades_logic(exams)
+
+        if add_grand_total:
+            add_grand_total_logic(exams)
+
+    return students

@@ -29,5 +29,5 @@ def show_marks():
         .order_by(ClassData.id.asc())
         .all()
     )
-    return render_template('show_marks.html', Data=None, classes = classes)
+    return render_template('marks_management/show_marks.html', Data=None, classes = classes)
     

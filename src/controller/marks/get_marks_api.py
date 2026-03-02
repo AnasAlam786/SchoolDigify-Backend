@@ -13,7 +13,7 @@ from src.controller.marks.utils.marks_processing import result_data
 from src.controller.marks.utils.process_marks import process_marks
 
 from bs4 import BeautifulSoup
-# import time
+import time
 
 
 get_marks_api_bp = Blueprint('get_marks_api_bp',   __name__)
@@ -54,30 +54,17 @@ def get_marks_api():
     except Exception as e:
         return jsonify({"message": f"Error fetching marks data: {str(e)}"}), 500
     
-    # end_time = time.time()  # end timer
-    # print(f"login_required decorator took {end_time - start_time:.6f} seconds to run")
-
 
     if not student_marks_data:
         # no students found for this class – render UI with a special flag
         print("No student marks data found for the given class.")
-        html = render_template('show_marks.html', student_marks=[], class_empty=True)
-        soup = BeautifulSoup(html, "lxml")
-        content = soup.body.find('div', {'id': 'results'}).decode_contents()
-        return jsonify({"html": str(content)})
+        html = render_template('marks_management/marks_table.html', student_marks=[], class_empty=True)
+        return jsonify({"html": str(html)})
     
-    print(f"Fetched {len(student_marks_data)} records of student marks data.")
-    
+
     student_marks = process_marks(student_marks_data, add_grades_flag=False, add_grand_total_flag=True)
 
-    # # Print the structure of result student_marks_dict
-    # import pprint
-    # pprint.pprint(student_marks)
-   
+    html = render_template("marks_management/marks_table.html", student_marks=student_marks)
 
-    html = render_template('show_marks.html', student_marks=student_marks)
-    soup = BeautifulSoup(html,"lxml")
-    content = soup.body.find('div',{'id':'results'}).decode_contents()
-
-    return jsonify({"html":str(content)})
+    return jsonify({"html":str(html)})
     
