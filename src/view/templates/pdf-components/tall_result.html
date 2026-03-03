@@ -150,6 +150,18 @@
       font-weight: 800;
     }
 
+    /* special column highlighting for printer-friendly report */
+    .term-total-header,
+    .term-total-cell {
+      font-weight: 800;
+      font-size: 1.1em;
+    }
+    .grand-total-header,
+    .grand-total-cell {
+      font-weight: 900;
+      font-size: 1.2em;
+    }
+
     .subject-row th,
     .subject-row td {
       font-size: 18px;
@@ -256,10 +268,22 @@
             <tr>
               <th class="light-border" style="padding: 10px; font-size: 25px; font-weight: 800;">Subjects</th>
               {% for exam_name, exam_data in student.marks.items() %}
+              {% if "G. Total" in exam_name or "Grand" in exam_name %}
+              <th class="red light-border grand-total-header" style="font-size: 18px;">
+                {{ exam_name }}
+                <div class="exam-base-text">Out of {{ exam_data.weightage }}</div>
+              </th>
+              {% elif "Total" in exam_name or "Grades" in exam_name %}
+              <th class="red light-border term-total-header" style="font-size: 18px;">
+                {{ exam_name }}
+                <div class="exam-base-text">Out of {{ exam_data.weightage }}</div>
+              </th>
+              {% else %}
               <th class="red light-border" style="font-size: 18px;">
                 {{ exam_name }}
                 <div class="exam-base-text">Out of {{ exam_data.weightage }}</div>
               </th>
+              {% endif %}
               {% endfor %}
             </tr>
           </thead>
@@ -269,9 +293,19 @@
               <th class="light-border text-start" style="font-size: 22px; color: black">{{ subject }}</th>
               {% for exam_name in exam_names %}
               {% set exam_data = marks[exam_name] %}
+              {% if "G. Total" in exam_name or "Grand" in exam_name %}
+              <td class="light-border grand-total-cell text-center">
+                {{ exam_data.subject_marks_dict.get(subject, "") }}
+              </td>
+              {% elif "Total" in exam_name %}
+              <td class="light-border term-total-cell text-center">
+                {{ exam_data.subject_marks_dict.get(subject, "") }}
+              </td>
+              {% else %}
               <td class="light-border text-center">
                 {{ exam_data.subject_marks_dict.get(subject, "") }}
               </td>
+              {% endif %}
               {% endfor %}
             </tr>
             {% endfor %}

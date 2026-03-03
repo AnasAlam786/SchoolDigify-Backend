@@ -32,7 +32,6 @@ def get_marks_api():
     if not school_id or not current_session_id or not user_id:
         return jsonify({"message": "Unable to get session data, Please try to logout and login again!"}), 403
 
-
     has_access = db.session.query(
         exists().where(ClassAccess.staff_id == user_id)
     ).scalar()
@@ -59,7 +58,6 @@ def get_marks_api():
         html = render_template('marks_management/marks_table.html', student_marks=[], class_empty=True)
         return jsonify({"html": str(html)})
     
-
     student_marks = process_marks(student_marks_data, add_grades_flag=False, add_grand_total_flag=True)
 
     html = render_template("marks_management/marks_table.html", student_marks=student_marks)
