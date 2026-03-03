@@ -1,7 +1,6 @@
 # src/controller/tools/question_paper_PDF_api.py
 
 from flask import session, render_template, request, jsonify, Blueprint
-from bs4 import BeautifulSoup
 from src.controller.permissions.has_permission import has_permission
 from src.model.Papers import Papers
 

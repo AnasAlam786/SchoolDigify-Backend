@@ -12,8 +12,6 @@ from src import db
 from src.controller.marks.utils.marks_processing import result_data
 from src.controller.marks.utils.process_marks import process_marks
 
-from bs4 import BeautifulSoup
-import time
 
 
 get_marks_api_bp = Blueprint('get_marks_api_bp',   __name__)

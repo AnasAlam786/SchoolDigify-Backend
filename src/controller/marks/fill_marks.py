@@ -2,13 +2,10 @@
 
 from flask import render_template, session, request, jsonify, Blueprint
 
-
-
 from src.model import Exams, StudentsDB, StudentSessions, ClassData, StudentMarks, Subjects, TeachersLogin, ClassExams
 from src.model.ClassAccess import ClassAccess
 from src import db
 
-from bs4 import BeautifulSoup
 from src.controller.auth.login_required import login_required
 from src.controller.permissions.permission_required import permission_required
 from src.controller.permissions.has_permission import has_permission
@@ -69,7 +66,7 @@ def fill_marks():
         
     data = None
 
-    return render_template('fill_marks.html', data=data, classes=classes, exams = exams, subjects = unique_subjects)
+    return render_template('marks_management/fill_marks.html', data=data, classes=classes, exams = exams, subjects = unique_subjects)
 
 
 @fill_marks_bp.route('/get_marks', methods=["GET"])
@@ -149,13 +146,10 @@ def get_marks():
         .all()
     )
     
-
-
-    html = render_template('fill_marks.html', data=marks_data, EXAM=None, classes=None)
-    soup=BeautifulSoup(html,"lxml")
-    content=soup.body.find('div',{'id':'marksTable'}).decode_contents()
-
-    return jsonify({"html":str(content)})
+    # Render only the partial template for the marks table
+    html = render_template('marks_management/fill_marks_table.html', data=marks_data)
+    
+    return jsonify({"html": html})
 
 
 @fill_marks_bp.route('/get_all_exams', methods=['GET'])
