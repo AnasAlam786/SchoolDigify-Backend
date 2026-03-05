@@ -1,5 +1,5 @@
 from sqlalchemy import (
-    Boolean, TIMESTAMP, Column, BigInteger, ForeignKey, Text, func
+    Boolean, TIMESTAMP, Column, BigInteger, ForeignKey, Text, func, Numeric
 )
 from src import db
 
@@ -15,6 +15,7 @@ class RTEInfo(db.Model):
     RTE_registered_year = Column(Text, nullable=True)
     bank_branch = Column(Text, nullable=True)
     is_RTE = Column(Boolean, nullable=False)
+    registration_no = Column(Numeric, nullable=True)
     
 
     student_id = Column(BigInteger, ForeignKey("StudentsDB.id", onupdate="CASCADE", ondelete="CASCADE"), nullable=False)

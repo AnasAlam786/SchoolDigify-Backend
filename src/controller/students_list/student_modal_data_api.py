@@ -53,6 +53,7 @@ def student_modal_data_api():
 
             RTEInfo.is_RTE, RTEInfo.RTE_registered_year, RTEInfo.account_number, 
             RTEInfo.ifsc, RTEInfo.bank_name, RTEInfo.account_holder, RTEInfo.bank_branch,
+            RTEInfo.registration_no
             
             
         ).join(
@@ -136,6 +137,7 @@ def student_modal_data_api():
             "bank_branch": s.bank_branch,
             "account_holder": s.account_holder,
             "RTE_registered_year": s.RTE_registered_year,
+            "registration_no": s.registration_no,
 
 
 

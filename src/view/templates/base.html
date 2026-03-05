@@ -123,7 +123,7 @@
     }
 
     /* Reset text direction for child elements */
-    .sidebar-container > * {
+    .sidebar-container>* {
       direction: ltr;
     }
 
@@ -537,9 +537,9 @@
         <div class="flex items-center space-x-3">
           <div class="user-avatar">
             {% if session.get('user_image') %}
-              <img src="{{ session.get('user_image') }}" alt="User Avatar" style="border-radius: 25%;">
+            <img src="{{ session.get('user_image') }}" alt="User Avatar" style="border-radius: 25%;">
             {% else %}
-              {{ session.get('user_name', 'U')[0]|upper }}
+            {{ session.get('user_name', 'U')[0]|upper }}
             {% endif %}
           </div>
           <div class="flex-1 min-w-0">
@@ -715,10 +715,12 @@
         </label>
         <div class="relative">
           <select
-            class="w-full bg-white/5 text-gray-300 py-2.5 px-4 rounded-lg border border-white/10 focus:ring-2 focus:ring-primary focus:border-transparent appearance-none pr-10 backdrop-blur-sm"
+            class="w-full bg-[#111111] text-gray-300 py-2.5 px-4 rounded-lg border border-white/10 focus:ring-2 focus:ring-primary focus:border-transparent appearance-none pr-10 backdrop-blur-sm"
             onchange="changeSession(this.value)">
+
             {% for year in session['all_sessions'] %}
-            <option value="{{ year }}" {% if year==session['session_id'] %}selected{% endif %}>
+            <option value="{{ year }}" class="bg-[#111111] text-gray-300" {% if year==session['session_id'] %}selected{%
+              endif %}>
               {{ year }} - {{ year|int + 1 }}
               {% if year|int == session['current_running_session'] %} (Current){% endif %}
             </option>

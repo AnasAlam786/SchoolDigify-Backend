@@ -45,7 +45,6 @@ def admission():
     user_id = session["user_id"]
     school_id = session["school_id"]
     current_session = session["session_id"]
-    current_running_session = session.get("current_running_session")
 
     # Get classes accessible to user
     classes_query = (
@@ -93,7 +92,7 @@ def admission():
         rte_info=None,
         classes=classes_dict,
         admission_sessions=admission_sessions,
-        current_session=current_running_session,
+        current_session=current_session,
         default_admission_no=new_adm,
         default_sr=new_sr,
         default_admission_date=current_date,

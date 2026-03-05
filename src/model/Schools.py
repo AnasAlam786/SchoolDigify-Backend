@@ -1,5 +1,5 @@
 from sqlalchemy import (
-    BigInteger, Column, Text, Date, JSON,
+    BigInteger, Column, Text, Date, JSON, Numeric
 )
 from src import db
 
@@ -21,6 +21,7 @@ class Schools(db.Model):
     students_image_folder_id = Column(Text, nullable=True)  # Added students_image_folder_id as per DB
     school_heading_image = Column(Text, nullable=True)  # Added school_heading_image as per DB
     session_id = Column(Text, nullable=False)
+    login_no = Column(Numeric, nullable=False)
 
     school_legacy_id = Column(BigInteger, db.ForeignKey('Sessions.id', onupdate='CASCADE'), nullable=False)
     session = db.relationship('Sessions', back_populates='school_legacy')

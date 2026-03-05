@@ -755,7 +755,7 @@
                         PEN No.
                     </label>
                     <div class="relative">
-                        <input type="text" id="PEN" name="PEN"
+                        <input type="number" id="PEN" name="PEN"
                             class="w-full px-4 py-3 sm:py-3.5 bg-gray-800/70 border border-gray-700 rounded-lg sm:rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all duration-300"
                             value="{{ student.PEN if student and student.PEN else '' }}" placeholder="Enter PEN number"
                             maxlength="11">
@@ -775,7 +775,7 @@
                         APAAR No.
                     </label>
                     <div class="relative">
-                        <input type="text" id="APAAR" name="APAAR"
+                        <input type="number" id="APAAR" name="APAAR"
                             class="w-full px-4 py-3 sm:py-3.5 bg-gray-800/70 border border-gray-700 rounded-lg sm:rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all duration-300"
                             value="{{ student.APAAR if student and student.APAAR else '' }}"
                             placeholder="Enter APAAR number" maxlength="12">
@@ -848,7 +848,7 @@
                                     Aadhar Number
                                 </label>
                                 <div class="relative">
-                                    <input type="text" id="FATHERS_AADHAR" name="FATHERS_AADHAR"
+                                    <input type="number" id="FATHERS_AADHAR" name="FATHERS_AADHAR"
                                         class="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 transition-all duration-300"
                                         value="{{ student.FATHERS_AADHAR if student and student.FATHERS_AADHAR else '' }}"
                                         placeholder="XXXX XXXX XXXX" maxlength="14">
@@ -942,7 +942,7 @@
                                     Aadhar Number
                                 </label>
                                 <div class="relative">
-                                    <input type="text" id="MOTHERS_AADHAR" name="MOTHERS_AADHAR"
+                                    <input type="number" id="MOTHERS_AADHAR" name="MOTHERS_AADHAR"
                                         class="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:border-pink-500 transition-all duration-300"
                                         value="{{ student.MOTHERS_AADHAR if student and student.MOTHERS_AADHAR else '' }}"
                                         placeholder="XXXX XXXX XXXX" maxlength="14">
@@ -1252,10 +1252,26 @@
                             <h4 class="text-sm sm:text-md font-semibold text-violet-400 mb-4">Bank Account Details</h4>
                             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
                                 <div class="form-field">
+                                    <label for="registration_no"
+                                        class="block text-sm font-medium text-gray-300 mb-2">
+                                        RTE Registation No
+                                    </label>
+                                    <input type="number" id="registration_no" name="registration_no"
+                                        class="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500 transition-all duration-300"
+                                        value="{{ rte_info.registration_no if rte_info and rte_info.registration_no else '' }}"
+                                        placeholder="Reg. No (6 digits)">
+                                    <div class="error-message hidden text-red-400 text-sm mt-2 flex items-center gap-2">
+                                        <i class="fas fa-exclamation-circle"></i>
+                                        <span></span>
+                                    </div>
+                                </div>
+
+
+                                <div class="form-field">
                                     <label for="account_number" class="block text-sm font-medium text-gray-300 mb-2">
                                         Account Number
                                     </label>
-                                    <input type="text" id="account_number" name="account_number"
+                                    <input type="number" id="account_number" name="account_number"
                                         class="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500 transition-all duration-300"
                                         value="{{ rte_info.account_number if rte_info and rte_info.account_number else '' }}"
                                         placeholder="Bank account number">
