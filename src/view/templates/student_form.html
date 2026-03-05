@@ -367,7 +367,7 @@
                         Aadhar Number
                     </label>
                     <div class="relative">
-                        <input type="text" id="AADHAAR" name="AADHAAR"
+                        <input type="text" inputmode="numeric"  pattern="[0-9 ]*" id="AADHAAR" name="AADHAAR"
                             class="w-full px-4 py-3 sm:py-3.5 bg-gray-800/70 border border-gray-700 rounded-lg sm:rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all duration-300"
                             value="{{ student.AADHAAR if student and student.AADHAAR else '' }}"
                             placeholder="XXXX XXXX XXXX" maxlength="14">
@@ -848,7 +848,7 @@
                                     Aadhar Number
                                 </label>
                                 <div class="relative">
-                                    <input type="number" id="FATHERS_AADHAR" name="FATHERS_AADHAR"
+                                    <input type="text" inputmode="numeric"  pattern="[0-9 ]*" id="FATHERS_AADHAR" name="FATHERS_AADHAR" 
                                         class="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 transition-all duration-300"
                                         value="{{ student.FATHERS_AADHAR if student and student.FATHERS_AADHAR else '' }}"
                                         placeholder="XXXX XXXX XXXX" maxlength="14">
@@ -942,7 +942,7 @@
                                     Aadhar Number
                                 </label>
                                 <div class="relative">
-                                    <input type="number" id="MOTHERS_AADHAR" name="MOTHERS_AADHAR"
+                                    <input type="text" inputmode="numeric"  pattern="[0-9 ]*" id="MOTHERS_AADHAR" name="MOTHERS_AADHAR"
                                         class="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:border-pink-500 transition-all duration-300"
                                         value="{{ student.MOTHERS_AADHAR if student and student.MOTHERS_AADHAR else '' }}"
                                         placeholder="XXXX XXXX XXXX" maxlength="14">
