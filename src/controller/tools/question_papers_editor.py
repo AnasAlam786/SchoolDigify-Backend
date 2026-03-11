@@ -1,6 +1,7 @@
 # src/controller/tools/question_papers_editor.py
 
 from flask import session, render_template, request, Blueprint, jsonify, redirect, url_for
+from sqlalchemy import or_
 from src import db
 from src.controller.permissions.has_permission import has_permission
 from src.model.Papers import Papers
@@ -19,7 +20,7 @@ def question_papers_editor(paper_id):
     user_id = session.get('user_id')
     
     # Fetch the paper
-    paper = Papers.query.filter_by(id=paper_id, user_id=user_id).first()
+    paper = Papers.query.filter_by(id=paper_id, user_id=user_id).filter(or_(Papers.status != 'deleted', Papers.status.is_(None))).first()
     
     if not paper:
         return redirect(url_for('question_papers_dashboard_bp.question_papers_dashboard'))
@@ -92,7 +93,7 @@ def update_paper(paper_id):
     
     user_id = session.get('user_id')
     
-    paper = Papers.query.filter_by(id=paper_id, user_id=user_id).first()
+    paper = Papers.query.filter_by(id=paper_id, user_id=user_id).filter(or_(Papers.status != 'deleted', Papers.status.is_(None))).first()
     
     if not paper:
         return jsonify({'error': 'Paper not found'}), 404
@@ -159,17 +160,21 @@ def update_paper(paper_id):
 @login_required
 @permission_required('create_paper')
 def delete_paper(paper_id):
-    """Delete a question paper"""
+    """Soft delete a question paper by marking status as deleted"""
     
     user_id = session.get('user_id')
     
-    paper = Papers.query.filter_by(id=paper_id, user_id=user_id).first()
+    paper = Papers.query.filter_by(id=paper_id).first()
     
     if not paper:
         return jsonify({'error': 'Paper not found'}), 404
     
+    # Allow deletion if owner or has view_all_papers permission
+    if paper.user_id != user_id and not has_permission('view_all_papers'):
+        return jsonify({'error': 'Paper not found'}), 404
+    
     try:
-        db.session.delete(paper)
+        paper.status = 'deleted'
         db.session.commit()
         
         return jsonify({'success': True, 'message': 'Paper deleted successfully'})
@@ -188,7 +193,7 @@ def duplicate_paper(paper_id):
     user_id = session.get('user_id')
     
     # allow duplicating own papers or any paper if user has view_all_papers permission
-    original_paper = Papers.query.filter_by(id=paper_id).first()
+    original_paper = Papers.query.filter_by(id=paper_id).filter(or_(Papers.status != 'deleted', Papers.status.is_(None))).first()
     
     if not original_paper:
         return jsonify({'error': 'Paper not found'}), 404
@@ -233,7 +238,7 @@ def get_paper_data(paper_id):
     
     user_id = session.get('user_id')
     
-    paper = Papers.query.filter_by(id=paper_id, user_id=user_id).first()
+    paper = Papers.query.filter_by(id=paper_id, user_id=user_id).filter(or_(Papers.status != 'deleted', Papers.status.is_(None))).first()
     
     if not paper:
         return jsonify({'error': 'Paper not found'}), 404

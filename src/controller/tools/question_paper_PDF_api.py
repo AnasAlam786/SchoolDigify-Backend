@@ -1,6 +1,7 @@
 # src/controller/tools/question_paper_PDF_api.py
 
 from flask import session, render_template, request, jsonify, Blueprint
+from sqlalchemy import or_
 from src.controller.permissions.has_permission import has_permission
 from src.model.Papers import Papers
 
@@ -48,7 +49,7 @@ def question_paper_PDF_by_id(paper_id):
     
     user_id = session.get('user_id')
     
-    paper = Papers.query.filter_by(id=paper_id).first()
+    paper = Papers.query.filter_by(id=paper_id).filter(or_(Papers.status != 'deleted', Papers.status.is_(None))).first()
     
     if not paper:
         return jsonify({'error': 'Paper not found'}), 404

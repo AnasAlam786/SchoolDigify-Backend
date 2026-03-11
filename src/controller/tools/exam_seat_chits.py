@@ -32,31 +32,30 @@ def get_seat_chits_api():
         return jsonify({"message": "Missing session context (school/session)."}), 400
 
     # Build base query for students in the current session and school
+    #exclude students with class UKG/KG2/PP1, Nursery/KG/PP3, Nursery/KG/PP3
     query = db.session.query(
-        StudentsDB.STUDENTS_NAME,
-        StudentsDB.IMAGE,
-        StudentsDB.FATHERS_NAME,
+        StudentsDB.STUDENTS_NAME.label('STUDENTS_NAME'),
+        StudentsDB.IMAGE.label('IMAGE'),
+        StudentsDB.FATHERS_NAME.label('FATHERS_NAME'),
         ClassData.CLASS.label('CLASS'),
-        StudentSessions.ROLL,
+        StudentSessions.ROLL.label('ROLL'),
     ).join(
         StudentSessions, StudentSessions.student_id == StudentsDB.id
     ).join(
         ClassData, StudentSessions.class_id == ClassData.id
     ).filter(
         StudentsDB.school_id == school_id,
-        ~ClassData.id.in_([1, 2, 3]),  # exclude class IDs 1, 2, and 3
         StudentSessions.session_id == current_session_id,
+        # ~ClassData.CLASS.in_(['UKG/KG2/PP1', 'Nursery/KG/PP3', 'LKG/KG1/PP2'])  # exclude specified classes
     ).order_by(
         ClassData.display_order,  # first order by class display order
         StudentSessions.ROLL      # then by roll number
     )
-
     students = query.all()
 
-
-    # Group students into sets of 12 using list slicing
-    # i goes from 0 to total students in steps of 12
-    # students[i:i+12] picks 12 students starting from index i
-    grouped_students = [students[i:i+15] for i in range(0, len(students), 15)]
+    # Group students into sets of 30 using list slicing
+    # i goes from 0 to total students in steps of 15
+    # students[i:i+15] picks 15 students starting from index i
+    grouped_students = [students[i:i+30] for i in range(0, len(students), 30)]
 
     return render_template('admit_card/exam_seat_chits.html', data=grouped_students)

@@ -31,6 +31,7 @@ class Papers(db.Model):
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    status = Column(Text, default="active", nullable=False)  # active/inactive for soft delete
     
     def __repr__(self):
         return f"<Papers {self.id}: {self.event} - {self.subject} ({self.class_name})>"
