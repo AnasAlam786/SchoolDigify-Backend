@@ -29,9 +29,7 @@ from .fees.demand_fee_message_api import demand_fee_message_bp
 from .fees.transaction_watsapp_message_api import transaction_whatsapp_message_bp
 
 from .marks.fill_marks import fill_marks_bp
-from .marks.update_marks_api import update_marks_api_bp
 from .marks.show_marks import show_marks_bp
-from .marks.get_marks_api import get_marks_api_bp
 from .marks.get_result_api import get_result_api_bp
 from .marks.bulk_download_results import bulk_download_results_bp
 
@@ -66,6 +64,7 @@ from .students.add_student.admission import admission_bp
 from .students.utils.pydantic_verification_api import pydantic_verification_api_bp
 from .students.utils.get_new_roll_api import get_new_roll_api_bp
 from .students.add_student.final_admission_api import final_admission_api_bp
+from .students.add_student.bulk_admission_api import bulk_admission_bp
 
 from .students.update.final_student_update_api import final_update_student_api_bp
 from .students.update.update_student import update_student_bp
@@ -116,14 +115,13 @@ def register_blueprints(app):
     app.register_blueprint(pydantic_verification_api_bp)
     app.register_blueprint(get_new_roll_api_bp)
     app.register_blueprint(final_admission_api_bp)
+    app.register_blueprint(bulk_admission_bp)
 
     app.register_blueprint(create_watsapp_message_api_bp)
     app.register_blueprint(create_admission_form_api_bp)
 
     app.register_blueprint(fill_marks_bp)
-    app.register_blueprint(update_marks_api_bp)
     app.register_blueprint(show_marks_bp)
-    app.register_blueprint(get_marks_api_bp)
     app.register_blueprint(get_result_api_bp)
     app.register_blueprint(bulk_download_results_bp)
 

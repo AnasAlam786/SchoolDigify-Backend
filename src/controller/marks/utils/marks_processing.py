@@ -281,6 +281,9 @@ def result_data(school_id, session_id, class_id, student_ids=None, extra_fields=
             for kv in mj:
                 ordered_marks.update(kv)
             row_dict["subject_marks_dict"] = ordered_marks
+
+            # if row_dict["exam_name"] == "Annual Exam":
+            #     print(f"Subject Marks for Student {row_dict.get('STUDENTS_NAME')}: {ordered_marks}\n")
         return row_dict
 
     return [result_to_dict(r) for r in result]

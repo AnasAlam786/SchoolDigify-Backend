@@ -14,7 +14,7 @@ from src.controller.permissions.has_permission import has_permission
 fill_marks_bp = Blueprint( 'fill_marks_bp',   __name__)
 
 @fill_marks_bp.route('/fill_marks', methods=["GET", "POST"])
-@login_required
+@login_required     # Only logged in users can access the fill marks page.
 @permission_required('fill_marks')
 def fill_marks():
     
@@ -32,26 +32,8 @@ def fill_marks():
 
     class_ids = [row.id for row in classes]
 
-        
-    subjects = (
-        db.session.query(Subjects.id, Subjects.subject, Subjects.display_order)
-        .filter(
-            Subjects.school_id == school_id,
-            Subjects.is_active == True,
-            Subjects.class_id.in_(class_ids)
-        )
-        .order_by(Subjects.display_order.asc())
-        .all()
-    )
-
-    # Build a list of unique subjects by name, but keep an associated id for frontend selection
-    unique_subjects = []
-    seen = set()
-    for s in subjects:
-        if s.subject not in seen:
-            seen.add(s.subject)
-            unique_subjects.append({"id": s.id, "subject": s.subject})
-
+    # No preloaded subjects in the dropdown; user selects class first then we load subjects via API.
+    subjects = []
 
     exams = (
         db.session.query(Exams.exam_name, Exams.id, Exams.is_enabled)
@@ -66,11 +48,11 @@ def fill_marks():
         
     data = None
 
-    return render_template('marks_management/fill_marks.html', data=data, classes=classes, exams = exams, subjects = unique_subjects)
+    return render_template('marks_management/fill_marks.html', data=data, classes=classes, exams=exams, subjects=subjects)
 
 
 @fill_marks_bp.route('/get_marks', methods=["GET"])
-@login_required
+@login_required     # API to fetch marks after selecting class+subject+exam combination, used to populate the marks table in the frontend.
 @permission_required('fill_marks')
 def get_marks():
     class_id = request.args.get('class_id')
@@ -78,23 +60,53 @@ def get_marks():
     exam_id = request.args.get('exam_id')
     school_id = session["school_id"]
     current_session_id = session["session_id"]
-    
+    user_id = session["user_id"]
 
     if not subject_id or not class_id or not exam_id:
         return jsonify({"error": "Missing required fields: subject, class, and exam are all required."}), 400
-        
-    exam = Exams.query.filter_by(id=exam_id, school_id=school_id).first()
+
+    try:
+        class_id_int = int(class_id)
+        subject_id_int = int(subject_id)
+        exam_id_int = int(exam_id)
+    except ValueError:
+        return jsonify({"error": "Invalid class/subject/exam id"}), 400
+
+    class_allowed = (
+        db.session.query(ClassData.id)
+            .join(ClassAccess, ClassAccess.class_id == ClassData.id)
+            .filter(ClassData.id == class_id_int, ClassAccess.staff_id == user_id)
+            .first()
+    )
+    if not class_allowed:
+        return jsonify({"error": "Class not found or not permitted for current teacher."}), 403
+
+    subject = (
+        db.session.query(Subjects.id)
+            .filter_by(
+                id=subject_id_int,
+                class_id=class_id_int,
+                school_id=school_id,
+                is_active=True
+            ).first()
+    )   
+    if not subject:
+        return jsonify({"error": "Subject not found for selected class."}), 400
+
+    exam = (
+        db.session.query(Exams.id, Exams.is_enabled)
+        .filter_by(
+            id=exam_id_int, 
+            school_id=school_id
+        ).first()
+    )
     if not exam:
         return jsonify({"error": "Exam not found"}), 404
     if not exam.is_enabled and not has_permission('override_marks_lock'):
         return jsonify({"error": "This exam is disabled. You do not have permission to fill marks for disabled exams."}), 403
 
-    # validate subject id
-    try:
-        subject_id_int = int(subject_id)
-    except Exception:
-        return jsonify({"error": "Invalid subject id"}), 400
-    
+    print(f"Fetching marks for Class ID: {class_id_int}, Subject ID: {subject_id_int}, Exam ID: {exam_id_int}, School ID: {school_id}, Session ID: {current_session_id}")
+
 
     marks_data = (
         db.session.query(
@@ -120,7 +132,7 @@ def get_marks():
         .join(ClassData, StudentSessions.class_id == ClassData.id)
 
         # Join exam details — fixed value (one exam at a time) it create the colum with same values in all the table like FA1
-        .join(Exams, Exams.id == exam_id)
+        .join(Exams, Exams.id == exam_id_int)
 
         # Join subject details — fixed value (one subject at a time)
         .join(Subjects, Subjects.id == subject_id_int)
@@ -129,14 +141,14 @@ def get_marks():
         .outerjoin(
             StudentMarks,
             (StudentMarks.student_id == StudentsDB.id) &
-            (StudentMarks.exam_id == exam_id) &
+            (StudentMarks.exam_id == exam_id_int) &
             (StudentMarks.subject_id == Subjects.id) &
             (StudentMarks.session_id == current_session_id)   # 🔑 Important
         )
 
         # Filter by class, school, and session
         .filter(
-            ClassData.id == class_id,
+            ClassData.id == class_id_int,
             StudentsDB.school_id == school_id,
             StudentSessions.session_id == current_session_id,
         )
@@ -152,8 +164,99 @@ def get_marks():
     return jsonify({"html": html})
 
 
+@fill_marks_bp.route('/api/subjects/<int:class_id>', methods=['GET'])
+@login_required   # Get subjects for the dropdown based on selected class in the frontend.
+@permission_required('fill_marks')
+def get_subjects_by_class(class_id):
+    school_id = session["school_id"]
+
+    subjects = Subjects.query.filter_by(
+        class_id=class_id,
+        school_id=school_id,
+        is_active=True
+    ).order_by(Subjects.display_order.asc()).all()
+
+    return jsonify([{"id": sub.id, "subject": sub.subject} for sub in subjects])
+
+@fill_marks_bp.route('/update_marks_api', methods=['POST'])
+@login_required     # API to update or insert marks based on the presence of marks_id or existing record for student+subject+exam.
+@permission_required('fill_marks')
+def update_marks_api():
+    data = request.json
+    
+    marks_id = data.get('marks_id')
+    score = data.get('score')
+    student_id = data.get('student_id')
+    subject_id = data.get('subject_id')
+    exam_id = data.get('exam_id')
+
+    current_session_id = session.get("session_id")
+    school_id = session.get("school_id")
+
+    
+
+    if not all([student_id, subject_id, exam_id, current_session_id, school_id]):
+        return jsonify({"message": "Missing required fields"}), 400
+
+    exam = Exams.query.filter_by(id=exam_id, school_id=school_id).first()
+    if not exam:
+        return jsonify({"message": "Exam not found"}), 404
+
+    if not exam.is_enabled and not has_permission('override_marks_lock'):
+        return jsonify({"message": "This exam is disabled. You do not have permission to fill marks for disabled exams."}), 403
+
+    student_session = StudentSessions.query.filter_by(student_id=student_id, session_id=current_session_id).first()
+    if not student_session:
+        return jsonify({"message": "Student session not found"}), 400
+
+    subject = Subjects.query.filter_by(id=subject_id, school_id=school_id, is_active=True).first()
+    if not subject or subject.class_id != student_session.class_id:
+        return jsonify({"message": "Selected subject is invalid for this student class"}), 400
+
+    # 🟩 CASE 1: Update existing mark
+    if marks_id and marks_id != "":
+        
+        student_marks = StudentMarks.query.filter_by(id=marks_id).first()
+        if student_marks:
+            student_marks.score = score
+            db.session.commit()
+            return jsonify({"message": "Updated marks successfully"}), 200
+        else:
+            return jsonify({"message": "Unable to find student record in database"}), 400
+
+    # 🟩 CASE 2: Try to find an existing record to update (by student + subject + exam)
+    existing = StudentMarks.query.filter_by(
+        student_id=student_id,
+        subject_id=subject_id,
+        exam_id=exam_id,
+        session_id=current_session_id
+    ).first()
+
+    if existing:
+        existing.score = score
+        db.session.commit()
+        return jsonify({"message": "Updated existing marks by composite key", "new_mark_id": existing.id}), 200
+
+    # 🟩 CASE 3: Create new record
+    new_mark = StudentMarks(
+        student_id=student_id,
+        subject_id=subject_id,
+        exam_id=exam_id,
+        score=score,
+        session_id=current_session_id,
+        school_id=school_id
+    )
+    db.session.add(new_mark)
+    db.session.commit()
+
+    return jsonify({
+        "message": "Inserted new marks successfully",
+        "new_mark_id": new_mark.id
+    }), 200
+
+
 @fill_marks_bp.route('/get_all_exams', methods=['GET'])
-@login_required
+@login_required # 
 @permission_required('lock_marks')
 def get_all_exams():
     school_id = session["school_id"]

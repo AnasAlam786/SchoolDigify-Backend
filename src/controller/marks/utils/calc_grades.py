@@ -1,5 +1,5 @@
 # src/controller/utils/calc_grades.py
-# Used in --> get_marks_api.py
+# Used in --> show_marks_api.py
 # Used in --> report_card_api.py
 
 from typing import Tuple, Union

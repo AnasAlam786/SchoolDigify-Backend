@@ -175,12 +175,8 @@
       <div class="relative">
         <select id="Subject" name="selectSubject" required
           class="w-full bg-[#1A1A1A] border border-white/10 text-gray-100 text-base p-3 pl-4 rounded-lg focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 outline-none transition-all appearance-none cursor-pointer">
-          <option disabled selected hidden value="" class="bg-[#1A1A1A] text-gray-500">Select Subject</option>
-          {% if subjects %}
-          {% for subject in subjects %}
-          <option value="{{ subject.id }}" class="bg-[#1A1A1A] text-gray-100">{{ subject.subject }}</option>
-          {% endfor %}
-          {% endif %}
+          <option disabled selected hidden value="" >Select Subject</option>
+          <option value="" disabled>Please Select Class First</option>
         </select>
         <div class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
           <i class="fas fa-chevron-down"></i>
@@ -528,6 +524,78 @@
       </div>
     `;
   }
+
+  function setSubjectOptions(subjects) {
+    const subjectSelect = document.getElementById('Subject');
+    const classSelected = document.getElementById('Class');
+    if (!subjectSelect)  return;
+    if (!classSelected)  return;
+    
+
+    if (!subjectSelect.value && !classSelected.value) {
+      const emptyClassError = document.createElement('option');
+      emptyClassError.textContent = 'Please select a class to load subjects.';
+      emptyClassError.disabled = true;
+      emptyClassError.value = '';
+      subjectSelect.appendChild(emptyClassError);
+      return
+    }
+
+    subjectSelect.innerHTML = '<option disabled selected hidden value="" class="bg-[#1A1A1A] text-gray-500">Select Subject</option>';
+
+    if (!subjects || subjects.length === 0) {
+      const emptyOption = document.createElement('option');
+      emptyOption.textContent = 'No active subjects for this class';
+      emptyOption.disabled = true;
+      emptyOption.value = '';
+      subjectSelect.appendChild(emptyOption);
+      return;
+    }
+
+    subjects.forEach(sub => {
+      const option = document.createElement('option');
+      option.value = sub.id;
+      option.textContent = sub.subject;
+      option.className = 'bg-[#1A1A1A] text-gray-100';
+      subjectSelect.appendChild(option);
+    });
+  }
+
+  async function loadSubjectsForClass(classId) {
+    setSubjectOptions([]);
+
+    try {
+      const response = await fetch(`/api/subjects/${classId}`);
+      if (!response.ok) {
+        throw new Error('Unable to fetch subjects');
+      }
+      const subjects = await response.json();
+      setSubjectOptions(subjects);
+    } catch (error) {
+      console.error('Error loading subjects:', error);
+      setSubjectOptions([]);
+      const subjectSelect = document.getElementById('Subject');
+      if (subjectSelect) {
+        const errOption = document.createElement('option');
+        errOption.textContent = 'Error loading subjects';
+        errOption.disabled = true;
+        errOption.value = '';
+        subjectSelect.appendChild(errOption);
+      }
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const classSelect = document.getElementById('Class');
+    if (classSelect) {
+      classSelect.addEventListener('change', (event) => {
+        const selectedClass = event.target.value;
+        if (selectedClass) {
+          loadSubjectsForClass(selectedClass);
+        }
+      });
+    }
+  });
 
   // Manage Exams Modal logic (unchanged)
   document.addEventListener('DOMContentLoaded', function () {

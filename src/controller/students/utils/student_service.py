@@ -1,9 +1,13 @@
 # src/controller/students/utils/student_service.py
 
+import re
 from typing import Dict, List, Optional, Tuple
 from datetime import datetime, date
 from sqlalchemy import or_
 from sqlalchemy.exc import IntegrityError
+from openpyxl import Workbook, load_workbook
+from flask import session
+from pydantic import ValidationError
 
 from src import db
 from src.model import StudentsDB, StudentSessions, ClassData, RTEInfo, Schools
@@ -13,6 +17,66 @@ import time
 
 
 class StudentService:
+    EXCEL_FIELDS = {
+        'STUDENTS_NAME': 'Student Name',
+        'DOB': 'Date of Birth (DD-MM-YYYY)',
+        'GENDER': 'Gender',
+        'AADHAAR': 'Aadhaar Number',
+        'Caste': 'Caste',
+        'Caste_Type': 'Caste Type',
+        'RELIGION': 'Religion',
+        'Height': 'Height (cm)',
+        'Weight': 'Weight (kg)',
+        'BLOOD_GROUP': 'Blood Group',
+        'student_status': 'Student Status (new/old)',
+        'admission_session_id': 'Admission Session',
+        'Admission_Class': 'Admission Class',
+        'CLASS': 'Current Class',
+        'ROLL': 'Roll Number',
+        'SR': 'SR Number',
+        'ADMISSION_NO': 'Admission Number',
+        'ADMISSION_DATE': 'Admission Date (DD-MM-YYYY)',
+        'PEN': 'PEN Number',
+        'APAAR': 'APAAR Number',
+        'FATHERS_NAME': "Father's Name",
+        'FATHERS_AADHAR': "Father's Aadhaar",
+        'MOTHERS_NAME': "Mother's Name",
+        'MOTHERS_AADHAR': "Mother's Aadhaar",
+        'FATHERS_EDUCATION': "Father's Education",
+        'FATHERS_OCCUPATION': "Father's Occupation",
+        'MOTHERS_EDUCATION': "Mother's Education",
+        'MOTHERS_OCCUPATION': "Mother's Occupation",
+        'ADDRESS': 'Address',
+        'PHONE': 'Phone Number',
+        'ALT_MOBILE': 'Alternate Mobile',
+        'PIN': 'PIN Code',
+        'Home_Distance': 'Home Distance',
+        'EMAIL': 'Email',
+        'Previous_School_Marks': 'Previous School Marks (%)',
+        'Previous_School_Attendance': 'Previous School Attendance (%)',
+        'Previous_School_Name': 'Previous School Name',
+        'is_RTE': 'Is RTE Student (Yes/No)',
+        'account_number': 'Bank Account Number',
+        'RTE_registered_year': 'RTE Registered Year',
+        'ifsc': 'IFSC Code',
+        'bank_name': 'Bank Name',
+        'bank_branch': 'Bank Branch',
+        'account_holder': 'Account Holder Name',
+        'registration_no': 'Registration Number'
+    }
+
+    REQUIRED_FIELDS = [
+        'STUDENTS_NAME', 'DOB', 'GENDER', 'Caste_Type', 'RELIGION',
+        'admission_session_id', 'Admission_Class', 'CLASS', 'ROLL', 'SR', 'ADMISSION_NO', 'ADMISSION_DATE',
+        'FATHERS_NAME', 'MOTHERS_NAME', 'ADDRESS', 'PHONE', 'PIN'
+    ]
+
+    ROMAN_MAP = {
+        "i": "1", "ii": "2", "iii": "3", "iv": "4", "v": "5",
+        "vi": "6", "vii": "7", "viii": "8", "ix": "9", "x": "10",
+        "xi": "11", "xii": "12"
+    }
+
     @staticmethod
     def str_to_date(value) -> date | None:
         if isinstance(value, date):
@@ -126,9 +190,10 @@ class StudentService:
                 StudentSessions.student_id == exclude_student_id,
                 StudentSessions.session_id == session_id
             ).scalar()
-            available_rolls.add(existing_roll)
-            if existing_roll == roll:
-                return None
+            if existing_roll is not None:
+                available_rolls.add(existing_roll)
+                if existing_roll == roll:
+                    return None
 
         if roll not in available_rolls:
             return f"Roll {roll} is not available. Available: {sorted(available_rolls)}"
@@ -266,3 +331,175 @@ class StudentService:
         except Exception as e:
             db.session.rollback()
             return f"Update failed: {str(e)}"
+
+
+    # Bulk Admission Utilities
+    @classmethod
+    def resolve_class(cls, value, class_map):
+
+        if not value:
+            return None
+
+        raw = str(value).strip().lower()
+        candidates = set()
+
+        candidates.add(raw)
+
+        candidates.add(raw.replace("class", "").strip())
+
+        candidates.add(re.sub(r"(st|nd|rd|th)$", "", raw))
+
+        if raw in cls.ROMAN_MAP:
+            candidates.add(cls.ROMAN_MAP[raw])
+
+        if raw in cls.EXTRA_MAP:
+            candidates.add(cls.EXTRA_MAP[raw])
+
+        for c in candidates:
+            key = c.strip().lower()
+            if key in class_map:
+                return class_map[key]
+
+        return None
+   
+    
+    @staticmethod
+    def read_excel_rows(file, class_map, field_map=None):
+
+        if field_map is None:
+            field_map = StudentService.EXCEL_FIELDS
+
+        wb = load_workbook(file)
+        ws = wb.active
+
+        headers = [c.value for c in ws[1] if c.value]
+
+        reverse_map = {v: k for k, v in field_map.items()}
+        field_headers = [reverse_map.get(h, h) for h in headers]
+
+        rows = []
+
+        for idx, row in enumerate(ws.iter_rows(min_row=2, values_only=True), start=2):
+
+            if all(v is None or str(v).strip() == "" for v in row):
+                continue
+
+            row_dict = {}
+
+            for i, value in enumerate(row):
+
+                if i >= len(field_headers):
+                    break
+
+                field = field_headers[i]
+
+                if value is None or str(value).strip() == "":
+                    row_dict[field] = None
+                    continue
+
+                val = str(value).strip()
+
+                if field in ("CLASS", "Admission_Class"):
+
+                    resolved = StudentService.resolve_class(val, class_map)
+
+                    if resolved:
+                        row_dict[field] = resolved["id"]
+                        row_dict[field + "_name"] = resolved["name"]
+                    else:
+                        row_dict[field] = None
+                        row_dict[field + "_raw"] = val
+
+                else:
+                    row_dict[field] = val
+
+            row_dict["_row_number"] = idx
+
+            rows.append(row_dict)
+
+        return rows
+    
+    
+    @staticmethod
+    def detect_excel_duplicates(rows):
+        seen_sr = {}
+        seen_admission = {}
+        seen_class_roll = {}
+        duplicates = {}
+
+        for row in rows:
+            row_no = row.get("_row_number")
+            sr = row.get("SR")
+            adm = row.get("ADMISSION_NO")
+            cls = row.get("CLASS")
+            roll = row.get("ROLL")
+
+            if sr:
+                if sr in seen_sr:
+                    duplicates[row_no] = "Duplicate SR number in Excel"
+                else:
+                    seen_sr[sr] = row_no
+
+            if adm:
+                if adm in seen_admission:
+                    duplicates[row_no] = "Duplicate Admission Number in Excel"
+                else:
+                    seen_admission[adm] = row_no
+
+            if cls and roll:
+                key = (cls, roll)
+                if key in seen_class_roll:
+                    duplicates[row_no] = "Duplicate Class + Roll in Excel"
+                else:
+                    seen_class_roll[key] = row_no
+
+        return duplicates
+
+    @staticmethod
+    def validate_rows(rows, excel_duplicates):
+        valid_rows = []
+        errors = []
+
+        for row in rows:
+            row_no = row.get("_row_number")
+
+            if row_no is None:
+                continue
+
+
+            # Excel duplicate check
+            if row_no in excel_duplicates:
+                errors.append({"row": row_no, "error": excel_duplicates[row_no]})
+                continue
+
+            # class mapping error
+            if "_class_error" in row:
+                errors.append({ "row": row_no, "error": f"Invalid class: {row['_class_error']}" })
+                continue
+
+            missing = [f for f in StudentService.REQUIRED_FIELDS if not row.get(f)]
+            if missing:
+                errors.append({"row": row_no, "error": f"Missing fields: {', '.join(missing)}"})
+                continue
+
+
+            try:
+                from src.controller.students.utils.admission_form_schema import AdmissionFormModel
+                from src.controller.students.utils.conflict_verification import verify_conflicts
+
+                model = AdmissionFormModel(**row)
+                verified = model.to_verified_data()
+
+                conflict = verify_conflicts(verified, mode="add")
+                if conflict:
+                    message = conflict[0].get("message") if isinstance(conflict, list) else "Conflict detected"
+                    errors.append({"row": row_no, "error": message})
+                    continue
+
+                valid_rows.append({"row_data": row, "verified_data": verified})
+
+            except ValidationError as e:
+                msg = "; ".join(f"{err['loc'][0]}: {err['msg']}" for err in e.errors())
+                errors.append({"row": row_no, "error": msg})
+
+        return valid_rows, errors

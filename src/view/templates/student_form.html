@@ -177,6 +177,43 @@
         min-height: 100%;
         padding: 1rem;
     }
+
+
+     /* Additional bilk modalcustom styles for smooth transitions and dark mode support */
+  .modal-entrance {
+    animation: modalFadeIn 0.2s ease-out;
+  }
+
+  @keyframes modalFadeIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  /* Error card styling */
+  .error-card {
+    @apply bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 rounded-lg p-4;
+  }
+
+  /* Scrollbar styling */
+  #errorContainer::-webkit-scrollbar,
+  #previewContent .overflow-x-auto::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  #errorContainer::-webkit-scrollbar-track,
+  #previewContent .overflow-x-auto::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+  }
+  #errorContainer::-webkit-scrollbar-thumb,
+  #previewContent .overflow-x-auto::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 10px;
+  }
+  #errorContainer::-webkit-scrollbar-thumb:hover,
+  #previewContent .overflow-x-auto::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+  }
 </style>
 
 <div class="max-w-6xl mx-auto sm:px-6 py-4">
@@ -222,6 +259,14 @@
 
                 <!-- ACTIONS -->
                 <div class="flex flex-col sm:flex-row lg:flex-row gap-3">
+                    {% if mode == 'add' %}
+                    <button id="bulkImportBtn"
+                        class="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-gradient-to-r from-green-500 to-emerald-700 hover:opacity-90 text-white text-sm font-medium transition">
+                        <i class="fas fa-upload"></i>
+                        Bulk Import
+                    </button>
+                    {% endif %}
+
                     <a href="/student_list"
                         class="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-300 hover:text-white transition text-sm">
                         <i class="fas fa-arrow-left text-xs"></i>
@@ -1504,6 +1549,187 @@
     </div>
 </div>
 
+<!-- Bulk Import Modal - Redesigned Modern UI -->
+<div id="bulkImportModal"
+  class="hidden fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
+  <div class="w-full max-w-4xl max-h-[90vh] modal-entrance">
+    <!-- Main Card -->
+    <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl overflow-hidden">
+      <!-- Header -->
+      <div class="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+        <div class="flex items-center space-x-3">
+          <div class="bg-gradient-to-br from-blue-500 to-indigo-600 p-3 rounded-xl shadow-md">
+            <i class="fas fa-users text-white text-xl"></i>
+          </div>
+          <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Bulk Student Import</h2>
+        </div>
+        <button id="closeBulkImportModal" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition">
+          <i class="fas fa-times text-2xl"></i>
+        </button>
+      </div>
+
+      <!-- Body -->
+      <div class="p-6 space-y-6">
+        <!-- Download Template Button (always visible) -->
+        <div class="flex justify-end">
+          <button id="downloadTemplateBtn" class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition">
+            <i class="fas fa-download mr-2"></i>Download Template
+          </button>
+        </div>
+
+        <!-- Upload Section -->
+        <div id="uploadSection" class="space-y-4">
+          <div id="uploadArea" class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-8 text-center hover:border-blue-500 dark:hover:border-blue-400 transition cursor-pointer">
+            <div class="space-y-3">
+              <div class="flex justify-center">
+                <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-full">
+                  <i class="fas fa-cloud-upload-alt text-4xl text-blue-600 dark:text-blue-400"></i>
+                </div>
+              </div>
+              <div>
+                <p class="text-gray-700 dark:text-gray-300 font-medium">Click to browse or drag & drop</p>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Excel files only (.xlsx)</p>
+              </div>
+              <input type="file" id="excelFileInput" accept=".xlsx" class="hidden">
+            </div>
+          </div>
+
+          <!-- Selected File Info -->
+          <div id="fileInfo" class="hidden bg-gray-50 dark:bg-gray-800 rounded-lg p-4 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+              <i class="fas fa-file-excel text-green-600 text-2xl"></i>
+              <div>
+                <p id="fileName" class="text-sm font-medium text-gray-900 dark:text-white"></p>
+                <p id="fileSize" class="text-xs text-gray-500 dark:text-gray-400"></p>
+              </div>
+            </div>
+            <button id="removeFileBtn" class="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300">
+              <i class="fas fa-times-circle"></i>
+            </button>
+          </div>
+
+          <!-- Validate Button -->
+          <div class="flex justify-end">
+            <button id="proceedToValidate" class="px-6 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition" disabled>
+              Validate Data
+            </button>
+          </div>
+        </div>
+
+        <!-- Validation Section (hidden initially) -->
+        <div id="validationSection" class="hidden space-y-4">
+          <!-- Loading -->
+          <div id="validationLoading" class="text-center py-8">
+            <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <p class="mt-2 text-gray-600 dark:text-gray-400">Validating your data...</p>
+          </div>
+
+          <!-- Validation Results -->
+          <div id="validationResults" class="hidden space-y-4">
+            <!-- Success Message -->
+            <div id="validationSuccess" class="hidden p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+              <div class="flex">
+                <div class="flex-shrink-0">
+                  <i class="fas fa-check-circle text-green-600 dark:text-green-400"></i>
+                </div>
+                <div class="ml-3">
+                  <h3 class="text-sm font-medium text-green-800 dark:text-green-300">Validation Successful</h3>
+                  <p class="text-sm text-green-700 dark:text-green-400 mt-1">All records are valid. You can now preview the data.</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Error Summary -->
+            <div id="validationErrors" class="hidden p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+              <div class="flex">
+                <div class="flex-shrink-0">
+                  <i class="fas fa-exclamation-triangle text-red-600 dark:text-red-400"></i>
+                </div>
+                <div class="ml-3">
+                  <h3 class="text-sm font-medium text-red-800 dark:text-red-300">Validation Errors</h3>
+                  <p class="text-sm text-red-700 dark:text-red-400 mt-1">Please fix the errors below and upload again.</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Error Cards (mobile friendly) -->
+            <div id="errorContainer" class="space-y-3 max-h-80 overflow-y-auto pr-2">
+              <!-- Error cards will be inserted here -->
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex justify-end space-x-3">
+              <button id="backToUploadFromValidation" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                Upload Again
+              </button>
+              <button id="proceedToPreview" class="hidden px-6 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition">
+                Preview Data
+              </button>
+              <button id="retryValidation" class="hidden px-6 py-2 bg-gradient-to-r from-yellow-500 to-orange-500 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition">
+                Retry Validation
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Preview Section (hidden initially) -->
+        <div id="previewSection" class="hidden space-y-4">
+          <!-- Loading -->
+          <div id="previewLoading" class="text-center py-8">
+            <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <p class="mt-2 text-gray-600 dark:text-gray-400">Loading preview...</p>
+          </div>
+
+          <!-- Preview Content -->
+          <div id="previewContent" class="hidden space-y-4">
+            <!-- Summary -->
+            <div class="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+              <div class="flex">
+                <div class="flex-shrink-0">
+                  <i class="fas fa-info-circle text-blue-600 dark:text-blue-400"></i>
+                </div>
+                <div class="ml-3">
+                  <p id="previewSummary" class="text-sm text-blue-800 dark:text-blue-300"></p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Table (scrollable) -->
+            <div class="overflow-x-auto max-h-80 border border-gray-200 dark:border-gray-700 rounded-lg">
+              <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead class="bg-gray-50 dark:bg-gray-800 sticky top-0">
+                  <tr>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">SR No</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Student Name</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Class</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Admission No</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Father Name</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Phone</th>
+                  </tr>
+                </thead>
+                <tbody id="previewTableBody" class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+                  <!-- Rows inserted via JS -->
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex justify-end space-x-3">
+              <button id="backToValidation" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                Back
+              </button>
+              <button id="importStudentsBtn" class="px-6 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition">
+                Import Students
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
 <script>
     window.MODE = '{{ mode }}';
     window.STUDENT_ID = '{{ student.id if student else "" }}';
@@ -1523,4 +1749,362 @@
 
 </script>
 
+<script>
+// Bulk Import Modal Functionality - Redesigned
+let currentSection = 'upload'; // 'upload', 'validation', 'preview'
+let uploadedFile = null;
+let validationResult = null;
+let previewData = null;
+
+// DOM Elements
+const modal = document.getElementById('bulkImportModal');
+const closeBtn = document.getElementById('closeBulkImportModal');
+const openBtn = document.getElementById('bulkImportBtn'); // Ensure this exists
+
+// Sections
+const uploadSection = document.getElementById('uploadSection');
+const validationSection = document.getElementById('validationSection');
+const previewSection = document.getElementById('previewSection');
+
+// Upload elements
+const uploadArea = document.getElementById('uploadArea');
+const fileInput = document.getElementById('excelFileInput');
+const fileInfo = document.getElementById('fileInfo');
+const fileNameEl = document.getElementById('fileName');
+const fileSizeEl = document.getElementById('fileSize');
+const removeFileBtn = document.getElementById('removeFileBtn');
+const validateBtn = document.getElementById('proceedToValidate');
+
+// Validation elements
+const validationLoading = document.getElementById('validationLoading');
+const validationResults = document.getElementById('validationResults');
+const validationSuccess = document.getElementById('validationSuccess');
+const validationErrors = document.getElementById('validationErrors');
+const errorContainer = document.getElementById('errorContainer');
+const backToUploadFromValidation = document.getElementById('backToUploadFromValidation');
+const proceedToPreviewBtn = document.getElementById('proceedToPreview');
+const retryValidationBtn = document.getElementById('retryValidation');
+
+// Preview elements
+const previewLoading = document.getElementById('previewLoading');
+const previewContent = document.getElementById('previewContent');
+const previewSummary = document.getElementById('previewSummary');
+const previewTableBody = document.getElementById('previewTableBody');
+const backToValidationBtn = document.getElementById('backToValidation');
+const importBtn = document.getElementById('importStudentsBtn');
+
+// Template download
+const downloadBtn = document.getElementById('downloadTemplateBtn');
+
+// Open modal
+if (openBtn) {
+  openBtn.addEventListener('click', () => {
+    modal.classList.remove('hidden');
+    document.body.classList.add('overflow-hidden');
+    resetToUpload();
+  });
+}
+
+// Close modal
+closeBtn.addEventListener('click', () => {
+  modal.classList.add('hidden');
+  document.body.classList.remove('overflow-hidden');
+  resetToUpload();
+});
+
+// Reset to upload section
+function resetToUpload() {
+  currentSection = 'upload';
+  uploadedFile = null;
+  validationResult = null;
+  previewData = null;
+
+  // Show upload, hide others
+  uploadSection.classList.remove('hidden');
+  validationSection.classList.add('hidden');
+  previewSection.classList.add('hidden');
+
+  // Reset upload UI
+  fileInput.value = '';
+  fileInfo.classList.add('hidden');
+  validateBtn.disabled = true;
+}
+
+// Show section helper
+function showSection(section) {
+  uploadSection.classList.add('hidden');
+  validationSection.classList.add('hidden');
+  previewSection.classList.add('hidden');
+
+  if (section === 'upload') {
+    uploadSection.classList.remove('hidden');
+    currentSection = 'upload';
+  } else if (section === 'validation') {
+    validationSection.classList.remove('hidden');
+    currentSection = 'validation';
+  } else if (section === 'preview') {
+    previewSection.classList.remove('hidden');
+    currentSection = 'preview';
+  }
+}
+
+// Download template
+downloadBtn.addEventListener('click', async () => {
+  try {
+    const response = await fetch('/bulk_admission_template');
+    if (response.ok) {
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'student_admission_template.xlsx';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } else {
+      showAlert(400, 'Failed to download template');
+    }
+  } catch (error) {
+    console.error('Error downloading template:', error);
+    showAlert(500, 'Error downloading template');
+  }
+});
+
+// File upload handling
+uploadArea.addEventListener('click', () => fileInput.click());
+
+fileInput.addEventListener('change', (e) => handleFileSelect(e.target.files[0]));
+
+uploadArea.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  uploadArea.classList.add('border-blue-500');
+});
+
+uploadArea.addEventListener('dragleave', () => {
+  uploadArea.classList.remove('border-blue-500');
+});
+
+uploadArea.addEventListener('drop', (e) => {
+  e.preventDefault();
+  uploadArea.classList.remove('border-blue-500');
+  if (e.dataTransfer.files.length) handleFileSelect(e.dataTransfer.files[0]);
+});
+
+function handleFileSelect(file) {
+  if (!file) return;
+  if (!file.name.endsWith('.xlsx')) {
+    showAlert(400, 'Please select a .xlsx file');
+    return;
+  }
+
+  uploadedFile = file;
+  fileNameEl.textContent = file.name;
+  fileSizeEl.textContent = formatFileSize(file.size);
+  fileInfo.classList.remove('hidden');
+  validateBtn.disabled = false;
+}
+
+removeFileBtn.addEventListener('click', () => {
+  uploadedFile = null;
+  fileInput.value = '';
+  fileInfo.classList.add('hidden');
+  validateBtn.disabled = true;
+});
+
+function formatFileSize(bytes) {
+  if (bytes === 0) return '0 Bytes';
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+// Validate button
+validateBtn.addEventListener('click', () => {
+  if (uploadedFile) {
+    showSection('validation');
+    validateExcelFile();
+  }
+});
+
+// Validation function
+async function validateExcelFile() {
+  validationLoading.classList.remove('hidden');
+  validationResults.classList.add('hidden');
+
+  try {
+    const formData = new FormData();
+    formData.append('file', uploadedFile);
+
+    const response = await fetch('/bulk_admission_validate', {
+      method: 'POST',
+      body: formData
+    });
+
+    const data = await response.json();
+
+    validationLoading.classList.add('hidden');
+    validationResults.classList.remove('hidden');
+
+    if (response.ok) {
+      validationResult = data;
+      validationSuccess.classList.remove('hidden');
+      validationErrors.classList.add('hidden');
+      errorContainer.innerHTML = '';
+      proceedToPreviewBtn.classList.remove('hidden');
+      retryValidationBtn.classList.add('hidden');
+    } else {
+      validationSuccess.classList.add('hidden');
+      validationErrors.classList.remove('hidden');
+      proceedToPreviewBtn.classList.add('hidden');
+      retryValidationBtn.classList.remove('hidden');
+      displayErrors(data.errors || []);
+    }
+  } catch (error) {
+    console.error('Validation error:', error);
+    validationLoading.classList.add('hidden');
+    showAlert(500, 'Validation failed');
+  }
+}
+
+function displayErrors(errors) {
+  errorContainer.innerHTML = '';
+  errors.forEach(error => {
+    const card = document.createElement('div');
+    card.className = 'bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 rounded-lg p-4';
+    card.innerHTML = `
+      <div class="flex flex-wrap items-start gap-2">
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300">Row ${error.row || '?'}</span>
+        <span class="text-sm font-medium text-gray-900 dark:text-white">${error.student_name || 'Unknown'}</span>
+        <span class="text-sm text-gray-600 dark:text-gray-400">(${error.class || 'N/A'})</span>
+      </div>
+      <p class="mt-2 text-sm text-red-700 dark:text-red-400">${error.error}</p>
+    `;
+    errorContainer.appendChild(card);
+  });
+}
+
+// Navigation from validation
+backToUploadFromValidation.addEventListener('click', () => {
+  showSection('upload');
+});
+
+retryValidationBtn.addEventListener('click', validateExcelFile);
+
+proceedToPreviewBtn.addEventListener('click', () => {
+  showSection('preview');
+  loadPreview();
+});
+
+// Preview function
+async function loadPreview() {
+  previewLoading.classList.remove('hidden');
+  previewContent.classList.add('hidden');
+
+  try {
+    const response = await fetch('/bulk_admission_preview', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ validation_results: validationResult })
+    });
+
+    const data = await response.json();
+
+    previewLoading.classList.add('hidden');
+    previewContent.classList.remove('hidden');
+
+    if (response.ok) {
+      previewData = data;
+      displayPreview(data);
+    } else {
+      showAlert(400, data.message || 'Failed to load preview');
+    }
+  } catch (error) {
+    console.error('Preview error:', error);
+    showAlert(500, 'Failed to load preview');
+  }
+}
+
+function displayPreview(data) {
+  const count = data.students.length;
+  previewSummary.textContent = `Ready to import ${count} student${count !== 1 ? 's' : ''}.`;
+
+  previewTableBody.innerHTML = '';
+  data.students.forEach(student => {
+    const row = document.createElement('tr');
+    row.className = 'hover:bg-gray-50 dark:hover:bg-gray-800';
+    row.innerHTML = `
+      <td class="px-4 py-3 text-sm text-gray-900 dark:text-white">${student.SR || ''}</td>
+      <td class="px-4 py-3 text-sm text-gray-900 dark:text-white">${student.STUDENTS_NAME || ''}</td>
+      <td class="px-4 py-3 text-sm text-gray-900 dark:text-white">${student.CLASS_NAME || ''}</td>
+      <td class="px-4 py-3 text-sm text-gray-900 dark:text-white">${student.ADMISSION_NO || ''}</td>
+      <td class="px-4 py-3 text-sm text-gray-900 dark:text-white">${student.FATHERS_NAME || ''}</td>
+      <td class="px-4 py-3 text-sm text-gray-900 dark:text-white">${student.PHONE || ''}</td>
+    `;
+    previewTableBody.appendChild(row);
+  });
+}
+
+// Back from preview to validation
+backToValidationBtn.addEventListener('click', () => {
+  showSection('validation');
+});
+
+// Import function
+importBtn.addEventListener('click', async () => {
+  const originalText = importBtn.innerHTML;
+  importBtn.disabled = true;
+  importBtn.innerHTML = '<div class="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2 inline-block"></div>Importing...';
+
+  try {
+    const response = await fetch('/bulk_admission_import', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ preview_data: previewData })
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      showAlert(200, `Successfully imported ${data.imported_count} students`);
+      modal.classList.add('hidden');
+      document.body.classList.remove('overflow-hidden');
+      resetToUpload();
+    } else {
+      showAlert(response.status, data.message || 'Import failed');
+    }
+  } catch (error) {
+    console.error('Import error:', error);
+    showAlert(500, 'Import failed');
+  } finally {
+    importBtn.disabled = false;
+    importBtn.innerHTML = originalText;
+  }
+});
+
+// Alert function (reuse existing alert elements)
+function showAlert(status, message) {
+  const alertEl = status >= 200 && status < 300 ? document.getElementById('successAlert') : document.getElementById('errorAlert');
+  const messageEl = status >= 200 && status < 300 ? document.getElementById('successMessage') : document.getElementById('errorMessage');
+
+  if (alertEl && messageEl) {
+    messageEl.textContent = message;
+    alertEl.classList.remove('hidden');
+    setTimeout(() => alertEl.classList.add('hidden'), 5000);
+  } else {
+    // Fallback
+    alert(message);
+  }
+}
+
+// Click outside to close (optional)
+modal.addEventListener('click', (e) => {
+  if (e.target === modal) {
+    modal.classList.add('hidden');
+    document.body.classList.remove('overflow-hidden');
+    resetToUpload();
+  }
+});
+</script>
 {% endblock %}

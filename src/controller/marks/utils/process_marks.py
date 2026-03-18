@@ -247,12 +247,39 @@ def process_marks(
         ordered_exams = OrderedDict()
 
         for r in processed:
+            # Normalize the values to prevent crashes when None or invalid types are present.
+            percentage_raw = r.get("percentage", 0)
+            if percentage_raw is None:
+                percentage_value = 0.0
+            else:
+                try:
+                    percentage_value = float(percentage_raw)
+                except (TypeError, ValueError):
+                    percentage_value = 0.0
+
+            exam_total_raw = r.get("exam_total", 0)
+            if exam_total_raw is None:
+                exam_total_value = 0
+            else:
+                try:
+                    exam_total_value = float(exam_total_raw)
+                except (TypeError, ValueError):
+                    exam_total_value = 0
+
+            weightage_raw = r.get("weightage", "")
+            weightage_value = ""
+            if weightage_raw is not None and weightage_raw != "":
+                try:
+                    weightage_value = int(weightage_raw)
+                except (TypeError, ValueError):
+                    weightage_value = ""
+
             ordered_exams[r["exam_name"]] = {
-                "subject_marks_dict": r["subject_marks_dict"],
-                "exam_total": r["exam_total"],
-                "percentage": round(float(r["percentage"]), 2),
-                "weightage": int(r["weightage"]) if r["weightage"] else "",
-                "exam_term": r["exam_term"],
+                "subject_marks_dict": r.get("subject_marks_dict", {}),
+                "exam_total": exam_total_value,
+                "percentage": round(percentage_value, 2),
+                "weightage": weightage_value,
+                "exam_term": r.get("exam_term"),
             }
 
         base_info = {

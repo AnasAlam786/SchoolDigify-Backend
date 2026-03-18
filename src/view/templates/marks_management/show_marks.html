@@ -470,7 +470,7 @@
 
     try {
       // Fetch marks data
-      const response = await fetch('/get_marks_api', {
+      const response = await fetch('/show_marks_api', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ class_id: classId })

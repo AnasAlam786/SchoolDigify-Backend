@@ -24,5 +24,4 @@ class Sessions(db.Model):
     # fee_data = db.relationship("FeeData", back_populates="session")
     fee_sessions = db.relationship("FeeSessionData", back_populates="session")
     fee_transactions = db.relationship("FeeTransaction", back_populates="session")
-    # students_marks = db.relationship("StudentsMarks", back_populates="session")
 
