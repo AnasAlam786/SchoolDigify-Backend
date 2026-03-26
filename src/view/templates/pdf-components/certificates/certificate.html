@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Falak Public School Certificate</title>
+
+      <!-- Google Fonts for refined typography -->
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800;900&family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Font Awesome 6 (free icons) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #555; /* Dark background to highlight the paper */
+            display: flex;
+            justify-content: center;
+            padding-top: 20px;
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        /* A4 Page Container */
+        .certificate-card {
+            width: 210mm;
+            height: 297mm;
+            background-color: white;
+            position: relative;
+            /* USING YOUR UPLOADED BACKGROUND IMAGE */
+            /* background-image: url("C:\\Users\\Falak\\OneDrive\\Desktop\\Border BG 1.png");  */
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-sizing: border-box;
+            overflow: hidden;
+            /* padding: 10mm; */
+        }
+
+        /* School Logo */
+        .school-logo {
+            width: 140px;
+            margin-top: 50px; /* Adjusting for border spacing */
+        }
+
+        /* Main School Name with Gradient-like Orange */
+        .school-name {
+            color: #FF5E3A;
+            font-size: 45pt;
+            font-weight: 800;
+            margin: 5px 0 0 0;
+            text-transform: capitalize;
+        }
+
+        .tagline {
+            color: #FFB800;
+            font-size: 19pt;
+            font-weight: 700;
+            margin-top: 5px;
+        }
+
+        /* Decorative Gold Divider */
+        .ornament-line {
+            width: 350px;
+            height: 3px;
+            background: #FFB800;
+            margin: 35px 0;
+            position: relative;
+        }
+        .ornament-line::after {
+            content: "❧";
+            position: absolute;
+            top: -16px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            padding: 0 15px;
+            color: #FFB800;
+            font-size: 24pt;
+        }
+
+        .cert-header {
+            color: #E67E22;
+            font-size: 28pt;
+            font-weight: 700;
+            margin-bottom: 15px;
+        }
+
+        .awarded-text {
+            font-size: 22pt;
+            font-weight: 700;
+            color: #000;
+        }
+
+        .student-placeholder {
+            color: #FF5E3A;
+            font-size: 30pt;
+            font-weight: 800;
+            margin-bottom: 35px;
+        }
+
+        /* The Black Info Shape */
+        .info-tab {
+            position: relative;
+            background-color: #000000;
+            color: #fff;
+            align-self: flex-start;
+            padding: 25px 160px 25px 80px;
+            line-height: 1.8;
+            font-size: 16pt;
+            font-family: 'Open Sans', sans-serif;
+            overflow: hidden;
+        }
+
+        .info-tab::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            right: -60px;
+            width: 120px;
+            height: 100%;
+            background: white; /* same as page background */
+            border-radius: 80%;
+        }
+
+        .info-tab span {
+            font-weight: 700;
+        }
+
+
+
+            /* DESCRIPTION (Lorem Ipsum) */
+    .description-text {
+      font-family: 'Inter', 'Times New Roman', serif;
+      font-size: 15px;
+      line-height: 1.55;
+      color: #423b2a;
+      text-align: center;
+      max-width: 90%;
+      margin: 25px auto 18px;
+      background: #FFFFF5;
+      padding: 12px 22px;
+      border-radius: 50px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      border: 1px solid #ecdfbb;
+      font-style: italic;
+    }
+
+
+            /* bottom seal */
+    .footer-seal {
+      display: flex;
+      justify-content: center;
+      gap: 18px;
+      margin-top: 18px;
+      align-items: center;
+    }
+    .footer-seal i {
+      color: #dbb456;
+      font-size: 20px;
+    }
+    .footnote {
+      text-align: center;
+      font-size: 10px;
+      letter-spacing: 0.8px;
+      color: #c7aa6e;
+      margin-top: 12px;
+      font-family: monospace;
+    }
+
+        /* Printing Specifics */
+        @media print {
+            body { background: none; padding: 0; }
+            .certificate-card { 
+                box-shadow: none; 
+                -webkit-print-color-adjust: exact; 
+                print-color-adjust: exact;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="certificate-card">
+        <img src="C:\Users\Falak\OneDrive\Desktop\Python Projects\SchoolDigify\src\view\static\logo.svg" alt="School Logo" class="school-logo">
+
+        <h1 class="school-name">Falak Public School</h1>
+        <div class="tagline">Striving For Excellence Education</div>
+
+        <div class="ornament-line"></div>
+
+        <div class="cert-header">Academic Achievement Certificate</div>
+        <div class="awarded-text">Awarded To:</div>
+        
+        <div class="student-placeholder">Students Name</div>
+
+        <div class="info-tab">
+            <span>Class:</span> Nursery <br>
+            <span>Father Name:</span> XYZ <br>
+            <span>Session:</span> 2025-2027
+        </div>
+
+
+
+        
+    <!-- Exact Lorem Ipsum text from the original image -->
+    <div class="description-text">
+      “ Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text, when an unknown printer took a galley of type and scrambled. ”
+    </div>
+
+
+            <!-- Decorative seal row -->
+    <div class="footer-seal">
+      <i class="fas fa-certificate"></i>
+      <i class="fas fa-medal"></i>
+      <i class="fas fa-scroll"></i>
+    </div>
+    <div class="footnote">
+      ⚜️ In Recognition of Academic Excellence ⚜️
+    </div>
+    </div>
+
+</body>
+</html>

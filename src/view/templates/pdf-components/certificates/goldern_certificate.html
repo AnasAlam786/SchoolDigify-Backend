@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>Falak Public School - Academic Achievement Certificate (Print Ready)</title>
+  <!-- Google Fonts for refined typography -->
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800;900&family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Font Awesome 6 (free icons) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    /* PRINT OPTIMIZATION – A4 exact, no extra margins, proper colors */
+    @media print {
+      body {
+        background: white;
+        margin: 0;
+        padding: 0;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      .certificate {
+        margin: 0;
+        width: 100%;
+        height: auto;
+        box-shadow: none;
+        page-break-after: avoid;
+        break-inside: avoid;
+        border: none;
+        padding: 10mm 8mm 8mm 8mm;
+      }
+      .certificate::before,
+      .certificate::after,
+      .corner-decoration,
+      .corner-top-right,
+      .corner-bottom-left {
+        print-color-adjust: exact;
+      }
+      .sample-school-img, .student-photo-frame {
+        print-color-adjust: exact;
+      }
+      .description-text {
+        border: 1px solid #e0cfa0;
+      }
+    }
+
+    /* SCREEN PREVIEW – A4 style with soft shadow */
+    body {
+      background: #e8dfcf;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 24px 20px;
+      font-family: 'Cormorant Garamond', 'Times New Roman', serif;
+    }
+
+    .certificate {
+      width: 210mm;
+      min-height: 297mm;
+      background: #FFFEF9;
+      position: relative;
+      box-shadow: 0 25px 40px -15px rgba(0, 0, 0, 0.3);
+      /* Subtle vintage paper texture (light) */
+      background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4MCIgaGVpZ2h0PSI4MCIgdmlld0JveD0iMCAwIDQwIDQwIj48cGF0aCBmaWxsPSIjZTBlMGQwIiBmaWxsLW9wYWNpdHk9IjAuMDgiIGQ9Ik0wIDBoNDB2NDBIMHoiLz48cGF0aCBkPSJNMjAgM2wxLjUgNC41IDUgMC41LTQgMyAyIDUgLTQuNS0yLjUtNC41IDIuNS0yLTUgNCAzLTEuNS00LjV6IiBmaWxsPSIjY2NhYzYwIiBmaWxsLW9wYWNpdHk9IjAuMDYiLz48L3N2Zz4='), 
+                      radial-gradient(circle at 20% 30%, rgba(250, 245, 225, 0.5) 0%, #FFFCF0 100%);
+      background-repeat: repeat, no-repeat;
+      background-size: 38px 38px, cover;
+      padding: 12mm 12mm 12mm 12mm;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      border-radius: 4px;
+    }
+
+    /* GOLDEN BORDERS & CORNERS (elegant print-safe) */
+    .certificate::before {
+      content: "";
+      position: absolute;
+      top: 6px;
+      left: 6px;
+      right: 6px;
+      bottom: 6px;
+      border: 1.5px solid rgba(197, 160, 80, 0.6);
+      pointer-events: none;
+      border-radius: 3px;
+    }
+
+    .certificate::after {
+      content: "";
+      position: absolute;
+      top: 18px;
+      left: 18px;
+      width: 55px;
+      height: 55px;
+      border-top: 3px solid #c9a53b;
+      border-left: 3px solid #c9a53b;
+      border-radius: 8px 0 0 0;
+      pointer-events: none;
+    }
+
+    .corner-decoration {
+      position: absolute;
+      bottom: 18px;
+      right: 18px;
+      width: 55px;
+      height: 55px;
+      border-bottom: 3px solid #c9a53b;
+      border-right: 3px solid #c9a53b;
+      border-radius: 0 0 8px 0;
+      pointer-events: none;
+    }
+
+    .corner-top-right {
+      position: absolute;
+      top: 18px;
+      right: 18px;
+      width: 55px;
+      height: 55px;
+      border-top: 3px solid #c9a53b;
+      border-right: 3px solid #c9a53b;
+      border-radius: 0 8px 0 0;
+      pointer-events: none;
+    }
+
+    .corner-bottom-left {
+      position: absolute;
+      bottom: 18px;
+      left: 18px;
+      width: 55px;
+      height: 55px;
+      border-bottom: 3px solid #c9a53b;
+      border-left: 3px solid #c9a53b;
+      border-radius: 0 0 0 8px;
+      pointer-events: none;
+    }
+
+    /* HEADER: school + sample image */
+    .header-flex {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      border-bottom: 2px solid #eedfc2;
+      padding-bottom: 12px;
+      flex-wrap: wrap;
+    }
+    .school-title-area {
+      flex: 1;
+    }
+    .school-name {
+      font-family: 'Playfair Display', serif;
+      font-size: 38px;
+      font-weight: 800;
+      letter-spacing: 1px;
+      color: #8B6B2C;
+      text-shadow: 1px 1px 0 rgba(225, 200, 120, 0.3);
+      line-height: 1.1;
+    }
+    .motto {
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      letter-spacing: 2px;
+      color: #a47c38;
+      font-weight: 500;
+      text-transform: uppercase;
+      border-left: 2px solid #d6b45a;
+      padding-left: 12px;
+      margin-top: 6px;
+    }
+    /* sample school image */
+    .sample-school-img {
+      background: linear-gradient(145deg, #faf3e2, #f5ebd4);
+      border-radius: 50%;
+      width: 80px;
+      height: 80px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      border: 2px solid #e9d2a4;
+    }
+    .sample-school-img i {
+      font-size: 38px;
+      color: #b58d42;
+    }
+    .sample-school-img span {
+      font-size: 9px;
+      font-weight: 600;
+      font-family: 'Inter', sans-serif;
+      color: #836e38;
+    }
+
+    /* MAIN TITLE */
+    .award-title {
+      text-align: center;
+      margin: 20px 0 12px 0;
+    }
+    .award-title h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 44px;
+      font-weight: 800;
+      background: linear-gradient(135deg, #B17E32, #E5BA6C);
+      background-clip: text;
+      -webkit-background-clip: text;
+      color: transparent;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+    }
+    .award-title .sub-gold {
+      width: 100px;
+      height: 2px;
+      background: #e2c181;
+      margin: 12px auto 8px;
+    }
+    .small-flourish {
+      font-size: 20px;
+      color: #dbb758;
+      letter-spacing: 6px;
+    }
+
+    /* STUDENT INFO + PHOTO SECTION (modern elegant layout) */
+    .recipient-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 30px;
+      margin: 20px 0 10px;
+      flex-wrap: wrap;
+    }
+    .student-details-area {
+      flex: 2;
+    }
+    .awarded-label {
+      font-family: 'Inter', sans-serif;
+      font-size: 16px;
+      font-weight: 500;
+      color: #8B6940;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      margin-bottom: 4px;
+    }
+    .student-name-line {
+      font-family: 'Playfair Display', serif;
+      font-size: 36px;
+      font-weight: 700;
+      color: #2b2419;
+      border-bottom: 2px solid #dcbe7a;
+      display: inline-block;
+      min-width: 260px;
+      padding-bottom: 6px;
+      margin-top: 6px;
+      letter-spacing: 1px;
+    }
+    .student-placeholder {
+      font-size: 13px;
+      font-family: 'Inter';
+      color: #b39354;
+      margin-top: 6px;
+    }
+
+    /* MODERN PHOTO FRAME (elegant circle or soft rectangle) */
+    .student-photo-frame {
+      flex: 0 0 130px;
+      text-align: center;
+    }
+    .photo-container {
+      width: 130px;
+      height: 130px;
+      background: #FDF8EA;
+      border-radius: 20px;
+      box-shadow: 0 12px 22px -10px rgba(0,0,0,0.15), 0 0 0 3px white, 0 0 0 5px #e9dbbc;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      overflow: hidden;
+      margin: 0 auto;
+    }
+    .photo-placeholder-icon {
+      font-size: 58px;
+      color: #c6a459;
+      opacity: 0.8;
+      margin-bottom: 6px;
+    }
+    .photo-container span {
+      font-family: 'Inter', sans-serif;
+      font-size: 11px;
+      font-weight: 500;
+      color: #ab8748;
+      background: rgba(255,250,225,0.8);
+      padding: 2px 12px;
+      border-radius: 30px;
+    }
+    .photo-caption {
+      font-size: 10px;
+      font-family: 'Inter';
+      color: #b69148;
+      margin-top: 8px;
+      letter-spacing: 0.5px;
+    }
+
+    /* DETAILS GRID (class, father, session) */
+    .details-grid {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 28px;
+      margin: 24px 0 16px;
+      background: rgba(250, 244, 226, 0.5);
+      padding: 14px 20px;
+      border-radius: 48px;
+      border: 1px solid #efdfb5;
+    }
+    .detail-item {
+      text-align: center;
+      min-width: 140px;
+    }
+    .detail-label {
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      color: #b2853c;
+      letter-spacing: 1px;
+    }
+    .detail-value {
+      font-family: 'Playfair Display', serif;
+      font-size: 22px;
+      font-weight: 600;
+      color: #2b2a26;
+      border-bottom: 1px dashed #e1c88a;
+      display: inline-block;
+      padding: 0 6px 4px;
+      margin-top: 4px;
+    }
+
+    /* DESCRIPTION (Lorem Ipsum) */
+    .description-text {
+      font-family: 'Inter', 'Times New Roman', serif;
+      font-size: 13px;
+      line-height: 1.55;
+      color: #423b2a;
+      text-align: center;
+      max-width: 90%;
+      margin: 14px auto 18px;
+      background: #FFFFF5;
+      padding: 12px 22px;
+      border-radius: 50px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      border: 1px solid #ecdfbb;
+      font-style: italic;
+    }
+
+    /* SIGNATURE & DATE */
+    .signature-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin-top: 24px;
+      margin-bottom: 8px;
+      padding-top: 12px;
+      border-top: 1px solid #eedfc2;
+    }
+    .signature, .date-stamp {
+      text-align: center;
+      width: 45%;
+    }
+    .signature-line, .date-line {
+      width: 170px;
+      border-bottom: 2px solid #d4ae5a;
+      margin: 8px auto 6px;
+    }
+    .signature p, .date-stamp p {
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      color: #8b6b3a;
+      font-weight: 500;
+    }
+    .small-seal {
+      font-size: 26px;
+      color: #dbb55e;
+      opacity: 0.7;
+      margin-top: 5px;
+    }
+
+    /* bottom seal */
+    .footer-seal {
+      display: flex;
+      justify-content: center;
+      gap: 18px;
+      margin-top: 18px;
+      align-items: center;
+    }
+    .footer-seal i {
+      color: #dbb456;
+      font-size: 20px;
+    }
+    .footnote {
+      text-align: center;
+      font-size: 8px;
+      letter-spacing: 0.8px;
+      color: #c7aa6e;
+      margin-top: 12px;
+      font-family: monospace;
+    }
+
+    /* A4 print margins */
+    @media print {
+      .certificate {
+        padding: 8mm 8mm 8mm 8mm;
+      }
+      .student-photo-frame {
+        break-inside: avoid;
+      }
+      .description-text {
+        background: #fffcf0;
+      }
+    }
+  </style>
+</head>
+<body>
+<div class="certificate">
+  <!-- Decorative golden corners -->
+  <div class="corner-decoration"></div>
+  <div class="corner-top-right"></div>
+  <div class="corner-bottom-left"></div>
+
+  <div class="certificate-content" style="flex:1; display: flex; flex-direction: column;">
+    <!-- Header with school & sample image -->
+    <div class="header-flex">
+      <div class="school-title-area">
+        <div class="school-name">FALAK PUBLIC SCHOOL</div>
+        <div class="motto">Striving For Excellence Education</div>
+      </div>
+      <div class="sample-school-img">
+        <i class="fas fa-school"></i>
+        <span>SCHOOL</span>
+      </div>
+    </div>
+
+    <!-- Award Title -->
+    <div class="award-title">
+      <div class="small-flourish">✦ ✦ ✦</div>
+      <h2>Academic Achievement</h2>
+      <div class="sub-gold"></div>
+      <div style="margin-top: 6px;">
+        <i class="fas fa-award" style="color:#e4bc71; font-size: 18px;"></i>
+      </div>
+    </div>
+
+    <!-- Recipient Row: Student Name + Modern Photo -->
+    <div class="recipient-row">
+      <div class="student-details-area">
+        <div class="awarded-label">Awarded To</div>
+        <div class="student-name-line">_________________________</div>
+        <div class="student-placeholder">(Full Name of the Scholar)</div>
+        <!-- subtle note: dynamic name can be filled -->
+      </div>
+      <!-- STUDENT PHOTO (elegant modern frame) -->
+      <div class="student-photo-frame">
+        <div class="photo-container">
+          <i class="fas fa-user-graduate photo-placeholder-icon"></i>
+          <span>Student Photo</span>
+        </div>
+        <div class="photo-caption">✦ Excellence Portrait ✦</div>
+      </div>
+    </div>
+
+    <!-- Details Grid: Class, Father Name, Session (as per original) -->
+    <div class="details-grid">
+      <div class="detail-item">
+        <div class="detail-label"><i class="fas fa-graduation-cap"></i> Class</div>
+        <div class="detail-value">Nursery</div>
+      </div>
+      <div class="detail-item">
+        <div class="detail-label"><i class="fas fa-user-friends"></i> Father Name</div>
+        <div class="detail-value">XYZ</div>
+      </div>
+      <div class="detail-item">
+        <div class="detail-label"><i class="fas fa-calendar-alt"></i> Session</div>
+        <div class="detail-value">2025 - 2027</div>
+      </div>
+    </div>
+
+    <!-- Exact Lorem Ipsum text from the original image -->
+    <div class="description-text">
+      “ Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text, when an unknown printer took a galley of type and scrambled. ”
+    </div>
+
+    <!-- Signature & Date row (authentic) -->
+    <div class="signature-row">
+      <div class="signature">
+        <div class="signature-line"></div>
+        <p><i class="fas fa-pen-fancy"></i> Principal's Signature</p>
+        <div style="font-size: 11px; font-family: 'Inter'; color: #b3873f;">Dr. Samira Qureshi</div>
+      </div>
+      <div class="date-stamp">
+        <div class="date-line"></div>
+        <p><i class="far fa-calendar-check"></i> Date of Issue</p>
+        <div style="font-size: 12px; font-weight: 500;">18<sup>th</sup> March, 2026</div>
+      </div>
+    </div>
+
+    <!-- Decorative seal row -->
+    <div class="footer-seal">
+      <i class="fas fa-certificate"></i>
+      <i class="fas fa-medal"></i>
+      <i class="fas fa-scroll"></i>
+    </div>
+    <div class="footnote">
+      ⚜️ In Recognition of Academic Excellence & Character ⚜️
+    </div>
+  </div>
+</div>
+</body>
+</html>

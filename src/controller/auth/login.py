@@ -2,6 +2,7 @@
 
 from flask import render_template, session, url_for, redirect, Blueprint, request
 from cryptography.fernet import Fernet
+from sqlalchemy.exc import ProgrammingError
 from src.model.Schools import Schools
 from src.model.Sessions import Sessions
 from src.model.TeachersLogin import TeachersLogin
@@ -25,12 +26,21 @@ def login():
 
         session.clear()
 
-        user = (
-            TeachersLogin.query
-            .join(Roles, Roles.id == TeachersLogin.role_id)
-            .filter(TeachersLogin.email == email)
-            .first()
-        )
+        try:
+            user = (
+                TeachersLogin.query
+                .join(Roles, Roles.id == TeachersLogin.role_id)
+                .filter(TeachersLogin.email == email)
+                .first()
+            )
+        except ProgrammingError as e:
+            # Database schema not initialized or wrong table name/case.
+            return render_template(
+                'login.html',
+                error="Database tables not found. Please initialize schema/migrate DB before login.",
+                debug=str(e)
+            )
+
         if not user:
             return render_template('login.html', error="No user found with this email")
 
@@ -75,12 +85,15 @@ def save_sessions(user=None, user_id=None):
         return False
 
     if not user:
-        user = (
-            TeachersLogin.query
-            .join(Roles, Roles.id == TeachersLogin.role_id)
-            .filter(TeachersLogin.id == user_id)
-            .first()
-        )
+        try:
+            user = (
+                TeachersLogin.query
+                .join(Roles, Roles.id == TeachersLogin.role_id)
+                .filter(TeachersLogin.id == user_id)
+                .first()
+            )
+        except ProgrammingError:
+            return False
     if not user:
         return False
 

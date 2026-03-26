@@ -39,7 +39,13 @@ def create_app():
     # )
 
     # ——— DATABASE CONFIG (Supabase-safe) ———
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('URI')
+    uri = os.getenv('URI')
+    if uri:
+        # Ensure Postgres schema is selected explicitly to prevent "no schema has been selected to create in".
+        if 'options=' not in uri:
+            sep = '&' if '?' in uri else '?'
+            uri = f"{uri}{sep}options=-c%20search_path%3Dpublic"
+    app.config['SQLALCHEMY_DATABASE_URI'] = uri
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
     # 🔴 CRITICAL: Supabase connection pool limits
@@ -49,6 +55,9 @@ def create_app():
         "pool_timeout": 30,
         "pool_recycle": 1800,
         "pool_pre_ping": True,
+        'connect_args': {
+            'options': '-c search_path=public'
+        }
     }
 
     # ——— SESSION CONFIGURATION (Flask-Session) ———
@@ -64,6 +73,7 @@ def create_app():
 
     # ——— Initialize extensions ———
     sess.init_app(app)
+    db.metadata.schema = 'public'
     db.init_app(app)
 
     # 🔴 CRITICAL: ALWAYS release DB session after request
@@ -115,6 +125,17 @@ def create_app():
     # ——— Register blueprints ———
     from .controller import register_blueprints
     register_blueprints(app)
+
+    # ——— Ensure models are imported and tables exist in DB ———
+    # NOTE: For production, prefer Alembic migrations instead of create_all().
+    with app.app_context():
+        import src.model  # ensure model modules are imported and SQLAlchemy metadata is populated
+        try:
+            db.create_all()
+        except Exception as e:
+            # In environments where user schema search path is unavailable, fail gracefully.
+            # Use migrations (alembic) in prod; this is a local development safety fallback.
+            print('WARNING: db.create_all failed:', e)
 
     # ——— Inject permissions globally in templates ———
     from src.controller.permissions.has_permission import has_permission
