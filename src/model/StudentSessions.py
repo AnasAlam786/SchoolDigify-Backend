@@ -25,7 +25,7 @@ class StudentSessions(db.Model):
     Height = Column(Integer, nullable=True)
     Weight = Column(Integer, nullable=True)
     session_id = Column(BigInteger, ForeignKey('Sessions.id', onupdate="CASCADE"), nullable=False)
-    Attendance = Column(Integer, nullable=True)
+    Attendance = Column(Text, nullable=True)  # JSON format for bulk attendance or integer for daily count
     created_at = Column(DateTime)
     Section = Column(Text, nullable=True)
 

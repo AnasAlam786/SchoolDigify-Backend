@@ -19,6 +19,9 @@ from .attendance.get_attendance_data_api import get_attendance_data_api_bp
 from .attendance.mark_attendance_api import mark_attendance_api_bp
 from .attendance.add_holiday_api import add_holiday_api_bp
 from .attendance.messages_api import get_message_api_bp
+from .attendance.overall_attendance import overall_attendance_bp
+from .attendance.get_overall_attendance_data_api import get_overall_attendance_data_api_bp
+from .attendance.update_overall_attendance_api import update_overall_attendance_api_bp
 
 
 from .fees.pay_fee_api import pay_fee_api_bp
@@ -103,6 +106,9 @@ def register_blueprints(app):
     app.register_blueprint(mark_attendance_api_bp)
     app.register_blueprint(add_holiday_api_bp)
     app.register_blueprint(get_message_api_bp)
+    app.register_blueprint(overall_attendance_bp)
+    app.register_blueprint(get_overall_attendance_data_api_bp)
+    app.register_blueprint(update_overall_attendance_api_bp)
     
     app.register_blueprint(pay_fee_api_bp)
     app.register_blueprint(get_fee_api_bp)

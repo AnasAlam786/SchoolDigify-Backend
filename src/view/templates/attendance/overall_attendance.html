@@ -1,0 +1,627 @@
+{% extends "base.html" %}
+{% block title %}Premium Attendance | Overall Present{% endblock %}
+{% block content %}
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #121212 !important;
+            font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+            color: #E5E7EB;
+            scroll-behavior: smooth;
+        }
+
+        /* Override any base background */
+        .bg-dark-premium {
+            background-color: #121212;
+        }
+
+        /* Glass card premium effect */
+        .glass-premium {
+            background: rgba(25, 25, 30, 0.75);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 2rem;
+            box-shadow: 0 20px 35px -12px rgba(0, 0, 0, 0.4);
+        }
+
+        /* Modern inputs */
+        .input-modern {
+            background-color: #1E1E24;
+            border: 1px solid #2C2C34;
+            color: #F3F4F6;
+            border-radius: 1rem;
+            padding: 0.7rem 1rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            width: 100%;
+            font-size: 0.95rem;
+        }
+
+        .input-modern:focus {
+            outline: none;
+            border-color: #8B5CF6;
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
+            background-color: #25252D;
+        }
+
+        /* Elegant button */
+        .btn-gradient {
+            background: linear-gradient(105deg, #8B5CF6 0%, #6366F1 100%);
+            border: none;
+            color: white;
+            font-weight: 600;
+            padding: 0.8rem 1.8rem;
+            border-radius: 2rem;
+            transition: all 0.25s ease;
+            cursor: pointer;
+            box-shadow: 0 5px 15px -5px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-gradient:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 20px -10px rgba(99, 102, 241, 0.5);
+        }
+
+        .btn-save {
+            background: linear-gradient(135deg, #10B981, #059669);
+            border: none;
+            color: white;
+            font-weight: 600;
+            padding: 0.6rem 1.2rem;
+            border-radius: 2rem;
+            transition: 0.2s;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+            letter-spacing: 0.3px;
+        }
+
+        .btn-save:hover:not(:disabled) {
+            transform: scale(1.02);
+            background: linear-gradient(135deg, #34D399, #10B981);
+            box-shadow: 0 6px 14px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-save:disabled {
+            opacity: 0.7;
+            cursor: wait;
+        }
+
+        /* Table premium styling */
+        .premium-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0 10px;
+        }
+
+        .premium-table thead th {
+            background: transparent;
+            font-weight: 600;
+            font-size: 0.8rem;
+            letter-spacing: 0.5px;
+            color: #9CA3AF;
+            text-transform: uppercase;
+            padding: 1rem 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .premium-table tbody tr {
+            background: rgba(20, 20, 25, 0.7);
+            backdrop-filter: blur(4px);
+            border-radius: 1.2rem;
+            transition: all 0.2s;
+        }
+
+        .premium-table tbody tr:hover {
+            background: rgba(35, 35, 42, 0.9);
+            transform: scale(1.01);
+        }
+
+        .premium-table td {
+            padding: 1rem 1rem;
+            border-bottom: none;
+            vertical-align: middle;
+        }
+
+        /* Card design for mobile */
+        .student-card {
+            background: rgba(22, 22, 28, 0.85);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 1.8rem;
+            padding: 1.2rem;
+            transition: all 0.25s;
+            margin-bottom: 1rem;
+        }
+
+        .student-card:hover {
+            background: #27272E;
+            border-color: rgba(139, 92, 246, 0.3);
+        }
+
+        .student-card .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+
+        .student-card .label {
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: #9CA3AF;
+            letter-spacing: 0.3px;
+        }
+
+        .student-card .value {
+            font-weight: 600;
+            color: #F3F4F6;
+        }
+
+        .present-input-card {
+            background: #111115;
+            border: 1px solid #2C2C34;
+            border-radius: 1.2rem;
+            padding: 0.7rem;
+            width: 100%;
+            text-align: center;
+            font-size: 1rem;
+            font-weight: 600;
+            color: white;
+        }
+
+        /* Utility */
+        .text-gradient {
+            background: linear-gradient(120deg, #C084FC, #818CF8);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .scroll-smooth {
+            scroll-behavior: smooth;
+        }
+
+        /* hide default number spinner */
+        input[type=number]::-webkit-inner-spin-button,
+        input[type=number]::-webkit-outer-spin-button {
+            opacity: 0.5;
+        }
+    </style>
+</head>
+
+
+<div class="max-w-7xl mx-auto">
+
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-10">
+        <div>
+            <div class="flex items-center gap-3 mb-1">
+                <i class="fas fa-chalkboard-user text-3xl text-indigo-400"></i>
+                <h1 class="text-3xl md:text-4xl font-bold tracking-tight bg-gradient-to-r from-white via-indigo-200 to-purple-200 bg-clip-text text-transparent">
+                    Overall Attendance
+                </h1>
+            </div>
+            <p class="text-gray-400 text-sm md:text-base mt-1 pl-1 border-l-2 border-indigo-500/50">
+                Manage final <span class="text-indigo-300 font-medium">Total Present Days</span> for each student · Streamlined flow
+            </p>
+        </div>
+        <div class="flex items-center gap-2 bg-white/5 backdrop-blur-sm px-4 py-2 rounded-full">
+            <i class="fas fa-calendar-alt text-emerald-400 text-sm"></i>
+            <span class="text-xs text-gray-300">Academic Year Summary</span>
+        </div>
+    </div>
+
+    <!-- Filter + Data Section (Glass) -->
+    <div class="glass-premium p-5 md:p-8 mb-10 transition-all">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-end">
+            <div>
+                <label class="block text-sm font-semibold text-gray-300 mb-2 ml-1 flex items-center gap-2">
+                    <i class="fas fa-layer-group text-indigo-400 text-sm"></i> 
+                    Select Class
+                </label>
+                <div class="relative">
+                    <select id="classSelector" required
+                        class="input-modern appearance-none cursor-pointer bg-[#1A1A1F] border border-gray-700 focus:border-purple-500">
+                        <option disabled selected hidden value="" class="text-gray-400">-- Choose class --</option>
+                        {% if classes %}
+                            {% for class in classes %}
+                            <option value="{{ class.id }}" class="bg-[#1A1A1F] text-gray-200">{{ class.CLASS }}</option>
+                            {% endfor %}
+                        {% endif %}
+                    </select>
+                    <div class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                        <i class="fas fa-chevron-down text-xs"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="flex justify-start lg:justify-end">
+                <button id="getDataBtn" class="btn-gradient w-full md:w-auto flex items-center justify-center gap-3 px-8 py-3 text-base shadow-xl shadow-purple-900/20">
+                    <i class="fas fa-users-viewfinder text-lg"></i>
+                    <span>Load Students</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Students Section (dynamic) -->
+    <div id="studentsSection" class="hidden transition-all duration-500">
+        <!-- modern header info -->
+        <div class="flex justify-between items-center mb-5 flex-wrap gap-3">
+            <h2 class="text-2xl font-bold flex items-center gap-2">
+                <i class="fas fa-user-graduate text-emerald-400"></i> 
+                Update <span class="text-gradient">Present Days</span>
+            </h2>
+            <div class="bg-black/30 rounded-full px-4 py-1.5 text-xs text-gray-300 backdrop-blur-sm">
+                <i class="fas fa-save mr-1 text-emerald-400"></i> Save → auto next student
+            </div>
+        </div>
+
+        <!-- DESKTOP TABLE (hidden on mobile) -->
+        <div class="hidden md:block overflow-x-auto rounded-2xl p-1">
+            <table class="premium-table w-full">
+                <thead>
+                    <tr>
+                        <th class="text-center w-16">Roll</th>
+                        <th class="text-left">Student Name</th>
+                        <th class="text-left">Father's Name</th>
+                        <th class="text-center">Total Present <i class="fas fa-check-circle text-emerald-400 text-xs"></i></th>
+                        <th class="text-center">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="studentsTableBody">
+                    <!-- JS populated -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- MOBILE CARDS (visible only on mobile) -->
+        <div id="studentsCardsContainer" class="block md:hidden space-y-4">
+            <!-- cards injected here -->
+        </div>
+    </div>
+
+    <!-- subtle toast notification (hidden by default) -->
+    <div id="notificationToast" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900/90 backdrop-blur-lg px-5 py-2 rounded-full border border-emerald-500/40 shadow-xl z-50 transition-all duration-300 opacity-0 pointer-events-none flex items-center gap-2 text-sm font-medium">
+        <i class="fas fa-check-circle text-emerald-400"></i>
+        <span id="toastMsg">Saved</span>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const classSelector = document.getElementById('classSelector');
+    const getDataBtn = document.getElementById('getDataBtn');
+    const studentsSection = document.getElementById('studentsSection');
+    const studentsTableBody = document.getElementById('studentsTableBody');
+    const studentsCardsContainer = document.getElementById('studentsCardsContainer');
+
+    // Store master student data for original absent/halfday/workingdays
+    let masterStudentsList = [];  // each item: { student_session_id, roll, student_name, fathers_name, original_attendance }
+
+    // Helper toast
+    function showToast(message, isError = false) {
+        const toast = document.getElementById('notificationToast');
+        const toastMsg = document.getElementById('toastMsg');
+        toastMsg.innerText = message;
+        if (isError) {
+            toast.classList.add('border-red-500/40');
+            toast.querySelector('i').className = 'fas fa-exclamation-circle text-red-400';
+        } else {
+            toast.classList.remove('border-red-500/40');
+            toast.querySelector('i').className = 'fas fa-check-circle text-emerald-400';
+        }
+        toast.classList.remove('opacity-0', 'pointer-events-none');
+        toast.classList.add('opacity-100', 'translate-y-0');
+        setTimeout(() => {
+            toast.classList.add('opacity-0', 'pointer-events-none');
+            toast.classList.remove('opacity-100');
+        }, 1800);
+    }
+
+    // fetch and populate both table & cards
+    getDataBtn.addEventListener('click', function() {
+        const classId = classSelector.value;
+        if (!classId) {
+            showToast('Please select a class first', true);
+            return;
+        }
+
+        // loading state on button
+        const originalBtnText = getDataBtn.innerHTML;
+        getDataBtn.innerHTML = '<i class="fas fa-spinner fa-pulse"></i> Loading...';
+        getDataBtn.disabled = true;
+
+        fetch(`/api/get_overall_attendance_data?classID=${classId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.students && Array.isArray(data.students)) {
+                    masterStudentsList = data.students.map(std => ({
+                        student_session_id: std.student_session_id,
+                        roll: std.roll || '—',
+                        student_name: std.student_name,
+                        fathers_name: std.fathers_name || '—',
+                        total_present: std.total_present
+                    }));
+                    renderAllStudents(masterStudentsList);
+                    studentsSection.classList.remove('hidden');
+                    showToast(`Loaded ${masterStudentsList.length} students`, false);
+                } else {
+                    showToast('No students found for this class', true);
+                    studentsSection.classList.add('hidden');
+                }
+            })
+            .catch(error => {
+                console.error('Fetch error:', error);
+                showToast('Error loading data. Check network.', true);
+                studentsSection.classList.add('hidden');
+            })
+            .finally(() => {
+                getDataBtn.innerHTML = originalBtnText;
+                getDataBtn.disabled = false;
+            });
+    });
+
+    // render both table rows + card components
+    function renderAllStudents(students) {
+        studentsTableBody.innerHTML = '';
+        studentsCardsContainer.innerHTML = '';
+
+        students.forEach((student, idx) => {
+            const presentVal = student.total_present;
+            const studentSessionId = student.student_session_id;
+            const roll = student.roll;
+            const studentName = student.student_name;
+            const fatherName = student.fathers_name;
+
+            // --- DESKTOP TABLE ROW ---
+            const tr = document.createElement('tr');
+            tr.className = 'student-item group transition-all';
+            tr.setAttribute('data-student-idx', idx);
+            tr.innerHTML = `
+                <td class="px-4 py-3 text-center font-mono text-sm font-medium text-white">${roll}</td>
+                <td class="px-4 py-3 font-semibold text-white tracking-wide">${escapeHtml(studentName)}</td>
+                <td class="px-4 py-3 text-gray-300 text-sm">${escapeHtml(fatherName)}</td>
+                <td class="px-4 py-3 text-center">
+                    <input type="number" class="present-input input-modern w-28 mx-auto text-center py-2" 
+                           value="${presentVal}" min="0" step="1" placeholder="Enter present days" data-original="${presentVal}">
+                </td>
+                <td class="px-4 py-3 text-center">
+                    <button class="btn-save save-attendance-btn" data-sid="${studentSessionId}" 
+                            data-idx="${idx}">
+                        <i class="fas fa-save"></i> Save
+                    </button>
+                </td>
+            `;
+            studentsTableBody.appendChild(tr);
+
+            // --- MOBILE CARD ---
+            const card = document.createElement('div');
+            card.className = 'student-card student-item';
+            card.setAttribute('data-student-idx', idx);
+            card.innerHTML = `
+                <div class="flex justify-between items-start mb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="bg-indigo-500/20 text-indigo-300 text-xs font-bold px-2 py-1 rounded-full">Roll ${roll}</span>
+                    </div>
+                    <i class="fas fa-address-card text-gray-500 text-sm"></i>
+                </div>
+                <div class="info-row">
+                    <span class="label"><i class="fas fa-user mr-1"></i> Student</span>
+                    <span class="value">${escapeHtml(studentName)}</span>
+                </div>
+                <div class="info-row mb-3">
+                    <span class="label"><i class="fas fa-user-tie mr-1"></i> Father</span>
+                    <span class="value text-sm">${escapeHtml(fatherName)}</span>
+                </div>
+                <div class="mt-3 rounded-2xl p-3">
+                    <label class="block text-xs font-medium text-gray-400 mb-1 flex items-center gap-1">
+                        <i class="fas fa-calendar-check text-emerald-400 text-xs"></i> Total Present Days
+                    </label>
+                    <input type="number" class="present-input-card present-input w-full text-center text-lg font-bold" 
+                           value="${presentVal}" min="0" step="1" placeholder="Enter present days" data-original="${presentVal}">
+                </div>
+                <div class="mt-4">
+                    <button class="btn-save w-full justify-center save-attendance-btn" data-sid="${studentSessionId}" 
+                            data-idx="${idx}">
+                        <i class="fas fa-save"></i> Save & Next
+                    </button>
+                </div>
+            `;
+            studentsCardsContainer.appendChild(card);
+        });
+
+        // attach event listeners to all save buttons (both table & cards)
+        attachSaveEventListeners();
+    }
+
+    // helper to escape HTML to avoid injection
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        }).replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, function(c) {
+            return c;
+        });
+    }
+
+    // Attach Save + Auto Next logic
+    function attachSaveEventListeners() {
+        const allSaveBtns = document.querySelectorAll('.save-attendance-btn');
+        allSaveBtns.forEach(btn => {
+            // Remove previous listeners to avoid duplicates (if re-render)
+            btn.removeEventListener('click', saveHandler);
+            btn.addEventListener('click', saveHandler);
+        });
+    }
+
+    // Unified save handler
+    async function saveHandler(event) {
+        const btn = event.currentTarget;
+        // prevent multiple rapid clicks
+        if (btn.disabled) return;
+        
+        // retrieve stored data attributes
+        const studentSessionId = btn.getAttribute('data-sid');
+        const studentIdx = parseInt(btn.getAttribute('data-idx'));
+
+        // find the closest student-item container (either tr or card)
+        const currentStudentItem = btn.closest('.student-item');
+        if (!currentStudentItem) return;
+
+        // locate the present input inside this student-item
+        const presentInput = currentStudentItem.querySelector('.present-input');
+        if (!presentInput) return;
+
+        let newPresent = parseInt(presentInput.value);
+
+        
+        // preserve original absent, halfday, working days - only update total_present
+        const payload = {
+            student_session_id: studentSessionId,
+            total_present: newPresent
+        };
+
+        // UI loading state
+        const originalBtnHTML = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-pulse"></i> Saving...';
+        btn.disabled = true;
+
+        try {
+            const response = await fetch('/api/update_overall_attendance', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const result = await response.json();
+            if (response.ok && result.message === 'Overall attendance updated successfully') {
+                // update the data-original attribute to reflect new saved value (optional)
+                presentInput.setAttribute('data-original', newPresent);
+                showToast(`✓ Present updated for ${studentSessionId}`, false);
+                
+                // ---- MOVE TO NEXT STUDENT ----
+                // find all student-item elements in order (both table rows & cards are mixed but we traverse DOM)
+                const allStudentItems = Array.from(document.querySelectorAll('.student-item'));
+                const currentIndex = allStudentItems.findIndex(item => item === currentStudentItem);
+                if (currentIndex !== -1 && currentIndex + 1 < allStudentItems.length) {
+                    const nextStudentItem = allStudentItems[currentIndex + 1];
+                    // find the present input inside next student item
+                    const nextPresentInput = nextStudentItem.querySelector('.present-input');
+                    if (nextPresentInput) {
+                        // smoothly scroll and focus
+                        nextPresentInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        nextPresentInput.focus({ preventScroll: false });
+                        // optional: subtle highlight effect
+                        nextStudentItem.style.transition = 'all 0.2s';
+                        nextStudentItem.style.backgroundColor = 'rgba(99, 102, 241, 0.15)';
+                        setTimeout(() => {
+                            nextStudentItem.style.backgroundColor = '';
+                        }, 500);
+                    } else {
+                        // fallback: scroll to next card
+                        nextStudentItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                } else {
+                    // last student saved, show completion message
+                    showToast('✨ All students processed! Great job.', false);
+                    // optionally remove focus
+                }
+                // after moving, change button back to normal (keep enabled for possible re-edit)
+                btn.innerHTML = originalBtnHTML;
+                btn.disabled = false;
+            } else {
+                throw new Error(result.message || 'Update failed');
+            }
+        } catch (error) {
+            console.error('Save error:', error);
+            showToast('Error saving attendance', true);
+            btn.innerHTML = originalBtnHTML;
+            btn.disabled = false;
+        }
+    }
+
+    // additional: handle "Enter" key in inputs to trigger save? optional premium
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && e.target.classList && e.target.classList.contains('present-input')) {
+            e.preventDefault();
+            const studentItem = e.target.closest('.student-item');
+            if (studentItem) {
+                const saveBtn = studentItem.querySelector('.save-attendance-btn');
+                if (saveBtn && !saveBtn.disabled) {
+                    saveBtn.click();
+                }
+            }
+        }
+    });
+
+    // small improvement: re-run listeners if dynamic content loaded (already handled inside render)
+});
+</script>
+
+<style>
+    /* additional fine-tuning for premium look */
+    .present-input:focus {
+        transform: scale(1.02);
+    }
+    .student-item {
+        transition: all 0.2s ease;
+    }
+    /* custom scrollbar */
+    ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+        background: #1f1f24;
+        border-radius: 8px;
+    }
+    ::-webkit-scrollbar-thumb {
+        background: #4b5563;
+        border-radius: 8px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+        background: #6366F1;
+    }
+    .glass-premium {
+        background: rgba(18, 18, 24, 0.75);
+        backdrop-filter: blur(12px);
+    }
+    @media (max-width: 768px) {
+        .btn-save {
+            width: 100%;
+            justify-content: center;
+        }
+        .present-input-card {
+            font-size: 1.2rem;
+        }
+    }
+    /* elegant fade for section */
+    #studentsSection {
+        animation: fadeSlideUp 0.4s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+    }
+    @keyframes fadeSlideUp {
+        from {
+            opacity: 0;
+            transform: translateY(18px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+</style>
+
+{% endblock %}

@@ -613,6 +613,16 @@
             </a>
             {% endif %}
 
+            {% if has_permission('attendance') %}
+            <a href="/overall_attendance" class="nav-link flex items-center p-3 text-gray-300 hover:text-white transition-all"
+              data-route="/overall_attendance">
+              <div class="icon-container">
+                <i class="fas fa-calendar-alt icon-cyan"></i>
+              </div>
+              <span class="font-medium">Overall Attendance</span>
+            </a>
+            {% endif %}
+
             {% if has_permission('fill_marks') %}
             <a href="/fill_marks" class="nav-link flex items-center p-3 text-gray-300 hover:text-white transition-all"
               data-route="/fill_marks">

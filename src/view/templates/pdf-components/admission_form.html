@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,28 +11,39 @@
         margin: 0;
         padding: 0;
       }
+
       @page {
         size: A4 portrait;
         margin: 3mm;
       }
     }
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #f0f0f0;
+    }
+
     .container {
       position: relative;
-      width: 210mm;  /* A4 horizontal width */
-      height: 297mm;  /* A4 horizontal width */
+      width: 210mm;
+      /* A4 horizontal width */
+      height: 296mm;
+      /* A4 vertical height */
       font-family: Arial, sans-serif;
     }
+
     .header {
       margin-top: 8px;
       text-align: center;
-      border-bottom: 2px solid black; 
-     }
-     .header p {
-        margin: 0;
-        font-weight: bold;
-      }
+      border-bottom: 2px solid black;
+    }
 
-    .details{
+    .header p {
+      margin: 0;
+      font-weight: bold;
+    }
+
+    .details {
       position: relative;
       margin-top: 20px;
       margin-right: 15px;
@@ -43,46 +55,50 @@
       top: 46%;
       left: 50%;
       transform: translate(-50%, -50%);
-      width: 90%; /* Adjust size as needed */
-      opacity: 0.1; /* Makes it very light */
-      z-index: -1; /* Sends it behind other content */
+      width: 90%;
+      /* Adjust size as needed */
+      opacity: 0.1;
+      /* Makes it very light */
+      z-index: -1;
+      /* Sends it behind other content */
     }
 
-    .detail-block{
-        
-        /*border: 1px dotted black;*/
-        margin-top: 20px;
-        border-radius: 10px;
-        padding: 10px;
-        font-size: 18px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    .detail-block {
+
+      /*border: 1px dotted black;*/
+      margin-top: 20px;
+      border-radius: 10px;
+      padding: 10px;
+      font-size: 18px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
     }
 
     td {
-    padding: 5px;
-  }
+      padding: 5px;
+    }
 
-  td:not(:has(strong)) {
-  font-size: 16px; /* Adjust as needed */
-}
-
+    td:not(:has(strong)) {
+      font-size: 16px;
+      /* Adjust as needed */
+    }
   </style>
 
 </head>
+
 <body>
-    <div class="container">
+  <div class="container">
     <div class="header">
       <div style="display: flex; justify-content: space-between;">
 
         <!-- First Image (Left) -->
-        <img style= "margin-top: 10px; margin-left: 15px; width: 110px; height: 110px; " src="{{ student.Logo }}=s200" alt="School Logo">
+        <img style="margin-top: 10px; margin-left: 15px; width: 110px; height: 110px; " src="{{ student.Logo }}=s200"
+          alt="School Logo">
 
         <!-- Middle Text (Centered) -->
         <img style="height: 120px; width: 525px;" src="{{ student.school_heading_image }}" alt="Falak Public School">
 
         <!-- Last Image (Right) -->
-        <img 
-        style="margin-right: 15px; 
+        <img style="margin-right: 15px; 
             margin-top: 5px;
             margin-bottom: 5px; 
             width: 115px; 
@@ -90,8 +106,7 @@
             object-fit: cover; 
             object-position: top; 
             border: 1px solid #808080; 
-            border-radius: 50%;" 
-        src="https://lh3.googleusercontent.com/d/{{ student.IMAGE }}=s500">
+            border-radius: 50%;" src="https://lh3.googleusercontent.com/d/{{ student.IMAGE }}=s500">
       </div>
     </div>
 
@@ -101,188 +116,194 @@
       <img class="center-logo" src="{{ student.Logo }}=s500" alt="School Logo">
 
 
-        <div style="display: flex; align-items: center; justify-content: center; width: 100%; position: relative;">
-            <span style="font-size: 30px; font-weight: bold;"> <u>Admission Form</u></span>
-            <span style="position: absolute; right: 10px;"><strong>Form No:</strong> {{ "%03d"|format(student.ADMISSION_NO % 1000) }}</span>
-        </div>
-
-        <!-- Personal Information Start -->
-        <div class="detail-block">
-            <table style="width: 100%; border-collapse: collapse; margin: 0; padding: 0; ">
-              <tr>
-                <td><strong>Ad. No:</strong></td>
-                <td>{% if student.ADMISSION_NO %}{{ student.ADMISSION_NO }}{% endif %}</td>
-                <td><strong>Ad. Date:</strong></td>
-                <td>{% if student.ADMISSION_DATE %}{{ student.ADMISSION_DATE }}{% endif %}</td>
-                <td><strong>SR No:</strong></td>
-                <td>{% if student.SR %}{{ student.SR }}{% endif %}</td>
-              </tr>
-
-              <tr>
-                <td><strong>Name:</strong></td>
-                <td>{{ student.STUDENTS_NAME }}</td>
-                <td><strong>Gender:</strong></td>
-                <td>{% if student.GENDER %}{{ student.GENDER }}{% endif %}</td>
-              </tr>
-              
-              <tr>
-                <td><strong>Class:</strong></td>
-                <td>{{ student.CLASS }}</td>
-                <td><strong>Roll:</strong></td>
-                <td>{{ student.ROLL }}</td>
-                <td><strong>Section:</strong></td>
-                <td>{% if student.SECTION %}{{ student.SECTION }}{% endif %}</td>
-              </tr>
-
-              <tr>
-                <td><strong>Aadhar:</strong></td>
-                <td>{% if student.AADHAAR %}{{ student.AADHAAR }}{% endif %}</td>
-                <td><strong>DOB:</strong></td>
-                <td>{{ student.dob }}</td>
-              </tr>
-
-              <tr>
-                <td><strong>PEN:</strong></td>
-                <td>{% if student.PEN %}{{ student.PEN }}{% endif %}</td>
-                <td><strong>APAAR:</strong></td>
-                <td>{% if student.APAAR %}{{ student.APAAR }}{% endif %}</td>
-              </tr>
-
-              <tr>
-                <td><strong>Caste:</strong></td>
-                <td>{% if student.Caste %}{{ student.Caste }}{% endif %}</td>
-                <td><strong>Religion:</strong></td>
-                <td>{% if student.RELIGION %}{{ student.RELIGION }}{% endif %}</td>
-                <td><strong>Country:</strong></td>
-                <td>India</td>
-              </tr>
-              <tr>
-                <td><strong>Height:</strong></td>
-                <td>{% if student.Height %}{{ student.Height }} cm{% endif %}</td>
-                <td><strong>Weight:</strong></td>
-                <td>{% if student.Weight %}{{ student.Weight }} kg{% endif %}</td>
-                <td><strong>Blood Type:</strong></td>
-                <td>{% if student.BLOOD_TYPE %}{{ student.BLOOD_TYPE }}{% endif %}</td>
-              </tr>
-            </table>
-          </div>
-        <!-- Personal Information End -->
-
-        <!-- Parent Information Start -->
-        <div class="detail-block">
-            <table style="width: 100%; border-collapse: collapse; margin: 0; padding: 0;">
-                <tr>
-                  <td><strong>Father:</strong> </td>
-                  <td>{% if student.FATHERS_NAME %}{{ student.FATHERS_NAME }}{% endif %}</td>
-                  <td><strong>Mother:</strong></td>
-                  <td>{% if student.MOTHERS_NAME %}{{ student.MOTHERS_NAME }}{% endif %}</td>
-                </tr>
-
-                <tr>
-                  <td><strong>F. Aadh:</strong></td>
-                  <td>{% if student.FATHERS_AADHAR %}{{ student.FATHERS_AADHAR }}{% endif %}</td>
-                  <td><strong>M. Aadh:</strong></td>
-                  <td>{% if student.MOTHERS_AADHAR %}{{ student.MOTHERS_AADHAR }}{% endif %}</td>
-                </tr>
-                <tr>
-                  <td><strong>F. Edu:</strong></td>
-                  <td>{% if student.FATHERS_EDUCATION %}{{ student.FATHERS_EDUCATION }}{% endif %}</td>
-                  <td><strong>M. Edu:</strong></td>
-                  <td>{% if student.MOTHERS_EDUCATION %}{{ student.MOTHERS_EDUCATION }}{% endif %}</td>
-                </tr>
-                <tr>
-                  <td><strong>F. Work:</strong></td>
-                  <td>{% if student.FATHERS_OCCUPATION %}{{ student.FATHERS_OCCUPATION }}{% endif %}</td>
-                  <td><strong>M. Work:</strong></td>
-                  <td>{% if student.MOTHERS_OCCUPATION %}{{ student.MOTHERS_OCCUPATION }}{% endif %}</td>
-                </tr>
-            </table>
-        </div>
-        <!-- Parent Information End -->
-
-        <!-- Address Information Start -->
-        <div class="detail-block">
-            <table style="width: 100%; border-collapse: collapse; margin: 0; padding: 0;">
-                <tr>
-                  <td><strong>Address:</strong> </td>
-                  <td>{% if student.ADDRESS %}{{ student.ADDRESS }}{% endif %}</td>
-                </tr>
-            </table>
-            <table style="width: 100%; border-collapse: collapse; margin: 0; padding: 0;">
-                <tr>
-                  <td><strong>Pin Code:</strong></td>
-                  <td>{% if student.PIN %}{{ student.PIN }}{% endif %}</td>
-                  <td><strong>Phone:</strong></td>
-                  <td>{% if student.PHONE %}{{ student.PHONE }}{% endif %}</td>
-                  <td><strong>Email:</strong></td>
-                  <td>{% if student.EMAIL %}{{ student.EMAIL }}{% endif %}</td>
-                </tr>
-              </table>
-              <table style="width: 100%; border-collapse: collapse; margin: 0; padding: 0;">
-                <tr>
-                  <td><strong>Siblings:</strong></td>
-                  <td>
-                    {% for sibling in student.siblings %}
-                      {{ sibling.name }} ({{ sibling.class }}){% if not loop.last %}, {% endif %}
-                    {% endfor %}
-                  </td>
-                </tr>
-              </table>
-        </div>
-        <!-- Address Information End -->
-
-        <!-- Contact Information Start -->
-        <div class="detail-block contact">
-            <table style="width: 100%;">
-                <tr>
-                  <td><strong>Prev. School:</strong></td>
-                  <td>{% if student.Previous_School_Name %}{{ student.Previous_School_Name }}{% endif %}</td>
-                </tr>
-                <tr>
-                  <td><strong>Prev. Marks:</strong> </td>
-                  <td>{% if student.Previous_School_Marks %}{{ student.Previous_School_Marks }}{% endif %}</td>
-                  <td><strong>Prev. Attendance:</strong> </td>
-                  <td>{% if student.Previous_School_Attendance %}{{ student.Previous_School_Attendance }}{% endif %}</td>
-                </tr>
-            </table>
-        </div>
-        <!-- Contact Information End -->
-      
-        <div style="width: 100%; margin: 20px 10px;">
-          <p>
-              I hereby declare that all the information provided above is true and complete, and I commit to complying with all established rules. I accept full responsibility for any discrepancies or issues arising from the information provided.
-          </p>
-          <p>
-              I agree to <strong> {{ student.School_Name }}</strong> collecting, storing, and processing my personal information including Aadhaar details in an online database for admission and administrative purposes, in accordance with applicable privacy laws.
-          </p>
-        </div>
-            
+      <div style="display: flex; align-items: center; justify-content: center; width: 100%; position: relative;">
+        <span style="font-size: 30px; font-weight: bold;"> <u>Admission Form</u></span>
+        <span style="position: absolute; right: 10px;"><strong>Form No:</strong> {{ "%03d"|format(student.ADMISSION_NO %
+          1000) }}</span>
       </div>
-      <!-- main detail block END -->
 
+      <!-- Personal Information Start -->
+      <div class="detail-block">
+        <table style="width: 100%; border-collapse: collapse; margin: 0; padding: 0; ">
+          <tr>
+            <td><strong>Ad. No:</strong></td>
+            <td>{% if student.ADMISSION_NO %}{{ student.ADMISSION_NO }}{% endif %}</td>
+            <td><strong>Ad. Date:</strong></td>
+            <td>{% if student.ADMISSION_DATE %}{{ student.ADMISSION_DATE }}{% endif %}</td>
+            <td><strong>SR No:</strong></td>
+            <td>{% if student.SR %}{{ student.SR }}{% endif %}</td>
+          </tr>
 
-      <!-- Signature Section Start -->
-      <table style="position: absolute; bottom: 3px; width: 100%;">
-        <tr style="font-weight: 700; font-size: 26px; color: rgba(0, 0, 0, 0.16);">
-          <td style="text-align: center; padding: 0; line-height: 0.5;">
-            <strong>Parents Sign</strong>
-          </td>
-          <td style="text-align: center; padding: 0; line-height: 0.5;">
-            <strong>Authorised Sign</strong>
-          </td>
-        </tr>
-        <tr>
-          <td style="text-align: center;">
-            <strong>_______________________</strong>
-          </td>
-          <td style="text-align: center;">
-            <strong>_______________________</strong>
-          </td>
-        </tr>
-        
-      </table>
-      <!-- Signature Section End -->
-        
+          <tr>
+            <td><strong>Name:</strong></td>
+            <td>{{ student.STUDENTS_NAME }}</td>
+            <td><strong>Gender:</strong></td>
+            <td>{% if student.GENDER %}{{ student.GENDER }}{% endif %}</td>
+          </tr>
+
+          <tr>
+            <td><strong>Class:</strong></td>
+            <td>{{ student.CLASS }}</td>
+            <td><strong>Roll:</strong></td>
+            <td>{{ student.ROLL }}</td>
+            <td><strong>Section:</strong></td>
+            <td>{% if student.SECTION %}{{ student.SECTION }}{% endif %}</td>
+          </tr>
+
+          <tr>
+            <td><strong>Aadhar:</strong></td>
+            <td>{% if student.AADHAAR %}{{ student.AADHAAR }}{% endif %}</td>
+            <td><strong>DOB:</strong></td>
+            <td>{{ student.dob }}</td>
+          </tr>
+
+          <tr>
+            <td><strong>PEN:</strong></td>
+            <td>{% if student.PEN %}{{ student.PEN }}{% endif %}</td>
+            <td><strong>APAAR:</strong></td>
+            <td>{% if student.APAAR %}{{ student.APAAR }}{% endif %}</td>
+          </tr>
+
+          <tr>
+            <td><strong>Caste:</strong></td>
+            <td>{% if student.Caste %}{{ student.Caste }}{% endif %}</td>
+            <td><strong>Religion:</strong></td>
+            <td>{% if student.RELIGION %}{{ student.RELIGION }}{% endif %}</td>
+            <td><strong>Country:</strong></td>
+            <td>India</td>
+          </tr>
+          <tr>
+            <td><strong>Height:</strong></td>
+            <td>{% if student.Height %}{{ student.Height }} cm{% endif %}</td>
+            <td><strong>Weight:</strong></td>
+            <td>{% if student.Weight %}{{ student.Weight }} kg{% endif %}</td>
+            <td><strong>Blood Type:</strong></td>
+            <td>{% if student.BLOOD_TYPE %}{{ student.BLOOD_TYPE }}{% endif %}</td>
+          </tr>
+        </table>
+      </div>
+      <!-- Personal Information End -->
+
+      <!-- Parent Information Start -->
+      <div class="detail-block">
+        <table style="width: 100%; border-collapse: collapse; margin: 0; padding: 0;">
+          <tr>
+            <td><strong>Father:</strong> </td>
+            <td>{% if student.FATHERS_NAME %}{{ student.FATHERS_NAME }}{% endif %}</td>
+            <td><strong>Mother:</strong></td>
+            <td>{% if student.MOTHERS_NAME %}{{ student.MOTHERS_NAME }}{% endif %}</td>
+          </tr>
+
+          <tr>
+            <td><strong>F. Aadh:</strong></td>
+            <td>{% if student.FATHERS_AADHAR %}{{ student.FATHERS_AADHAR }}{% endif %}</td>
+            <td><strong>M. Aadh:</strong></td>
+            <td>{% if student.MOTHERS_AADHAR %}{{ student.MOTHERS_AADHAR }}{% endif %}</td>
+          </tr>
+          <tr>
+            <td><strong>F. Edu:</strong></td>
+            <td>{% if student.FATHERS_EDUCATION %}{{ student.FATHERS_EDUCATION }}{% endif %}</td>
+            <td><strong>M. Edu:</strong></td>
+            <td>{% if student.MOTHERS_EDUCATION %}{{ student.MOTHERS_EDUCATION }}{% endif %}</td>
+          </tr>
+          <tr>
+            <td><strong>F. Work:</strong></td>
+            <td>{% if student.FATHERS_OCCUPATION %}{{ student.FATHERS_OCCUPATION }}{% endif %}</td>
+            <td><strong>M. Work:</strong></td>
+            <td>{% if student.MOTHERS_OCCUPATION %}{{ student.MOTHERS_OCCUPATION }}{% endif %}</td>
+          </tr>
+        </table>
+      </div>
+      <!-- Parent Information End -->
+
+      <!-- Address Information Start -->
+      <div class="detail-block">
+        <table style="width: 100%; border-collapse: collapse; margin: 0; padding: 0;">
+          <tr>
+            <td><strong>Address:</strong> </td>
+            <td>{% if student.ADDRESS %}{{ student.ADDRESS }}{% endif %}</td>
+          </tr>
+        </table>
+        <table style="width: 100%; border-collapse: collapse; margin: 0; padding: 0;">
+          <tr>
+            <td><strong>Pin Code:</strong></td>
+            <td>{% if student.PIN %}{{ student.PIN }}{% endif %}</td>
+            <td><strong>Phone:</strong></td>
+            <td>{% if student.PHONE %}{{ student.PHONE }}{% endif %}</td>
+            <td><strong>Email:</strong></td>
+            <td>{% if student.EMAIL %}{{ student.EMAIL }}{% endif %}</td>
+          </tr>
+        </table>
+        <table style="width: 100%; border-collapse: collapse; margin: 0; padding: 0;">
+          <tr>
+            <td><strong>Siblings:</strong></td>
+            <td>
+              {% for sibling in student.siblings %}
+              {{ sibling.name }} ({{ sibling.class }}){% if not loop.last %}, {% endif %}
+              {% endfor %}
+            </td>
+          </tr>
+        </table>
+      </div>
+      <!-- Address Information End -->
+
+      <!-- Contact Information Start -->
+      <div class="detail-block contact">
+        <table style="width: 100%;">
+          <tr>
+            <td><strong>Prev. School:</strong></td>
+            <td>{% if student.Previous_School_Name %}{{ student.Previous_School_Name }}{% endif %}</td>
+          </tr>
+          <tr>
+            <td><strong>Prev. Marks:</strong> </td>
+            <td>{% if student.Previous_School_Marks %}{{ student.Previous_School_Marks }}{% endif %}</td>
+            <td><strong>Prev. Attendance:</strong> </td>
+            <td>{% if student.Previous_School_Attendance %}{{ student.Previous_School_Attendance }}{% endif %}</td>
+          </tr>
+        </table>
+      </div>
+      <!-- Contact Information End -->
+
+      <div style="width: 100%; margin: 20px 10px;">
+        <p>
+          I hereby declare that all the information provided above is true and complete, and I commit to complying with
+          all established rules. I accept full responsibility for any discrepancies or issues arising from the
+          information provided.
+        </p>
+        <p>
+          I agree to <strong> {{ student.School_Name }}</strong> collecting, storing, and processing my personal
+          information including Aadhaar details in an online database for admission and administrative purposes, in
+          accordance with applicable privacy laws.
+        </p>
+      </div>
+
     </div>
-  </body>
+    <!-- main detail block END -->
+
+
+    <!-- Signature Section Start -->
+    <table style="position: absolute; bottom: 3px; width: 100%;">
+      <tr style="font-weight: 700; font-size: 26px; color: rgba(0, 0, 0, 0.16);">
+        <td style="text-align: center; padding: 0; line-height: 0.5;">
+          <strong>Parents Sign</strong>
+        </td>
+        <td style="text-align: center; padding: 0; line-height: 0.5;">
+          <strong>Authorised Sign</strong>
+        </td>
+      </tr>
+      <tr>
+        <td style="text-align: center;">
+          <strong>_______________________</strong>
+        </td>
+        <td style="text-align: center;">
+          <strong>_______________________</strong>
+        </td>
+      </tr>
+
+    </table>
+    <!-- Signature Section End -->
+
+  </div>
+</body>
+
 </html>

@@ -1,21 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Falak Public School Certificate</title>
 
-      <!-- Google Fonts for refined typography -->
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800;900&family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <!-- Font Awesome 6 (free icons) -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Google Fonts for refined typography -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800;900&family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <!-- Font Awesome 6 (free icons) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
-
-
         body {
             margin: 0;
             padding: 0;
-            background-color: #555; /* Dark background to highlight the paper */
+            background-color: #555;
+            /* Dark background to highlight the paper */
             display: flex;
             justify-content: center;
             padding-top: 20px;
@@ -43,7 +45,8 @@
         /* School Logo */
         .school-logo {
             width: 140px;
-            margin-top: 50px; /* Adjusting for border spacing */
+            margin-top: 50px;
+            /* Adjusting for border spacing */
         }
 
         /* Main School Name with Gradient-like Orange */
@@ -70,6 +73,7 @@
             margin: 35px 0;
             position: relative;
         }
+
         .ornament-line::after {
             content: "❧";
             position: absolute;
@@ -122,7 +126,8 @@
             right: -60px;
             width: 120px;
             height: 100%;
-            background: white; /* same as page background */
+            background: white;
+            /* same as page background */
             border-radius: 80%;
         }
 
@@ -131,61 +136,68 @@
         }
 
 
+        /* DESCRIPTION (Lorem Ipsum) */
+        .description-text {
+            font-family: 'Inter', 'Times New Roman', serif;
+            font-size: 15px;
+            line-height: 1.55;
+            color: #423b2a;
+            text-align: center;
+            max-width: 90%;
+            margin: 25px auto 18px;
+            background: #FFFFF5;
+            padding: 12px 22px;
+            border-radius: 50px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            border: 1px solid #ecdfbb;
+            font-style: italic;
+        }
 
-            /* DESCRIPTION (Lorem Ipsum) */
-    .description-text {
-      font-family: 'Inter', 'Times New Roman', serif;
-      font-size: 15px;
-      line-height: 1.55;
-      color: #423b2a;
-      text-align: center;
-      max-width: 90%;
-      margin: 25px auto 18px;
-      background: #FFFFF5;
-      padding: 12px 22px;
-      border-radius: 50px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-      border: 1px solid #ecdfbb;
-      font-style: italic;
-    }
 
+        /* bottom seal */
+        .footer-seal {
+            display: flex;
+            justify-content: center;
+            gap: 18px;
+            margin-top: 18px;
+            align-items: center;
+        }
 
-            /* bottom seal */
-    .footer-seal {
-      display: flex;
-      justify-content: center;
-      gap: 18px;
-      margin-top: 18px;
-      align-items: center;
-    }
-    .footer-seal i {
-      color: #dbb456;
-      font-size: 20px;
-    }
-    .footnote {
-      text-align: center;
-      font-size: 10px;
-      letter-spacing: 0.8px;
-      color: #c7aa6e;
-      margin-top: 12px;
-      font-family: monospace;
-    }
+        .footer-seal i {
+            color: #dbb456;
+            font-size: 20px;
+        }
+
+        .footnote {
+            text-align: center;
+            font-size: 10px;
+            letter-spacing: 0.8px;
+            color: #c7aa6e;
+            margin-top: 12px;
+            font-family: monospace;
+        }
 
         /* Printing Specifics */
         @media print {
-            body { background: none; padding: 0; }
-            .certificate-card { 
-                box-shadow: none; 
-                -webkit-print-color-adjust: exact; 
+            body {
+                background: none;
+                padding: 0;
+            }
+
+            .certificate-card {
+                box-shadow: none;
+                -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
             }
         }
     </style>
 </head>
+
 <body>
 
     <div class="certificate-card">
-        <img src="C:\Users\Falak\OneDrive\Desktop\Python Projects\SchoolDigify\src\view\static\logo.svg" alt="School Logo" class="school-logo">
+        <img src="C:\Users\Falak\OneDrive\Desktop\Python Projects\SchoolDigify\src\view\static\logo.svg"
+            alt="School Logo" class="school-logo">
 
         <h1 class="school-name">Falak Public School</h1>
         <div class="tagline">Striving For Excellence Education</div>
@@ -194,7 +206,7 @@
 
         <div class="cert-header">Academic Achievement Certificate</div>
         <div class="awarded-text">Awarded To:</div>
-        
+
         <div class="student-placeholder">Students Name</div>
 
         <div class="info-tab">
@@ -204,24 +216,24 @@
         </div>
 
 
+        <!-- Exact Lorem Ipsum text from the original image -->
+        <div class="description-text">
+            For outstanding performance, securing first position in the annual examination with a total percentage of
+            98.6% 
+        </div>
 
-        
-    <!-- Exact Lorem Ipsum text from the original image -->
-    <div class="description-text">
-      “ Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text, when an unknown printer took a galley of type and scrambled. ”
-    </div>
 
-
-            <!-- Decorative seal row -->
-    <div class="footer-seal">
-      <i class="fas fa-certificate"></i>
-      <i class="fas fa-medal"></i>
-      <i class="fas fa-scroll"></i>
-    </div>
-    <div class="footnote">
-      ⚜️ In Recognition of Academic Excellence ⚜️
-    </div>
+        <!-- Decorative seal row -->
+        <div class="footer-seal">
+            <i class="fas fa-certificate"></i>
+            <i class="fas fa-medal"></i>
+            <i class="fas fa-scroll"></i>
+        </div>
+        <div class="footnote">
+            ⚜️ In Recognition of Academic Excellence ⚜️
+        </div>
     </div>
 
 </body>
+
 </html>
