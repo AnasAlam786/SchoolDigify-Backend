@@ -107,7 +107,7 @@ def reprint_tc():
         promoted_class = current_class_name  # Use current class name since it's the final class
 
     # Fixed metadata (could be moved to config)
-    working_days = 214
+    working_days = 202
 
     # Render HTML directly with existing TC data
     html = render_template(

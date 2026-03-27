@@ -186,7 +186,7 @@ def result_data(school_id, session_id, class_id, student_ids=None, extra_fields=
         db.session.query(
             student_exam_totals.c.student_id,
             func.sum(student_exam_totals.c.exam_total).label('grand_total'),
-            func.rank().over(
+            func.dense_rank().over(
                 order_by=func.sum(student_exam_totals.c.exam_total).desc()
             ).label('overall_rank')
         )

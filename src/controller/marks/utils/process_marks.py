@@ -174,6 +174,7 @@ def process_marks(
                 subject_grades = OrderedDict()
 
                 for subj, total in subject_totals.items():
+                    # print(subj, total, weightage_sum)
 
                     percentage = (
                         (total / weightage_sum) * 100
@@ -199,11 +200,15 @@ def process_marks(
                     "exam_name": "Grades",
                     "exam_total": grade,
                     "weightage": "",
-                    "percentage": 0,
+                    "percentage": "-",
                     "subject_marks_dict": subject_grades,
                 })
 
+                # print("Adding Grades Record:", base)
+
                 processed.append(base)
+
+        
 
         # ===================================
         # 6. Final Ordering Logic
@@ -248,27 +253,32 @@ def process_marks(
 
         for r in processed:
             # Normalize the values to prevent crashes when None or invalid types are present.
-            percentage_raw = r.get("percentage", 0)
+            percentage_raw = r.get("percentage")
             if percentage_raw is None:
-                percentage_value = 0.0
+                percentage_value = ""
             else:
                 try:
-                    percentage_value = float(percentage_raw)
+                    percentage_value = round(float(percentage_raw), 2)
                 except (TypeError, ValueError):
-                    percentage_value = 0.0
+                    percentage_value = ""
 
-            exam_total_raw = r.get("exam_total", 0)
+            exam_total_raw = r.get("exam_total")
             if exam_total_raw is None:
-                exam_total_value = 0
+                exam_total_value = ""
+            elif isinstance(exam_total_raw, str) and exam_total_raw.strip() != "":
+                exam_total_value = exam_total_raw
             else:
                 try:
                     exam_total_value = float(exam_total_raw)
                 except (TypeError, ValueError):
-                    exam_total_value = 0
+                    exam_total_value = ""
 
-            weightage_raw = r.get("weightage", "")
-            weightage_value = ""
-            if weightage_raw is not None and weightage_raw != "":
+            weightage_raw = r.get("weightage")
+            if weightage_raw is None:
+                weightage_value = ""
+            elif isinstance(weightage_raw, str) and weightage_raw.strip() != "":
+                weightage_value = weightage_raw
+            else:
                 try:
                     weightage_value = int(weightage_raw)
                 except (TypeError, ValueError):
@@ -277,7 +287,7 @@ def process_marks(
             ordered_exams[r["exam_name"]] = {
                 "subject_marks_dict": r.get("subject_marks_dict", {}),
                 "exam_total": exam_total_value,
-                "percentage": round(percentage_value, 2),
+                "percentage": percentage_value,
                 "weightage": weightage_value,
                 "exam_term": r.get("exam_term"),
             }

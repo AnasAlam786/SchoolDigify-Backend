@@ -171,7 +171,7 @@ def generate_and_save_tc():
     # ------------------------------
     # Render TC HTML
     # ------------------------------
-    working_days = 214
+    working_days = 202
 
     html = render_template(
         'pdf-components/tcform.html',

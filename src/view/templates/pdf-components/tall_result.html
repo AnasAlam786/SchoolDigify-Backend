@@ -6,13 +6,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Student Results</title>
   <style>
+    @font-face {
+      font-family: 'SignatureFont';
+      src: url("{{ url_for('static', filename='Bastliga One.ttf') }}") format('truetype');
+    }
+
     /* =========================
    PRINT STYLES (A4 PAGING)
    ========================= */
     @media print {
       @page {
         size: A4 portrait;
-        margin: 2.5mm;
+        margin: 0mm;
+        border: 1px solid #000;
       }
 
       html,
@@ -22,18 +28,6 @@
         width: auto;
         height: auto;
         overflow: visible;
-      }
-
-      .student-result {
-        width: 210mm;
-        height: 297mm;
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-        page-break-after: always;
-        break-after: page;
-        page-break-inside: avoid;
-        break-inside: avoid;
       }
 
       .student-result:last-child {
@@ -55,7 +49,7 @@
     .student-result {
       width: 210mm;
       height: 297mm;
-      border: 3px solid #000;
+      /* border: 3px solid #000; */
       box-sizing: border-box;
       position: relative;
       overflow: hidden;
@@ -63,7 +57,7 @@
 
     .result-container {
       display: grid;
-      grid-template-rows: 13% 20% 50% 9% 8%;
+      grid-template-rows: 13% 20% 50% 10% 7%;
       width: 100%;
       height: 100%;
     }
@@ -85,12 +79,12 @@
       text-transform: uppercase;
       color: #2b2b2b;
       text-align: center;
-  }
+    }
 
-  .report-title span {
+    .report-title span {
       font-weight: 800;
       letter-spacing: 2px;
-  }
+    }
 
     .main {
       font-size: 25px;
@@ -146,19 +140,22 @@
       z-index: -1;
     }
 
-    .text-bold {
-      font-weight: 800;
-    }
-
     /* special column highlighting for printer-friendly report */
     .term-total-header,
     .term-total-cell {
-      font-weight: 800;
       font-size: 1.1em;
     }
+
+    .term-total-cell {
+      font-weight: 800;
+    }
+
+    .grand-total-cell {
+      font-weight: 800;
+    }
+
     .grand-total-header,
     .grand-total-cell {
-      font-weight: 900;
       font-size: 1.2em;
     }
 
@@ -171,26 +168,25 @@
     .total-row td {
       font-size: 20px;
     }
-
-
   </style>
 </head>
 
 <body>
   {% for student in students %}
   <div class="student-result">
+
+    <!-- <img class="logo-img" src="{{ session['logo'] }}=s500"> -->
     <div class="result-container">
       <div class="header">
         <div style="display: flex; flex-direction: column; align-items: center;">
-          
+
           <div style="display: flex; width: 100%; justify-content: space-between; align-items: center;">
             <!-- Left Logo -->
             <img class="logo-img" src="{{ session['logo'] }}=s500">
 
             <!-- Center Heading Image -->
             <div style="display: flex; flex-direction: column; align-items: center;">
-              <img style="height: 110px; width: 550px;"
-                  src="{{ school_heading_image }}">
+              <img style="height: 110px; width: 550px;" src="{{ school_heading_image }}">
 
               <!-- Subtitle -->
               <div class="report-title">
@@ -199,9 +195,8 @@
             </div>
 
             <!-- Student Image -->
-            <img class="logo-img student-image"
-                style="object-fit: cover; object-position: top; border-radius: 30%;"
-                src="{{ 'https://lh3.googleusercontent.com/d/' + student['IMAGE'] + '=s600'
+            <img class="logo-img student-image" style="object-fit: cover; object-position: top; border-radius: 30%;"
+              src="{{ 'https://lh3.googleusercontent.com/d/' + student['IMAGE'] + '=s600'
                       if student['IMAGE']
                       else 'https://cdn.pixabay.com/photo/2016/04/22/04/57/graduation-1345143_1280.png' }}">
           </div>
@@ -255,8 +250,7 @@
       </div>
 
       <div class="main">
-        <img class="center-logo" src="{{ session['logo'] }}=s500"
-          alt="School Logo">
+        <img class="center-logo" src="{{ session['logo'] }}=s500" alt="School Logo">
 
         <table
           style="width: 100%; height: 100%; border-collapse: collapse; text-align: center; border: 1px solid #c7c7c7;">
@@ -266,7 +260,7 @@
 
           <thead>
             <tr>
-              <th class="light-border" style="padding: 10px; font-size: 25px; font-weight: 800;">Subjects</th>
+              <th class="light-border" style="padding: 10px; font-size: 25px;">Subjects</th>
               {% for exam_name, exam_data in student.marks.items() %}
               {% if "G. Total" in exam_name or "Grand" in exam_name %}
               <th class="red light-border grand-total-header" style="font-size: 18px;">
@@ -311,7 +305,7 @@
             {% endfor %}
 
             <!-- Grand Total -->
-            <tr class="total-row" style="font-weight: 800; color: red;">
+            <tr class="total-row" style="color: red;">
               <th>G.Total</th>
               {% for exam_name in exam_names %}
               <td class="light-border text-center">
@@ -322,10 +316,15 @@
 
             <!-- Percentage -->
             <tr class="total-row" style="color: red;">
-              <th>Percentage</th>
+              <th>%age</th>
               {% for exam_name in exam_names %}
               <td class="light-border text-center">
-                {{ marks[exam_name].percentage }}
+                {% set p = marks[exam_name].percentage %}
+                {% if p %}
+                {{ p }}
+                {% else %}
+                -
+                {% endif %}
               </td>
               {% endfor %}
             </tr>
@@ -335,29 +334,28 @@
 
       <!-- Rank/Attendance Section -->
       {% set overall_rank = student["overall_rank"] %}
-      {% set grid_columns = 4 if overall_rank <= 10 else 3 %} {% if overall_rank==1 %} {% set
+      {% set grid_columns = 4 if overall_rank <= 10 else 3 %} {% set rank_image=None %} {% if overall_rank==1 %} {% set
         rank_image='1st-rank-gold-outline.png' %} {% elif overall_rank==2 %} {% set rank_image='2nd-rank-badge.png' %}
         {% elif overall_rank==3 %} {% set rank_image='3rd-rank-badge.png' %} {% endif %} <div
-        style="border-top: 1px solid #000000; font-weight: bold; display: grid; grid-template-columns: repeat({{ grid_columns }}, 1fr); font-size: 20px; padding: 10px 0;">
+        style="font-weight: bold; display: grid; grid-template-columns: repeat({{ grid_columns }}, 1fr); font-size: 20px; padding: 10px 0;">
         {% if overall_rank <= 10 %} <div style="padding: 0 10px; text-align: center; position: relative;">
           {% if overall_rank <= 3 %} <div>
-            <img src="{{ url_for('static', filename=rank_image) }}"
-              style="width: 70px; margin-bottom: -5px; margin-top: -5px;">
+            <img src="{{ url_for('static', filename=rank_image) }}" style="width: 70px;">
     </div>
     {% else %}
     <div style="color:rgb(0, 159, 207); font-size: 36px; font-weight: 800; margin-bottom: 4px;">
       {{ overall_rank }}<sup>th</sup>
     </div>
     {% endif %}
-    <div style="font-size: 14px; letter-spacing: 0.5px;">RANK</div>
+    <div style="font-size: 12px; letter-spacing: 0.5px;">RANK</div>
   </div>
   {% endif %}
 
-  <div style="text-align: center">
+  <div style="text-align: center;">
     <div style="color: green; font-size: 28px; font-weight: 800; margin-bottom: 4px;">
-      {{ student["Attendance"] }}<span style="color: black">/214</span>
+      {{ student["Attendance"] }}<span style="color: black">/202</span>
     </div>
-    <div style="font-size: 14px;letter-spacing: 0.5px;">ATTENDANCE</div>
+    <div style="font-size: 14px; letter-spacing: 0.5px;">ATTENDANCE</div>
   </div>
 
   <div style="text-align: center;">
@@ -367,38 +365,77 @@
 
   <div style="text-align: center; position: relative;">
     <div>
-      <img src="{{ url_for('static', filename='passed_stamp.png') }}"
-        style="width: 70px; margin-bottom: -7px; margin-top: -7px;">
+      <img src="{{ url_for('static', filename='passed_stamp.png') }}" style="width: 70px;">
     </div>
-    <div style="font-size: 14px;letter-spacing: 0.5px;">RESULT</div>
-  </div>
+    <div style="font-size: 12px; letter-spacing: 0.5px;">RESULT</div>
   </div>
 
-  <div style="border-top: 2px solid #000000; font-size: 30px; text-align: center; display: flex;" class="bottom">
+  </div>
+
+  <div style="box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.2); font-size: 30px; text-align: center; display: flex;"
+    class="bottom">
     <div class="XYcenter" style="flex: 1; font-weight: 700; color: rgba(0, 0, 0, 0.1);">
       Parent's Sign
     </div>
 
-    <div class="XYcenter"
-      style="position: relative; flex: 1; font-weight: 700; color: rgba(0, 0, 0, 0.1); border-left: 2px solid #000000;">
+    <div class="XYcenter" style="position: relative; flex: 1; font-weight: 700; color: rgba(0,0,0,0.1); ">
       Teacher's Sign
       {% if teacher_sign %}
       <img src="https://lh3.googleusercontent.com/d/{{ teacher_sign }}"
         style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); max-width: 80%; max-height: 80%; object-fit: contain;">
+      {% else %}
+
+      <div
+        style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%) rotate(-12deg); width:80%; height:80%; display:flex; align-items:center; justify-content:center;">
+
+        <span style="
+
+                  font-family:'SignatureFont', cursive;
+                  font-size:8vw;
+                  font-weight:100;
+                  color:#c20000;
+                  opacity:1;
+                  white-space:nowrap;
+                  line-height:1;
+                  letter-spacing:0.5px;
+                  display:inline-block;">
+          {{ teacher_name }}
+        </span>
+
+      </div>
       {% endif %}
     </div>
 
-    <div class="XYcenter"
-      style="position: relative; flex: 1; font-weight: 700; color: rgba(0, 0, 0, 0.1); border-left: 2px solid #000000;">
+    <div class="XYcenter" style="position: relative; flex: 1; font-weight: 700; color: rgba(0, 0, 0, 0.1); ">
       Principal's Sign
       {% if principle_sign %}
       <img src="https://lh3.googleusercontent.com/d/{{ principle_sign }}"
         style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); max-width: 80%; max-height: 80%; object-fit: contain;">
-      {% endif %}
+      {% else %}
+
+      <div
+        style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%) rotate(-12deg); width:80%; height:80%; display:flex; align-items:center; justify-content:center;">
+
+        <span style="
+                  font-family:'SignatureFont', cursive;
+                  font-size:8vw;
+                  font-weight:100;
+                  color:#c20000;
+                  opacity:1;
+                  white-space:nowrap;
+                  line-height:1;
+                  letter-spacing:0.5px;
+                  display:inline-block;">
+          {{ principal_name }}
+        </span>
+        {% endif %}
+      </div>
     </div>
   </div>
+
   </div>
   </div>
+
   {% endfor %}
 </body>
 
