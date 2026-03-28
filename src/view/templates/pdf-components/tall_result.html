@@ -175,7 +175,90 @@
   {% for student in students %}
   <div class="student-result">
 
-    <!-- <img class="logo-img" src="{{ session['logo'] }}=s500"> -->
+    <img class="decorative-icon" src="{{ url_for('static', filename='marksheet_icons/Book_Icon.png') }}" style="
+        position: absolute;
+        top: 300px;
+        right: 100px;
+        width: 80px;
+        height: 80px;
+        z-index: 0;
+        opacity: 0.3;
+        transform: rotate(45deg);">
+
+    <img class="decorative-icon" src="{{ url_for('static', filename='marksheet_icons/Computer_Icon.png') }}" style="
+        position: absolute;
+        top: 200px;
+        right: 350px;
+        width: 80px;
+        height: 80px;
+        z-index: 0;
+        opacity: 0.3;
+        transform: rotate(15deg);">
+
+
+    <img class="decorative-icon" src="{{ url_for('static', filename='marksheet_icons/Color_Plate_Icon.png') }}" style="
+        position: absolute;
+        top: 940px;
+        right:700px;
+        width: 80px;
+        height: 80px;
+        z-index: 0;
+        opacity: 0.3;
+        transform: rotate(45deg);">
+
+
+    <img class="decorative-icon" src="{{ url_for('static', filename='marksheet_icons/DNA_icon.png') }}" style="
+        position: absolute;
+        top: 930px;
+        right: 20px;
+        width: 50px;
+        height: 80px;
+        z-index: 0;
+        opacity: 0.3;
+        transform: rotate(45deg);">
+
+    <img class="decorative-icon" src="{{ url_for('static', filename='marksheet_icons/Eqn_Icon.png') }}" style="
+        position: absolute;
+        top: 140px;
+        right: 630px;
+        width: 90px;
+        height: 40px;
+        z-index: 0;
+        opacity: 0.3;
+        transform: rotate(20deg);">
+
+
+    <img class="decorative-icon" src="{{ url_for('static', filename='marksheet_icons/Globe_Icon.png') }}" style="
+        position: absolute;
+        top: 1000px;
+        right: 300px;
+        width: 70px;
+        height: 80px;
+        z-index: 0;
+        opacity: 0.3;">
+
+    <img class="decorative-icon" src="{{ url_for('static', filename='marksheet_icons/Microscope_Icon.png') }}" style="
+        position: absolute;
+        top: 250px;
+        right: 650px;
+        width: 50px;
+        height: 80px;
+        z-index: 0;
+        opacity: 0.3;
+        transform: rotate(24deg);">
+
+
+    <img class="decorative-icon" src="{{ url_for('static', filename='marksheet_icons/Geometry_Icon.png') }}" style="
+        position: absolute;
+        top:150px;
+        right: 10px;
+        width: 80px;
+        height: 80px;
+        z-index: 0;
+        opacity: 0.3;
+        transform: rotate(-10deg);">
+
+
     <div class="result-container">
       <div class="header">
         <div style="display: flex; flex-direction: column; align-items: center;">
@@ -297,7 +380,12 @@
               </td>
               {% else %}
               <td class="light-border text-center">
-                {{ exam_data.subject_marks_dict.get(subject, "") }}
+                {% if exam_data.subject_marks_dict.get(subject) is not none and
+                exam_data.subject_marks_dict.get(subject) != "" %}
+                {{ exam_data.subject_marks_dict.get(subject) }}
+                {% else %}
+                -
+                {% endif %}
               </td>
               {% endif %}
               {% endfor %}
