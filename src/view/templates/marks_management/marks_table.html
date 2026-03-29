@@ -2,8 +2,12 @@
 <div id="results" class="space-y-6">
     {% for student in student_marks %}
     <!-- START: Single Result Card -->
+
+    {% set g_total = student.marks['G. Total'] if 'G. Total' in student.marks else (student.marks['Grand Total'] if 'Grand Total' in student.marks else None) %}
+    {% set percentage_value = g_total.percentage if g_total else '' %}
     <div
-        class="marks-card bg-[#1A1A1A] backdrop-blur-sm mt-6 border border-gray-800 shadow-xl hover:shadow-2xl transition-all duration-300 rounded-2xl overflow-hidden">
+        class="marks-card bg-[#1A1A1A] backdrop-blur-sm mt-6 border border-gray-800 shadow-xl hover:shadow-2xl transition-all duration-300 rounded-2xl overflow-hidden"
+        data-rank="{{ student.overall_rank }}" data-percentage="{{ percentage_value }}" data-student-id="{{ student.student_id }}">
 
 
         <!-- Student Header - Modern Design -->
@@ -64,6 +68,7 @@
                 </div>
             </div>
             {% if has_permission('get_result') %}
+            
             <!-- Action Buttons -->
             <div class="flex flex-col sm:flex-row gap-3">
                 <button
@@ -71,6 +76,13 @@
                     onclick="getResult('{{ student['student_id'] }}', '{{ student['class_id'] }}')">
                     <i class="fas fa-print text-sm group-hover:scale-110 transition-transform"></i>
                     <span>Print Result</span>
+                </button>
+
+                <button
+                    class="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white py-3 px-5 md:px-6 rounded-xl text-sm md:text-base font-medium flex items-center justify-center gap-3 transition-all duration-200 shadow-lg hover:shadow-xl group"
+                    onclick="printCertificate('{{ student['student_id']|e }}', '{{ student['overall_rank']|e }}', '{{ percentage_value|e }}')">
+                    <i class="fas fa-certificate text-sm group-hover:scale-110 transition-transform"></i>
+                    <span>Print Certificate</span>
                 </button>
             </div>
             {% endif %}

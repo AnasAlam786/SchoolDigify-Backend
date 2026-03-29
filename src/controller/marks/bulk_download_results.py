@@ -66,13 +66,10 @@ def bulk_download_results():
         .first()
     )
 
-    import time
-
-    start = time.perf_counter()
-
     rows = (
         db.session.query(
             TeachersLogin.Sign,
+            TeachersLogin.Name,
             Roles.role_name,
             ClassAccess.class_id
         )
@@ -88,22 +85,25 @@ def bulk_download_results():
     principal_sign = None
     teacher_sign = None
 
-    for sign, role, cls_id in rows:
+    for sign, name, role, cls_id in rows:
         if role == "Principal":
             principal_sign = sign
+            principal_name = name.split(" ")[0]
+            
         elif role == "Teacher" and cls_id == class_id:
             teacher_sign = sign
+            teacher_name = name.split(" ")[0]
 
-    end = time.perf_counter()
 
-    print(f"Total time taken: {(end - start) * 1000:.2f} ms")
 
     current_session = int(current_session_id)
     session_year = f"{current_session}-{str(current_session + 1)[-2:]}"
 
     # Generate HTML for bulk results
     html = render_template('pdf-components/tall_result.html', students=student_marks, 
+                            attandance_out_of = '202', 
                             principle_sign=principal_sign, teacher_sign=teacher_sign, 
+                            principal_name=principal_name, teacher_name=teacher_name,
                             school_logo=school.Logo, school_heading_image=school.school_heading_image,
                             sesion_year=session_year)
 

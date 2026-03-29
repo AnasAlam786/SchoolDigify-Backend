@@ -3,227 +3,502 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Falak Public School Certificate</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Academic Certificate</title>
 
-    <!-- Google Fonts for refined typography -->
+    <!-- Google Fonts for elegant typography -->
     <link
         href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800;900&family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap"
         rel="stylesheet">
     <!-- Font Awesome 6 (free icons) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
     <style>
-        body {
+        * {
             margin: 0;
             padding: 0;
-            background-color: #555;
-            /* Dark background to highlight the paper */
-            display: flex;
-            justify-content: center;
-            padding-top: 20px;
-            font-family: 'Montserrat', sans-serif;
+            box-sizing: border-box;
         }
 
-        /* A4 Page Container */
+        /* PRINT-FIRST, A4 OPTIMIZED */
+        body {
+            background: #4a4a4a;
+            /* dark preview background */
+            flex-direction: column;   /* key fix */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Inter', 'Segoe UI', sans-serif;
+        }
+
+        /* CERTIFICATE CARD — EXACT A4 SIZE WITH BORDER BACKGROUND */
         .certificate-card {
             width: 210mm;
             height: 297mm;
-            background-color: white;
-            position: relative;
-            /* USING YOUR UPLOADED BACKGROUND IMAGE */
-            /* background-image: url("C:\\Users\\Falak\\OneDrive\\Desktop\\Border BG 1.png");  */
-            background-size: cover;
+            background-color: #ffffff;
+            /* === BORDER BACKGROUND IMAGE (your custom border) === */
+            background-image: url("{{ url_for('static', filename='marksheet_icons/marksheet_border.png') }}");
+            background-size: 100% 100%;
+            /* stretches perfectly to full A4 frame */
+            background-repeat: no-repeat;
             background-position: center;
+            position: relative;
             display: flex;
             flex-direction: column;
             align-items: center;
-            box-sizing: border-box;
-            overflow: hidden;
-            /* padding: 10mm; */
+            box-shadow: 0 20px 35px rgba(0, 0, 0, 0.3);
+            overflow: visible;
+            /* inner spacing to avoid content touching border edges */
+            padding: 8mm 12mm 10mm 12mm;
+        }
+        .certificate-card {
+            page-break-after: always;
+            break-after: page;
+            page-break-inside: avoid;
         }
 
-        /* School Logo */
+
+        /* SCHOOL LOGO */
         .school-logo {
-            width: 140px;
-            margin-top: 50px;
-            /* Adjusting for border spacing */
+            width: 115px;
+            height: auto;
+            margin-top: 18px;
+            display: block;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
         }
 
-        /* Main School Name with Gradient-like Orange */
+        /* MAIN TITLE */
         .school-name {
             color: #FF5E3A;
-            font-size: 45pt;
+            font-size: 42pt;
             font-weight: 800;
+            font-family: 'Playfair Display', serif;
             margin: 5px 0 0 0;
-            text-transform: capitalize;
+            letter-spacing: -0.5px;
+            text-align: center;
+            line-height: 1.2;
         }
 
         .tagline {
             color: #FFB800;
-            font-size: 19pt;
-            font-weight: 700;
+            font-size: 18pt;
+            font-weight: 600;
+            font-family: 'Cormorant Garamond', serif;
+            letter-spacing: 1px;
             margin-top: 5px;
+            text-align: center;
+            /* border-top: 1px dashed rgba(255, 184, 0, 0.3); */
+            /* border-bottom: 1px dashed rgba(255, 184, 0, 0.3); */
+            display: inline-block;
+            padding: 0 12px;
         }
 
-        /* Decorative Gold Divider */
+        /* DECORATIVE ORNAMENT DIVIDER */
         .ornament-line {
-            width: 350px;
-            height: 3px;
-            background: #FFB800;
-            margin: 35px 0;
+            width: 280px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #FFB800, #e09d00, #FFB800, transparent);
+            margin: 20px 0 18px 0;
             position: relative;
         }
 
         .ornament-line::after {
-            content: "❧";
+            content: "✧";
             position: absolute;
-            top: -16px;
+            top: -15px;
             left: 50%;
             transform: translateX(-50%);
             background: white;
             padding: 0 15px;
             color: #FFB800;
-            font-size: 24pt;
+            font-size: 26px;
+            font-weight: 400;
+            text-shadow: 0 0 2px #ffd966;
         }
 
+        /* CERTIFICATE HEADER */
         .cert-header {
-            color: #E67E22;
-            font-size: 28pt;
-            font-weight: 700;
-            margin-bottom: 15px;
+            color: #c25d00;
+            font-size: 32pt;
+            font-weight: 800;
+            font-family: 'Playfair Display', serif;
+            letter-spacing: 1px;
+            margin: 6px 0 8px 0;
+            text-align: center;
+            background: linear-gradient(135deg, #E65C19, #FF8C42);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            text-shadow: none;
         }
 
         .awarded-text {
-            font-size: 22pt;
-            font-weight: 700;
-            color: #000;
+            font-size: 20pt;
+            font-weight: 500;
+            color: #2c2c2c;
+            font-family: 'Inter', sans-serif;
+            margin-top: 6px;
+            letter-spacing: 1px;
         }
 
+        /* STUDENT NAME (large prominent) */
         .student-placeholder {
-            color: #FF5E3A;
-            font-size: 30pt;
+            color: #D93B1A;
+            font-size: 36pt;
             font-weight: 800;
-            margin-bottom: 35px;
+            font-family: 'Playfair Display', serif;
+            text-transform: uppercase;
+            background: linear-gradient(145deg, #FF5E3A, #C73C12);
+            background-clip: text;
+            color: transparent;
+            margin: 6px 0 18px 0;
+            border-bottom: 2px dotted #FFB800;
+            padding-bottom: 6px;
         }
 
-        /* The Black Info Shape */
+        /* INFO + PHOTO ROW (perfect alignment, no absolute overlap) */
+        .info-photo-row {
+            display: flex;
+            flex-wrap: nowrap;
+            align-items: center;
+            width: 90%;
+            margin: 0px 0 15px 0;
+        }
+
+        /* BLACK INFO TAB (modern clean shape) */
         .info-tab {
-            position: relative;
-            background-color: #000000;
-            color: #fff;
-            align-self: flex-start;
-            padding: 25px 160px 25px 80px;
-            line-height: 1.8;
-            font-size: 16pt;
-            font-family: 'Open Sans', sans-serif;
-            overflow: hidden;
-        }
-
-        .info-tab::after {
-            content: "";
-            position: absolute;
-            top: 0;
-            right: -60px;
-            width: 120px;
-            height: 100%;
-            background: white;
-            /* same as page background */
-            border-radius: 80%;
+            margin-right: 40px;
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 18pt;
+            font-weight: 900;
+            line-height: 1.65;
+            color: #2e2a22;
+            background: rgba(255, 250, 235, 0.85);
+            padding: 22px 24px;
+            border-radius: 28px;
+            width: 60%;
+            border: 1px solid #efd6a5;
+            letter-spacing: 0.3px;
+            box-shadow: 8px 10px 18px rgba(0, 0, 0, 0.2);
         }
 
         .info-tab span {
+            font-weight: 900;
+            color: #926d2b;
+            margin-right: 8px;
+            letter-spacing: 0.3px;
+        }
+
+        .highlight-value {
+            font-size: 1.6em;
             font-weight: 700;
         }
 
+        .info-tab br {
+            margin: 6px 0;
+        }
 
-        /* DESCRIPTION (Lorem Ipsum) */
-        .description-text {
-            font-family: 'Inter', 'Times New Roman', serif;
-            font-size: 15px;
-            line-height: 1.55;
-            color: #423b2a;
-            text-align: center;
-            max-width: 90%;
-            margin: 25px auto 18px;
-            background: #FFFFF5;
-            padding: 12px 22px;
-            border-radius: 50px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-            border: 1px solid #ecdfbb;
-            font-style: italic;
+        /* STUDENT PHOTO HOLDER (your avatar image) */
+
+        .student-photo-img {
+            z-index: 9;
+            width: 200px;
+            height: auto;
+            display: block;
+            margin: 0 auto;
         }
 
 
-        /* bottom seal */
+        /* SIGNATURE ROW */
+        .signature-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            width: 85%;
+            margin: 90px auto 12px auto;
+            padding-top: 12px;
+        }
+
+        .signature,
+        .date-stamp {
+            text-align: center;
+            width: 45%;
+        }
+
+        .signature-line,
+        .date-line {
+            width: 170px;
+            border-bottom: 2.5px solid #c9a44b;
+            margin: 8px auto 6px;
+        }
+
+        .signature p,
+        .date-stamp p {
+            font-family: 'Inter', sans-serif;
+            font-size: 12px;
+            color: #926d2b;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .signature i,
+        .date-stamp i {
+            margin-right: 5px;
+            color: #dba338;
+        }
+
+        /* FOOTER DECORATION */
         .footer-seal {
             display: flex;
             justify-content: center;
-            gap: 18px;
-            margin-top: 18px;
+            gap: 28px;
+            margin: 12px 0 8px 0;
             align-items: center;
         }
 
         .footer-seal i {
-            color: #dbb456;
-            font-size: 20px;
+            color: #cf9f42;
+            font-size: 24px;
+            filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.1));
         }
 
         .footnote {
             text-align: center;
             font-size: 10px;
-            letter-spacing: 0.8px;
-            color: #c7aa6e;
-            margin-top: 12px;
+            letter-spacing: 1px;
+            color: #b88f44;
             font-family: monospace;
+            font-weight: 600;
+            margin-top: 5px;
+            background: rgba(255, 245, 215, 0.7);
+            padding: 5px 12px;
+            border-radius: 30px;
+            display: inline-block;
         }
 
-        /* Printing Specifics */
+        /* ========== PRINT PERFECTION ========== */
+        @page {
+            size: A4;
+            margin:0;
+        }
+
         @media print {
             body {
-                background: none;
+                margin: 0;
                 padding: 0;
+                min-height: auto;
+                background: white;
+                display: block;
             }
 
             .certificate-card {
+                width: 210mm;
+                height: 297mm;
                 box-shadow: none;
+                background-size: 210mm 297mm !important;
+            }
+
+            * {
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
             }
+        }
+
+
+
+        .circle-container {
+            position: absolute;
+            top: 610px;
+            right: 131px;
+            width: 130px;
+            height: 130px;
+            border-radius: 50%;
+            overflow: hidden;
+        }
+
+        .circle-img {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            /* no crop */
         }
     </style>
 </head>
 
 <body>
 
-    <div class="certificate-card">
-        <img src="C:\Users\Falak\OneDrive\Desktop\Python Projects\SchoolDigify\src\view\static\logo.svg"
-            alt="School Logo" class="school-logo">
 
+
+    {% set default_student_img = url_for('static', filename='images/default_student.png') %}
+
+    {% for student in students %}
+
+    <div class="certificate-card">
+
+        <img class="decorative-icon" src="{{ url_for('static', filename='marksheet_icons/Book_Icon.png') }}" style="
+        position: absolute;
+                top: 870px;
+        right: 350px;
+        width: 80px;
+        height: 80px;
+        z-index: 0;
+        opacity: 0.7;">
+
+        <img class="decorative-icon" src="{{ url_for('static', filename='marksheet_icons/Computer_Icon.png') }}" style="
+        position: absolute;
+        top: 230px;
+        right: 120px;
+        width: 80px;
+        height: 80px;
+        z-index: 0;
+        opacity: 0.7;
+        transform: rotate(15deg);">
+
+
+        <img class="decorative-icon" src="{{ url_for('static', filename='marksheet_icons/Color_Plate_Icon.png') }}"
+            style="
+        position: absolute;
+        top: 1000px;
+        right:600px;
+        width: 80px;
+        height: 80px;
+        z-index: 0;
+        opacity: 0.7;
+        transform: rotate(45deg);">
+
+
+        <img class="decorative-icon" src="{{ url_for('static', filename='marksheet_icons/DNA_icon.png') }}" style="
+        position: absolute;
+        top: 800px;
+        right: 100px;
+        width: 50px;
+        height: 80px;
+        z-index: 0;
+        opacity: 0.7;
+        transform: rotate(45deg);">
+
+        <img class="decorative-icon" src="{{ url_for('static', filename='marksheet_icons/Eqn_Icon.png') }}" style="
+        position: absolute;
+        top: 80px;
+        right: 550px;
+        width: 90px;
+        height: 40px;
+        z-index: 0;
+        opacity: 0.7;
+        transform: rotate(20deg);">
+
+
+        <img class="decorative-icon" src="{{ url_for('static', filename='marksheet_icons/Globe_Icon.png') }}" style="
+        position: absolute;
+        top: 656px;
+        right: 350px;
+        width: 70px;
+        height: 80px;
+        z-index: 0;
+        opacity: 0.7;">
+
+        <img class="decorative-icon" src="{{ url_for('static', filename='marksheet_icons/Microscope_Icon.png') }}"
+            style="
+        position: absolute;
+        top: 450px;
+        right: 650px;
+        width: 50px;
+        height: 80px;
+        z-index: 0;
+        opacity: 0.7;
+        transform: rotate(24deg);">
+
+
+        <img class="decorative-icon" src="{{ url_for('static', filename='marksheet_icons/Geometry_Icon.png') }}" style="
+        position: absolute;
+        top:800px;
+        right: 650px;
+        width: 80px;
+        height: 80px;
+        z-index: 0;
+        opacity: 0.7;
+        transform: rotate(-10deg);">
+
+        <img class="decorative-icon" src="{{ url_for('static', filename='marksheet_icons/Telescope.png') }}" style="
+        position: absolute;
+        top: 460px;
+        right: 80px;
+
+        width: 80px;
+        height: 80px;
+        z-index: 0;
+        opacity: 0.7;
+        transform: rotate(-10deg);">
+
+        <img class="decorative-icon" src="{{ url_for('static', filename='marksheet_icons/Flask_Icon.png') }}" style="
+        position: absolute;
+        top: 260px;
+        right: 550px;
+        width: 80px;
+        height: 80px;
+        z-index: 0;
+        opacity: 0.5;
+        transform: rotate(-10deg);">
+
+        <!-- SCHOOL LOGO (your exact path) -->
+        <img src="{{ school_logo }}" class="school-logo">
+
+        <!-- School identity -->
         <h1 class="school-name">Falak Public School</h1>
         <div class="tagline">Striving For Excellence Education</div>
 
+        <!-- Ornament divider -->
         <div class="ornament-line"></div>
 
+        <!-- Certificate title -->
         <div class="cert-header">Academic Achievement Certificate</div>
         <div class="awarded-text">Awarded To:</div>
 
-        <div class="student-placeholder">Students Name</div>
+        <!-- Student name placeholder (dynamic) -->
+        <div class="student-placeholder">{{ student.STUDENTS_NAME | default('Student Name') }}</div>
 
-        <div class="info-tab">
-            <span>Class:</span> Nursery <br>
-            <span>Father Name:</span> XYZ <br>
-            <span>Session:</span> 2025-2027
+        <!-- ROW: Info block (black background) + Student Photo (avatar_holder_3rd) -->
+        <div class="info-photo-row">
+            <!-- Left side: Student details (class, father, session) -->
+            <div class="info-tab">
+                <span><i class="fas fa-graduation-cap"></i> Class :</span> {{ student.CLASS | default('N/A') }} <br>
+                <span><i class="fas fa-user-friends"></i> Father :</span> {{ student.FATHERS_NAME | default('N/A') }} <br>
+                <span><i class="far fa-calendar-alt"></i> Session :</span> {{ session_year | default('2025-2026') }}<br>
+                <span><i class="fas fa-trophy"></i> Rank :</span>
+                <strong class="highlight-value">#{{ student.rank | default('N/A') }}</strong>
+                with
+                <strong class="highlight-value">{{ student.percentage | default('0') }}%</strong>
+            </div>
+
+
+            <!-- Right side: Student image holder (your required avatar image) -->
+            <div>
+                <img src="{{ url_for('static', filename='marksheet_icons/image_holder.png') }}" alt="Student Portrait"
+                    class="student-photo-img" onerror="this.onerror=null;this.src='{{ default_student_img }}';">
+
+                <div class="circle-container">
+                    <img src="{{ student.student_image | default(default_student_img) }}" class="circle-img"
+                        onerror="this.onerror=null;this.src='{{ default_student_img }}';">
+                </div>
+            </div>
         </div>
 
 
-        <!-- Exact Lorem Ipsum text from the original image -->
-        <div class="description-text">
-            For outstanding performance, securing first position in the annual examination with a total percentage of
-            98.6% 
+        <!-- Signature & Date row (official) -->
+        <div class="signature-row">
+            <div class="signature">
+                <div class="signature-line"></div>
+                <p><i class="fa-solid fa-signature"></i> Principal's Signature</p>
+            </div>
+            <div class="date-stamp">
+                <div class="date-line"></div>
+                <p><i class="fa-duotone fa-solid fa-signature"></i> Teacher's Signature</p>
+            </div>
         </div>
 
 
-        <!-- Decorative seal row -->
+        <!-- Bottom decorative seals & footnote -->
         <div class="footer-seal">
             <i class="fas fa-certificate"></i>
             <i class="fas fa-medal"></i>
@@ -233,7 +508,7 @@
             ⚜️ In Recognition of Academic Excellence ⚜️
         </div>
     </div>
-
+    {% endfor %}
 </body>
 
 </html>

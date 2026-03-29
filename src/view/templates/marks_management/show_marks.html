@@ -273,6 +273,23 @@
         </span>
       </button>
 
+      <!-- Bulk Certificate Print Button -->
+      <button id="bulk-certificate-btn"
+        disabled
+        onclick="bulkPrintCertificates()"
+        class="flex items-center gap-3 px-6 py-3 rounded-xl text-sm md:text-base font-semibold 
+               bg-gradient-to-r from-amber-500 to-orange-500 
+               hover:from-amber-400 hover:to-orange-400 
+               shadow-lg hover:shadow-amber-400/20
+               transition-all duration-300 
+               disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:shadow-none">
+
+        <i class="fas fa-certificate"></i>
+
+        <span>Print Certificates</span>
+
+      </button>
+
     </div>
 
   </div>
@@ -557,6 +574,48 @@
   }
   // END: getResult function
 
+  // START: Print Certificate function
+  async function printCertificate(studentId, rank, percentage) {
+    if (!studentId) {
+      showError('Student ID is required to print certificate.');
+      return;
+    }
+
+    let selectedStudents = [{
+          student_id: parseInt(studentId, 10),
+          rank: rank,
+          percentage: percentage,
+        }];
+
+    try {
+      const response = await fetch('/print_certificate_api', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ students: selectedStudents }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to generate certificate');
+      }
+
+      const printWindow = window.open('', '_blank');
+      printWindow.document.write(data.html);
+      printWindow.document.close();
+
+      setTimeout(() => {
+        printWindow.focus();
+        printWindow.print();
+      }, 500);
+
+    } catch (err) {
+      showError('Failed to generate certificate: ' + err.message);
+      console.error('Error printing certificate:', err);
+    }
+  }
+  // END: Print Certificate function
+
   // START: Bulk Selection Functions
   function updateBulkSelection() {
     const checkboxes = document.querySelectorAll('.student-checkbox');
@@ -621,6 +680,16 @@
         bulkBtn.title = 'Select at least one student to download';
       } else {
         bulkBtn.title = `Download ${count} marksheet${count > 1 ? 's' : ''}`;
+      }
+    }
+
+    const bulkCertificateBtn = document.getElementById('bulk-certificate-btn');
+    if (bulkCertificateBtn) {
+      bulkCertificateBtn.disabled = count === 0;
+      if (count === 0) {
+        bulkCertificateBtn.title = 'Select at least one student to print certificates';
+      } else {
+        bulkCertificateBtn.title = `Print certificates for ${count} student${count > 1 ? 's' : ''}`;
       }
     }
 
@@ -714,6 +783,65 @@
 
       bulkBtn.innerHTML = '<i class="fas fa-download"></i> Download Selected';
       bulkBtn.disabled = currentSelection.size === 0;
+    }
+  }
+
+  async function bulkPrintCertificates() {
+    if (currentSelection.size === 0) {
+      showError('Please select at least one student to print certificates');
+      return;
+    }
+
+    const printBtn = document.getElementById('bulk-certificate-btn');
+    const origHTML = printBtn ? printBtn.innerHTML : 'Print Certificates';
+
+    try {
+      if (printBtn) {
+        printBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+        printBtn.disabled = true;
+      }
+
+
+      const selectedStudents = Array.from(currentSelection).map(studentId => {
+        const card = document.querySelector(`.marks-card[data-student-id="${studentId}"]`);
+        return {
+          student_id: studentId,
+          rank: card?.dataset.rank,
+          percentage: card?.dataset.percentage,
+        };
+      });
+
+      const response = await fetch('/bulk_print_certificate_api', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ students: selectedStudents })
+      });
+
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.message || 'Failed to create bulk certificates');
+      }
+
+      const data = await response.json();
+      const win = window.open('', '_blank');
+      win.document.open();
+      win.document.write(data.html);
+      win.document.close();
+
+      win.onload = () => {
+        win.focus();
+        win.print();
+      };
+
+    } catch (err) {
+      console.error('Bulk certificate error:', err);
+      showError(err.message || 'Error generating bulk certificates');
+
+    } finally {
+      if (printBtn) {
+        printBtn.innerHTML = origHTML;
+        printBtn.disabled = currentSelection.size === 0;
+      }
     }
   }
 
