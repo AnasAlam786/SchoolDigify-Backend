@@ -98,8 +98,10 @@ def get_result_api():
         .all()
     )
 
-    principal_sign = None
-    teacher_sign = None
+    principal_sign = ""
+    teacher_sign = ""
+    principal_name = ""
+    teacher_name = ""
 
     for sign, name, role, cls_id in rows:
         if role == "Principal":
