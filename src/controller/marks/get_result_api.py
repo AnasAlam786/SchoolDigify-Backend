@@ -177,12 +177,10 @@ def _prepare_certificate_students(student_items):
 def print_certificate_api():
     payload = request.json or {}
     student_items = payload.get('students')
-
+    school_name = session.get('school_name')
 
     if not student_items or not isinstance(student_items, list):
         return jsonify({'message': 'students list is required and must be an array.'}), 400
-
-    
 
     try:
         certified_students = _prepare_certificate_students(student_items)
@@ -198,7 +196,7 @@ def print_certificate_api():
         html = render_template('pdf-components/certificates/certificate.html',
                             students=certified_students,
                             session_year=session_year,
-                            school_logo=school_logo)
+                            school_logo=school_logo, school_name=school_name)
 
         return jsonify({'html': str(html)})
     except Exception as e:
@@ -213,7 +211,7 @@ def print_certificate_api():
 def bulk_print_certificate_api():
     payload = request.json or {}
     student_items = payload.get('students')
-
+    school_name = session.get('school_name')
 
     if not student_items or not isinstance(student_items, list):
         return jsonify({'message': 'students list is required and must be an array.'}), 400
@@ -234,5 +232,5 @@ def bulk_print_certificate_api():
     html = render_template('pdf-components/certificates/certificate.html',
                            students=certified_students,
                            session_year=session_year,
-                           school_logo=school_logo)
+                           school_logo=school_logo, school_name=school_name)
     return jsonify({'html': str(html)})
