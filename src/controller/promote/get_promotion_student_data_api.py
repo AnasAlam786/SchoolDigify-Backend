@@ -57,7 +57,8 @@ def get_student_promotion_data():
     current_info = (
         db.session.query(StudentSessions.class_id,
                          ClassData.grade_level,
-                         ClassData.CLASS)
+                         ClassData.CLASS,
+                         ClassData.is_terminal)
         .join(ClassData, ClassData.id == StudentSessions.class_id)
         .filter(StudentSessions.student_id == student_id,
                 StudentSessions.session_id == previous_session_id)
@@ -67,11 +68,15 @@ def get_student_promotion_data():
     if not current_info:
         return jsonify({"message": "Student not found in previous session."}), 404
 
-    current_class_id, current_grade_level, current_class_name = current_info
+    current_class_id, current_grade_level, current_class_name, is_terminal = current_info
+
 
     # ----------------------------------------------------------------------
     # 2. Fetch all possible classes (same or above)
     # ----------------------------------------------------------------------
+
+    next_class = None
+
     available_classes = (
         db.session.query(ClassData.id, ClassData.CLASS, ClassData.grade_level)
         .filter(ClassData.school_id == school_id,
@@ -84,29 +89,38 @@ def get_student_promotion_data():
     # ----------------------------------------------------------------------
     # 3. Determine next class (simple scan)
     # ----------------------------------------------------------------------
-    next_class = None
-    for c_id, c_name, g_level in available_classes:
-        if g_level > current_grade_level:
-            next_class = (c_id, c_name)
-            break
 
-    if next_class:
-        promoted_class_id, promoted_class_name = next_class
+    if is_terminal:
+        # Student is in final class → no promotion
+        promoted_class_id = None
+        promoted_class_name = "Higher Class (Passed Out)"
+
     else:
-        # Student already in highest class
-        promoted_class_id = current_class_id
-        promoted_class_name = current_class_name
+        next_class = None
+    
+        for c_id, c_name, g_level in available_classes:
+            if g_level > current_grade_level:
+                next_class = (c_id, c_name)
+                break
+
+        if not next_class:
+            return jsonify({"message": "Next class not found for non-terminal class."}), 500
+        
+        promoted_class_id, promoted_class_name = next_class
 
 
     # ----------------------------------------------------------------------
     # 4. Get available roll numbers for promoted class in CURRENT session
     # ----------------------------------------------------------------------
-    available_rolls_data = get_gapped_rolls(promoted_class_id, current_session_id)
-    gapped_rolls = available_rolls_data['gapped_rolls']
-    next_roll = available_rolls_data['next_roll']
-
-    # Default to next available roll
-    promoted_roll = next_roll
+    if is_terminal:
+        promoted_roll = None
+        gapped_rolls = []
+        next_roll = None
+    else:
+        available_rolls_data = get_gapped_rolls(promoted_class_id, current_session_id)
+        gapped_rolls = available_rolls_data['gapped_rolls']
+        next_roll = available_rolls_data['next_roll']
+        promoted_roll = next_roll
 
 
     # ----------------------------------------------------------------------

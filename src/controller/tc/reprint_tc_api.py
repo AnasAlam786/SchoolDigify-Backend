@@ -68,6 +68,7 @@ def reprint_tc():
             StudentSessions.tc_date,
             StudentSessions.left_reason,
             ClassData.CLASS.label('current_class'),
+            ClassData.is_terminal,
 
 
             Schools.Logo.label('school_logo'),
@@ -94,17 +95,23 @@ def reprint_tc():
     current_display_order = current_class_info[2]  # display_order is at index 2
     current_class_name = current_class_info[1]  # CLASS name is at index 1
 
-    # Find next class by display_order
-    next_class_info = next(
-        (c for c in classes if c[2] is not None and c[2] > current_display_order),
-        None
-    )
-
-    if next_class_info:
-        promoted_class = next_class_info[1]  # CLASS name is at index 1
+    if student_data.is_terminal:
+        # Final class → no promotion
+        promoted_class = "Higher Class"
     else:
-        # Student is in final class - no next class available
-        promoted_class = current_class_name  # Use current class name since it's the final class
+
+        # Find next class by display_order
+        next_class_info = next(
+            (c for c in classes if c[2] is not None and c[2] > current_display_order),
+            None
+        )
+
+        if not next_class_info:
+            return jsonify({"message": "Next class not found."}), 500
+        
+        promoted_class = next_class_info[1]  # CLASS name is at index 1
+
+
 
     # Fixed metadata (could be moved to config)
     working_days = 202

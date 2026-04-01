@@ -65,9 +65,9 @@ def get_result_api():
 
     student_marks = process_marks(student_marks_data, add_grades_flag=True, add_grand_total_flag=True)
 
-    # # Print the structure of result student_marks_dict
-    # import pprint
-    # pprint.pprint(student_marks)
+    # Print the structure of result student_marks_dict
+    import pprint
+    pprint.pprint(student_marks)
 
     # get principal and class teacher sign from database
 
@@ -114,6 +114,8 @@ def get_result_api():
 
     current_session = int(current_session_id)
     session_year = f"{current_session}-{str(current_session + 1)[-2:]}"
+
+    
 
     html = render_template('pdf-components/tall_result.html', students=student_marks, 
                             attandance_out_of = '202', 

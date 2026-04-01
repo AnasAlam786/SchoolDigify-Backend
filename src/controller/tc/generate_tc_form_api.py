@@ -1,7 +1,7 @@
 # src/controller/generate_tc_form_api.py
 
 from flask import render_template, session, request, Blueprint, jsonify
-from sqlalchemy import func
+from sqlalchemy import select, func
 
 from src.model import StudentsDB
 from src.model import ClassData
@@ -70,7 +70,7 @@ def generate_and_save_tc():
     # Fetch classes for the school
     # ------------------------------
     classes = (
-        db.session.query(ClassData.id, ClassData.CLASS, ClassData.display_order)
+        db.session.query(ClassData.id, ClassData.CLASS, ClassData.display_order, ClassData.is_terminal)
         .filter(ClassData.school_id == school_id)
         .order_by(ClassData.display_order.asc())
         .all()
@@ -116,31 +116,46 @@ def generate_and_save_tc():
 
     current_display_order = current_class_info[2]
     current_class_name = current_class_info[1]
+    is_terminal = current_class_info[3]
 
-    next_class_info = next(
-        (c for c in classes if c[2] is not None and c[2] > current_display_order),
-        None
-    )
+    # ✅ If terminal → no next class
+    if is_terminal:
+        promoted_class = f"Higher Class (Passed Out)"
 
-    promoted_class = next_class_info[1] if next_class_info else current_class_name
+    else:
+        next_class_info = None
+        min_order = float('inf')
+
+        for c in classes:
+            print(c)
+            display_order = c[2]
+
+            if display_order is not None and current_display_order < display_order < min_order:
+                min_order = display_order
+                next_class_info = c
+
+        if not next_class_info:
+            # Safety fallback (data inconsistency)
+            return jsonify({"message": "Next class not found, but class is not terminal."}), 500
+
+        promoted_class = next_class_info[1]
+
 
     # ------------------------------
     # Get new TC number
     # ------------------------------
-    highest_tc = (
+
+    highest_tc = ( 
         db.session.query(func.max(StudentSessions.tc_number))
         .join(StudentsDB, StudentsDB.id == StudentSessions.student_id)
-        .filter(
-            StudentSessions.session_id == previous_session_id,
-            StudentsDB.school_id == school_id
-        )
-        .scalar()
+        .filter( StudentSessions.session_id == previous_session_id, StudentsDB.school_id == school_id)
+        .scalar() 
     )
     try:
         highest_tc = int(highest_tc) if highest_tc else 0
     except:
-        highest_tc = 0
-
+        return jsonify({"message": "Error computing TC number"}), 500
+    
     tc_number = highest_tc + 1
 
     # ------------------------------

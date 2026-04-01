@@ -1,5 +1,5 @@
 from sqlalchemy import (
-    Column, BigInteger, SmallInteger, Text, JSON, ForeignKey
+    Column, BigInteger, SmallInteger, Text, JSON, ForeignKey, Boolean
 )
 from src import db
 
@@ -11,6 +11,7 @@ class ClassData(db.Model):
     Section = Column(Text, nullable=True)   # Added Section column as per DB
     display_order = Column(SmallInteger, nullable=True)
     grade_level = Column(SmallInteger, nullable=False)
+    is_terminal = Column(Boolean, nullable=False, default=False)  # Indicates if this is a terminal class (e.g., 10th, 12th)
 
     school_id = Column(Text, ForeignKey('Schools.id', onupdate="CASCADE"), nullable=False)
     school = db.relationship("Schools", back_populates="class_data")

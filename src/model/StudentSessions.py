@@ -41,5 +41,6 @@ class StudentSessions(db.Model):
     attendance = db.relationship("Attendance", back_populates="student_sessions")
 
     __table_args__ = (
+        UniqueConstraint('session_id', 'tc_number', name='uix_tc_session'),
         UniqueConstraint('class_id', 'ROLL', 'session_id' ,'Section', name='uix_school_SR'),
     )

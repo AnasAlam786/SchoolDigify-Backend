@@ -66,7 +66,9 @@ def show_marks_api():
 
     try:
         student_marks_data = result_data(school_id, current_session_id, class_id, 
-                                     extra_fields=extra_fields)        
+                                     extra_fields=extra_fields)    
+
+        print(student_marks_data)    
     except Exception as e:
         return jsonify({"message": f"Error fetching marks data: {str(e)}"}), 500
 
@@ -78,6 +80,7 @@ def show_marks_api():
         return jsonify({"html": str(html)})
     
     student_marks = process_marks(student_marks_data, add_grades_flag=False, add_grand_total_flag=True)
+    
 
     html = render_template("marks_management/marks_table.html", student_marks=student_marks)
 
