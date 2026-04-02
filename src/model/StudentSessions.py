@@ -29,7 +29,7 @@ class StudentSessions(db.Model):
     created_at = Column(DateTime)
     Section = Column(Text, nullable=True)
 
-    tc_number = Column(Text, nullable=True)
+    tc_number = Column(Numeric, nullable=True)
     tc_date = Column(Date, nullable=True)
     left_reason = Column(Text, nullable=True)
     status = Column(PromotionStatusEnum, nullable=False)

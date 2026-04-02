@@ -237,7 +237,7 @@ function createStudentCard(student) {
                         <a class="cursor-pointer hover:text-blue-300"
                             onclick="viewStudentDetails('${student.id}', '${student.PHONE}')">${student.STUDENTS_NAME}</a>
                     </h3>
-                    <p class="text-gray-400 text-md mb-2 truncate">C/O: ${student.FATHERS_NAME}</p>
+                    <p class="text-gray-400 text-md mb-2 truncate">C/O ${student.FATHERS_NAME}</p>
 
                     <!-- Larger class badge -->
                     <div class="bg-blue-900 bg-opacity-50 text-blue-400 px-2 py-1 rounded text-base font-medium mb-1 inline-block">

@@ -138,10 +138,21 @@
         <table style="width: 100%; border-collapse: collapse; margin: 0; padding: 0; ">
 
           <tr>
+            <td><strong>TC No: </strong></td>
+            <td>{{ tc_number }}</td>
+            <td><strong>TC Issued on: </strong></td>
+            <td>{{ leaving_date }}</td>
+          </tr>
+
+          <tr>
             <td><strong>SR No:</strong></td>
             <td>{{ student.SR }}</td>
             <td><strong>PEN No:</strong></td>
+            {% if student.PEN %}
             <td>{{ student.PEN }}</td>
+            {% else %}
+            <td>N/A</td>
+            {% endif %}
           </tr>
 
           <tr>
@@ -162,7 +173,11 @@
             <td><strong>Date of Birth:</strong></td>
             <td>{{ student.DOB }}</td>
             <td><strong>Aadhaar No:</strong></td>
+            {% if student.AADHAAR %}
             <td>{{ "********" + student.AADHAAR[-4:] }}</td>
+            {% else %}
+            <td>N/A</td>
+            {% endif %}
           </tr>
 
           <tr>
@@ -238,11 +253,6 @@
           <tr>
             <td><strong>Total number of working days the student was present in class:</strong></td>
             <td>{{ student.Attendance }}</td>
-          </tr>
-
-          <tr>
-            <td><strong>Issue Date of Transfer Certificate:</strong> </td>
-            <td>{{ leaving_date }}</td>
           </tr>
 
           <tr>

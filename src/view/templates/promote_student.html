@@ -94,7 +94,7 @@
 <!-- Toast notification container -->
 <div id="toastContainer" class="fixed top-4 right-4 z-50 flex flex-col gap-2"></div>
 
-<div class="container mx-auto px-4 py-6 md:py-8" id="student-container">
+<div class="container mx-auto" id="student-container">
     <!-- Page Header -->
     <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
         <div>
@@ -347,6 +347,13 @@
                     </div>
                 </div>
 
+                <!-- TC Number Field -->
+                <div class="mb-5">
+                    <label class="block text-gray-300 mb-2 font-medium">TC Number <span class="text-red-400">*</span></label>
+                    <input type="text" id="tcNumber" required class="w-full bg-gray-700 rounded-xl py-3 px-4 text-white focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="Loading TC number...">
+                    <p id="tcNumberError" class="error-message hidden mt-1 text-sm text-red-400"></p>
+                </div>
+
                 <!-- Form Fields -->
                 <div class="space-y-4">
                     <div>
@@ -402,6 +409,35 @@
                     <i class="fas fa-file-pdf mr-2"></i> Generate TC
                 </button>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- TC Revert Confirmation Modal -->
+<div class="fixed inset-0 bg-black/70 backdrop-blur-sm transition-all z-50 flex items-center justify-center p-4 modal-hidden" id="tcRevertConfirmModal" role="dialog" aria-labelledby="tcRevertTitle" aria-modal="true">
+    <div class="bg-gray-900 rounded-2xl w-full max-w-lg shadow-2xl border border-gray-700 overflow-hidden">
+        <div class="px-6 py-4 bg-gradient-to-r from-purple-700 to-indigo-600 text-white flex items-center justify-between">
+            <h3 class="text-lg font-bold" id="tcRevertTitle">Confirm TC Redo</h3>
+            <button class="text-white hover:text-gray-200" type="button" onclick="closeTCRevertConfirmModal()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="p-6 space-y-4 text-gray-100">
+            <div class="flex items-start gap-3">
+                <span class="text-xl text-amber-300 mt-1"><i class="fas fa-exclamation-triangle"></i></span>
+                <p id="revertWarningText" class="leading-relaxed">You are about to delete TC details and reset this student record.</p>
+            </div>
+            <div class="bg-gray-800 rounded-xl p-4 border border-purple-500/40">
+                <label class="inline-flex items-center gap-3">
+                    <input id="revertConfirmCheckbox" type="checkbox" class="form-checkbox h-5 w-5 text-purple-500 focus:ring-purple-400 border-gray-600 rounded">
+                    <span class="text-sm text-gray-200">I understand this action is final and cannot be undone.</span>
+                </label>
+            </div>
+            <p class="text-xs text-gray-400">This confirms you want to remove the generated TC and allow the student to re-enter the promotion workflow.</p>
+        </div>
+        <div class="flex flex-col sm:flex-row gap-3 p-4 bg-gray-950 border-t border-gray-700">
+            <button id="revertCancelButton" class="w-full sm:w-auto px-5 py-2 rounded-xl bg-gray-700 hover:bg-gray-600 text-white font-semibold" type="button">Cancel</button>
+            <button id="revertConfirmButton" class="w-full sm:w-auto px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-gray-900 font-semibold disabled:opacity-60" type="button" disabled>Confirm Remove TC</button>
         </div>
     </div>
 </div>
@@ -529,8 +565,8 @@
                 <button class="${baseBtn} bg-green-700 hover:bg-green-600 shadow" onclick="reprintIssuedTC('${student.student_session_id}')">
                     <i class="fas fa-file-alt mr-2"></i> Get TC
                 </button>
-                <button class="${baseBtn} bg-yellow-700 hover:bg-yellow-600 shadow" onclick="submitTCRevert('${student.student_session_id}')">
-                    <i class="fas fa-redo mr-2"></i> Redo
+                <button class="${baseBtn} bg-yellow-700 hover:bg-yellow-600 shadow" onclick="openTCRevertConfirm('${student.student_session_id}')">
+                    <i class="fas fa-redo mr-2"></i> TC Revert
                 </button>
             `;
         }
@@ -569,7 +605,7 @@
                         <img src="${imageSrc}" alt="Student" class="student-image" loading="lazy">
                         <div class="flex-1 min-w-0">
                             <h3 class="font-bold text-green-400 text-lg truncate">${student.STUDENTS_NAME}</h3>
-                            <p class="text-sm text-gray-400 mt-1 truncate">C/O: ${student.FATHERS_NAME || "-"}</p>
+                            <p class="text-sm text-gray-400 mt-1 truncate">C/O ${student.FATHERS_NAME || "-"}</p>
                             <div class="mt-3 space-y-1 text-sm">
                                 <div class="flex justify-between"><span class="text-gray-400">Class:</span><span class="font-medium text-white">${student.previous_class}</span></div>
                                 <div class="flex justify-between"><span class="text-gray-400">Roll:</span><span class="font-medium text-white">${student.previous_roll || "-"}</span></div>
@@ -918,6 +954,35 @@
                 ? 'https://lh3.googleusercontent.com/d/' + data.IMAGE + '=s200'
                 : 'https://cdn.pixabay.com/photo/2016/04/22/04/57/graduation-1345143_1280.png';
 
+            // populate TC number from backend and let user override it
+            const tcNumberInput = document.getElementById('tcNumber');
+            tcNumberInput.value = '';
+            tcNumberInput.placeholder = 'Loading TC number...';
+            tcNumberInput.classList.remove('border-red-400');
+            document.getElementById('tcNumberError').classList.add('hidden');
+
+            try {
+                const tcRes = await fetch('/api/tc/get-new-tc-number', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const tcJson = await tcRes.json();
+                if (tcRes.ok && tcJson.next_tc_number) {
+                    tcNumberInput.value = tcJson.next_tc_number;
+                    tcNumberInput.placeholder = 'Enter TC Number';
+                } else {
+                    tcNumberInput.placeholder = 'Enter TC Number';
+                    if (tcJson.message) {
+                        document.getElementById('tcNumberError').innerText = tcJson.message;
+                        document.getElementById('tcNumberError').classList.remove('hidden');
+                    }
+                }
+            } catch (err) {
+                tcNumberInput.placeholder = 'Enter TC Number';
+                document.getElementById('tcNumberError').innerText = 'Unable to load default TC. Enter manually.';
+                document.getElementById('tcNumberError').classList.remove('hidden');
+            }
+
             const tc_modal_footer = document.getElementById("tc-modal-footer");
             tc_modal_footer.querySelector("#tc-messageButton").classList.add("hidden");
             tc_modal_footer.querySelector("#tc-generateButton").classList.remove("hidden");
@@ -928,7 +993,8 @@
                 const leavingDate = document.getElementById("leavingDate").value;
                 const generalConduct = document.getElementById("generalConduct").value;
                 const otherRemarks = document.getElementById("otherRemark").value;
-                submitTCGeneration(data.student_session_id, leavingReason, leavingDate, generalConduct, otherRemarks);
+                const tcNumber = document.getElementById("tcNumber").value.trim();
+                submitTCGeneration(data.student_session_id, leavingReason, leavingDate, generalConduct, otherRemarks, tcNumber);
             };
 
             const modal = document.getElementById('studenttcModal');
@@ -1103,10 +1169,18 @@
         }
     }
 
-    async function submitTCGeneration(studentSessionId, leavingReason, leavingDate, generalConduct, otherRemarks = "") {
+    async function submitTCGeneration(studentSessionId, leavingReason, leavingDate, generalConduct, otherRemarks = "", tcNumber = "") {
+        const tcNumberErrorEl = document.getElementById('tcNumberError');
+        tcNumberErrorEl.classList.add('hidden');
+
         if (!leavingReason) return showAlert(400, "Please select a reason for leaving.");
         if (!leavingDate) return showAlert(400, "Please select a leaving date.");
         if (!generalConduct) return showAlert(400, "Please provide general conduct remarks.");
+        if (!tcNumber) {
+            tcNumberErrorEl.innerText = 'Please enter a TC number.';
+            tcNumberErrorEl.classList.remove('hidden');
+            return;
+        }
 
         try {
             const resp = await fetch("/api/tc/generate-and-save", {
@@ -1117,7 +1191,8 @@
                     leavingReason,
                     leavingDate,
                     generalConduct,
-                    otherRemarks
+                    otherRemarks,
+                    tc_number: tcNumber
                 }),
             });
 
@@ -1246,6 +1321,36 @@
         modal.classList.add("modal-hidden");
         document.body.style.overflow = "";
     }
+
+    // TC Revert Confirmation Modal
+    function openTCRevertConfirm(studentSessionId) {
+        const modal = document.getElementById('tcRevertConfirmModal');
+        modal.dataset.studentSessionId = studentSessionId;
+        document.getElementById('revertConfirmCheckbox').checked = false;
+        document.getElementById('revertConfirmButton').disabled = true;
+        document.getElementById('revertWarningText').innerText = "This action will permanently remove the generated TC record and reset student status to Not Promoted. It cannot be undone.";
+        modal.classList.remove('modal-hidden');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeTCRevertConfirmModal() {
+        const modal = document.getElementById('tcRevertConfirmModal');
+        modal.classList.add('modal-hidden');
+        document.body.style.overflow = '';
+    }
+
+    document.getElementById('revertConfirmCheckbox').addEventListener('change', (e) => {
+        document.getElementById('revertConfirmButton').disabled = !e.target.checked;
+    });
+
+    document.getElementById('revertConfirmButton').addEventListener('click', async () => {
+        const modal = document.getElementById('tcRevertConfirmModal');
+        const studentSessionId = modal.dataset.studentSessionId;
+        await submitTCRevert(studentSessionId);
+        closeTCRevertConfirmModal();
+    });
+
+    document.getElementById('revertCancelButton').addEventListener('click', closeTCRevertConfirmModal);
 
     document.getElementById('closeModal').addEventListener("click", closeModal);
     document.getElementById('studentPromotionModal').addEventListener("click", (e) => {

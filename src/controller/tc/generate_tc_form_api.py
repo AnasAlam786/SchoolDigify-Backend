@@ -120,7 +120,7 @@ def generate_and_save_tc():
 
     # ✅ If terminal → no next class
     if is_terminal:
-        promoted_class = f"Higher Class (Passed Out)"
+        promoted_class = f"Higher Class"
 
     else:
         next_class_info = None
@@ -142,21 +142,33 @@ def generate_and_save_tc():
 
 
     # ------------------------------
-    # Get new TC number
+    # TC number (manual override possible)
     # ------------------------------
 
-    highest_tc = ( 
-        db.session.query(func.max(StudentSessions.tc_number))
-        .join(StudentsDB, StudentsDB.id == StudentSessions.student_id)
-        .filter( StudentSessions.session_id == previous_session_id, StudentsDB.school_id == school_id)
-        .scalar() 
-    )
+    tc_number_input = data.get('tc_number')
+    tc_number = None
+
+    if not tc_number_input:
+        return jsonify({"message": "TC number must be a valid integer."}), 400
+
     try:
-        highest_tc = int(highest_tc) if highest_tc else 0
-    except:
-        return jsonify({"message": "Error computing TC number"}), 500
-    
-    tc_number = highest_tc + 1
+        tc_number = int(tc_number_input)
+    except ValueError:
+        return jsonify({"message": "TC number must be a valid integer."}), 400
+
+    if tc_number <= 0:
+        return jsonify({"message": "TC number must be greater than 0."}), 400
+
+    duplicate = (
+        db.session.query(StudentSessions)
+        .join(StudentsDB, StudentsDB.id == StudentSessions.student_id)
+        .filter(StudentsDB.school_id == school_id, StudentSessions.tc_number == tc_number)
+        .first()
+    )
+
+    if duplicate:
+        return jsonify({"message": "This TC number is already in use. Please choose another."}), 400
+
 
     # ------------------------------
     # Update TC record
@@ -187,6 +199,9 @@ def generate_and_save_tc():
     # Render TC HTML
     # ------------------------------
     working_days = 202
+    tc_number_text = f"TC-{tc_number}"  # Format TC number with leading zeros (e.g., TC-0001)
+    leaving_date = tc_row.tc_date.strftime("%A, %d %B %Y")
+
 
     html = render_template(
         'pdf-components/tcform.html',
@@ -197,7 +212,7 @@ def generate_and_save_tc():
         other_remarks=other_remarks,
         leaving_reason=leaving_reason,
         promoted_class=promoted_class,
-        tc_number=tc_row.tc_number,
+        tc_number=tc_number_text,
         tc_date=tc_row.tc_date.isoformat(),
         left_reason=tc_row.left_reason
     )
@@ -205,7 +220,34 @@ def generate_and_save_tc():
     return jsonify({
         'html': html,
         'state': "TC_ISSUED",
-        'tc_number': tc_row.tc_number,
+        'tc_number': tc_number_text,
         'tc_date': tc_row.tc_date.isoformat(),
         'left_reason': tc_row.left_reason
     })
+
+
+def get_highest_tc_no():
+    school_id = session.get('school_id')
+    highest_tc = ( 
+        db.session.query(func.max(StudentSessions.tc_number))
+        .join(StudentsDB, StudentsDB.id == StudentSessions.student_id)
+        .filter(StudentsDB.school_id == school_id)
+        .scalar() 
+    )
+
+    if highest_tc is None:
+        return 0
+    
+    return highest_tc
+
+
+@generate_and_save_tc_api_bp.route('/api/tc/get-new-tc-number', methods=['POST'])
+@login_required
+@permission_required('tc')
+def api_get_new_tc_number():
+    highest_tc = get_highest_tc_no()
+    try:
+        highest_tc = int(highest_tc) if highest_tc else 0
+    except Exception:
+        return jsonify({"message": "Error computing TC number"}), 500
+    return jsonify({"next_tc_number": highest_tc + 1})

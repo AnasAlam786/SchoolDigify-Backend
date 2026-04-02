@@ -66,8 +66,8 @@ def get_result_api():
     student_marks = process_marks(student_marks_data, add_grades_flag=True, add_grand_total_flag=True)
 
     # Print the structure of result student_marks_dict
-    import pprint
-    pprint.pprint(student_marks)
+    # import pprint
+    # pprint.pprint(student_marks)
 
     # get principal and class teacher sign from database
 

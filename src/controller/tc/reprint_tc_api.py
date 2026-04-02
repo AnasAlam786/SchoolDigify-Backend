@@ -65,7 +65,7 @@ def reprint_tc():
             StudentSessions.Weight,
             StudentSessions.status,
             StudentSessions.tc_number,
-            StudentSessions.tc_date,
+            func.to_char(StudentSessions.tc_date, 'Dy, DD Mon YYYY').label('tc_date'),
             StudentSessions.left_reason,
             ClassData.CLASS.label('current_class'),
             ClassData.is_terminal,
@@ -115,6 +115,7 @@ def reprint_tc():
 
     # Fixed metadata (could be moved to config)
     working_days = 202
+    tc_number_text = f"TC-{student_session.tc_number}"  # Format TC number with leading zeros (e.g., TC-0001)
 
     # Render HTML directly with existing TC data
     html = render_template(
@@ -122,18 +123,17 @@ def reprint_tc():
         student=student_data,
         working_days=working_days,
         general_conduct="Very Good",  # Default for reprint
-        leaving_date=student_session.tc_date.isoformat() if student_session.tc_date else None,
         other_remarks="",  # Default for reprint
         leaving_reason=student_session.left_reason or "TC Issued",
         promoted_class=promoted_class,
-        tc_number=student_session.tc_number,
-        tc_date=student_session.tc_date.isoformat() if student_session.tc_date else None,
+        tc_number=tc_number_text,
+        leaving_date=student_data.tc_date,
         left_reason=student_session.left_reason
     )
 
     return jsonify({
         'html': html,
         'tc_number': student_session.tc_number,
-        'tc_date': student_session.tc_date.isoformat() if student_session.tc_date else None,
+        'tc_date': student_data.tc_date,
         'left_reason': student_session.left_reason
     })

@@ -93,7 +93,7 @@ def get_student_promotion_data():
     if is_terminal:
         # Student is in final class → no promotion
         promoted_class_id = None
-        promoted_class_name = "Higher Class (Passed Out)"
+        promoted_class_name = "Higher Class"
 
     else:
         next_class = None
