@@ -3,7 +3,7 @@
 from flask import session, request, jsonify, Blueprint, render_template, url_for 
 from sqlalchemy import func
 
-from src.model import StudentsDB
+from src.model import SchoolSession, StudentsDB
 from src.model.ClassAccess import ClassAccess
 from src.model.Roles import Roles
 from src.model.Schools import Schools
@@ -115,10 +115,17 @@ def get_result_api():
     current_session = int(current_session_id)
     session_year = f"{current_session}-{str(current_session + 1)[-2:]}"
 
-    
+    working_days = (
+        db.session.query(SchoolSession.working_days)
+        .filter(SchoolSession.school_id == school_id,
+                SchoolSession.session_id == current_session_id)
+        .scalar()
+    )
+    attandance_out_of = working_days if working_days else "N/A"
+    print(f"Working days for session {current_session_id}: {attandance_out_of}")
 
     html = render_template('pdf-components/tall_result.html', students=student_marks, 
-                            attandance_out_of = '202', 
+                            attandance_out_of = attandance_out_of, 
                             principle_sign = principal_sign, principle_name = principal_name, 
                             teacher_sign = teacher_sign, teacher_name = teacher_name,
                             school_logo = school.Logo, school_heading_image = school.school_heading_image,

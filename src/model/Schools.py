@@ -39,4 +39,5 @@ class Schools(db.Model):
     fee_transactions = db.relationship("FeeTransaction", back_populates="school")
     holidays = db.relationship("AttendanceHolidays", back_populates="school")
     papers = db.relationship("Papers", back_populates="school")
+    school_sessions = db.relationship("SchoolSession", back_populates="school")
 

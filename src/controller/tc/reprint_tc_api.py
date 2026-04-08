@@ -1,7 +1,7 @@
 from flask import render_template, session, request, Blueprint, jsonify
 from sqlalchemy import func
 
-from src.model import StudentsDB
+from src.model import SchoolSession, StudentsDB
 from src.model import ClassData
 from src.model import Schools
 from src.model import StudentSessions
@@ -22,6 +22,9 @@ def reprint_tc():
     try:
         user_id = session.get('user_id')
         school_id = session.get('school_id')
+        session_id = session.get('session_id')
+        if not user_id or not school_id or not session_id:
+            raise ValueError
     except (TypeError, ValueError):
         return jsonify({"message": "Unable to get the session information, Try after logging in again."}), 400
 
@@ -112,9 +115,15 @@ def reprint_tc():
         promoted_class = next_class_info[1]  # CLASS name is at index 1
 
 
-
-    # Fixed metadata (could be moved to config)
-    working_days = 202
+    
+    working_days= (
+        db.session.query(SchoolSession.working_days)
+        .filter(SchoolSession.school_id == school_id,
+                SchoolSession.session_id == session_id)
+        .scalar()
+    )
+    working_days = working_days if working_days else "N/A"
+    
     tc_number_text = f"TC-{student_session.tc_number}"  # Format TC number with leading zeros (e.g., TC-0001)
 
     # Render HTML directly with existing TC data
@@ -134,6 +143,6 @@ def reprint_tc():
     return jsonify({
         'html': html,
         'tc_number': student_session.tc_number,
-        'tc_date': student_data.tc_date,
+        'leaving_date': student_data.tc_date,
         'left_reason': student_session.left_reason
     })

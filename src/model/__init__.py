@@ -3,6 +3,7 @@
 # Import all model classes
 from .Schools import Schools
 from .Sessions import  Sessions
+from .SchoolSession import SchoolSession
 from .ClassData import ClassData
 from .ClassAccess import ClassAccess
 
@@ -34,6 +35,7 @@ from .FeeTransaction import FeeTransaction
 __all__ = [
     "Schools",
     "Sessions",
+    "SchoolSession",
     "ClassData",
     "ClassAccess",
     

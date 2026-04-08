@@ -101,15 +101,11 @@ async function submit(button, inputID) {
             nextInput.focus();
             nextInput.scrollIntoView({ behavior: "smooth", block: "center" });
         }
-        else {
-            input.classList.add("border-red-500");
-            showAlert(response.status, data.message || "Failed to update marks.");
-        }
     } catch (error) {
         // ❌ Network or unexpected error
         console.error("Error:", error);
         input.classList.add("border-red-500");
-        showAlert(400, "Unexpected error occurred. Please try again.");
+        // showAlert(400, "Unexpected error occurred. Please try again.");
     } finally {
         // --- Reset UI back to normal ---
         button.disabled = false;

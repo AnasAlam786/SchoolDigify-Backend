@@ -3,7 +3,7 @@
 from flask import render_template, session, request, Blueprint, jsonify
 from sqlalchemy import select, func
 
-from src.model import StudentsDB
+from src.model import SchoolSession, StudentsDB
 from src.model import ClassData
 from src.model import Schools
 from src.model import StudentSessions
@@ -37,7 +37,8 @@ def generate_and_save_tc():
         previous_session_id = current_session_id - 1
         user_id = session.get('user_id')
         school_id = session.get('school_id')
-        if not user_id or not school_id:
+        session_id = session.get('session_id')
+        if not user_id or not school_id or not session_id:
             raise ValueError
     except (TypeError, ValueError):
         return jsonify({"message": "Unable to get the session information, Try logging in again."}), 400
@@ -198,7 +199,14 @@ def generate_and_save_tc():
     # ------------------------------
     # Render TC HTML
     # ------------------------------
-    working_days = 202
+    working_days = (
+        db.session.query(SchoolSession.working_days)
+        .filter(SchoolSession.school_id == school_id,
+                SchoolSession.session_id == session_id)
+        .scalar()
+    )
+    working_days = working_days if working_days else "N/A"
+    
     tc_number_text = f"TC-{tc_number}"  # Format TC number with leading zeros (e.g., TC-0001)
     leaving_date = tc_row.tc_date.strftime("%A, %d %B %Y")
 
