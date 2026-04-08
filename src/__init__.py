@@ -130,12 +130,6 @@ def create_app():
     # NOTE: For production, prefer Alembic migrations instead of create_all().
     with app.app_context():
         import src.model  # ensure model modules are imported and SQLAlchemy metadata is populated
-        try:
-            db.create_all()
-        except Exception as e:
-            # In environments where user schema search path is unavailable, fail gracefully.
-            # Use migrations (alembic) in prod; this is a local development safety fallback.
-            print('WARNING: db.create_all failed:', e)
 
     # ——— Inject permissions globally in templates ———
     from src.controller.permissions.has_permission import has_permission
