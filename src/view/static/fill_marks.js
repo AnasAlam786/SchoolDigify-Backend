@@ -91,7 +91,7 @@ async function submit(button, inputID) {
         }
 
         // Focus on next input in the same table
-        const container = input.closest("table") || input.closest("#marks-mobile-container");
+        const container = input.closest("table") || input.closest("#mobile-marks-container");
 
         const allInputs = Array.from(container.querySelectorAll("input"));
         const index = allInputs.indexOf(input);
