@@ -34,11 +34,9 @@ def generate_and_save_tc():
     # ------------------------------
     try:
         current_session_id = int(session.get('session_id'))
-        previous_session_id = current_session_id - 1
         user_id = session.get('user_id')
         school_id = session.get('school_id')
-        session_id = session.get('session_id')
-        if not user_id or not school_id or not session_id:
+        if not user_id or not school_id or not current_session_id:
             raise ValueError
     except (TypeError, ValueError):
         return jsonify({"message": "Unable to get the session information, Try logging in again."}), 400
@@ -61,6 +59,8 @@ def generate_and_save_tc():
     # Validate student_session
     # ------------------------------
     student_session = StudentSessions.query.filter_by(id=student_session_id).first()
+    previous_session_id = student_session.session_id if student_session else int(current_session_id)-1  # Use previous session for TC generation if student_session exists, else fallback to current session - 1
+
     if not student_session:
         return jsonify({"message": "Student session not found."}), 404
 
@@ -202,9 +202,10 @@ def generate_and_save_tc():
     working_days = (
         db.session.query(SchoolSession.working_days)
         .filter(SchoolSession.school_id == school_id,
-                SchoolSession.session_id == session_id)
+                SchoolSession.session_id == previous_session_id)
         .scalar()
     )
+
     working_days = working_days if working_days else "N/A"
     
     tc_number_text = f"TC-{tc_number}"  # Format TC number with leading zeros (e.g., TC-0001)
