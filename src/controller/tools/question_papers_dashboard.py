@@ -10,7 +10,6 @@ from src.controller.permissions.has_permission import has_permission
 from src.model.Papers import Papers
 from src.controller.permissions.permission_required import permission_required
 from src.controller.auth.login_required import login_required
-import time
 
 question_papers_dashboard_bp = Blueprint('question_papers_dashboard_bp', __name__)
 
@@ -70,7 +69,6 @@ def count_paper_words(questions):
 @permission_required('create_paper')
 def get_papers_list():
 
-    start = time.time()
 
     user_id = session.get('user_id')
     school_id = session.get('school_id')
@@ -156,7 +154,6 @@ def get_papers_list():
                 'num_words': num_words,
             })
 
-    print("Total time:", time.time() - start)
 
     return jsonify({
         'user_papers': user_data,

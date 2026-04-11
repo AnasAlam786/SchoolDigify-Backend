@@ -74,7 +74,6 @@ def create_admission_form_api():
     else:
         student["siblings"] = []
 
-    print(student)
 
     html = render_template('pdf-components/admission_form.html', student=student)
 

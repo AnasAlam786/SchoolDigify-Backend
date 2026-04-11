@@ -27,11 +27,13 @@ def get_students_by_class():
     current_session = int(session["session_id"])
 
     PromotedSession = aliased(StudentSessions)
+    NextClassData = aliased(ClassData)
     promoted_subq = (
         select(
             PromotedSession.student_id,
             PromotedSession.id.label("promoted_session_id"),
             PromotedSession.ROLL.label("next_roll"),
+            PromotedSession.class_id.label("next_class_id"),
             PromotedSession.created_at.label("promoted_date"),
             PromotedSession.status.label("promoted_status"),
         )
@@ -64,19 +66,7 @@ def get_students_by_class():
         promoted_subq.c.promoted_date,
         promoted_subq.c.promoted_session_id,
         promoted_subq.c.promoted_status,
-
-        # nested subquery to find next class using grade_level
-        select(ClassData.CLASS)
-            .where(
-                ClassData.grade_level == (
-                    select(ClassData.grade_level)
-                    .where(ClassData.id == class_id)
-                    .scalar_subquery()
-                ) + 1,
-                ClassData.school_id == school_id
-            )
-            .scalar_subquery()
-            .label("next_class")
+        NextClassData.CLASS.label("next_class")
     ).join(
         StudentSessions,
         StudentSessions.student_id == StudentsDB.id
@@ -86,6 +76,9 @@ def get_students_by_class():
     ).outerjoin(
         promoted_subq,
         promoted_subq.c.student_id == StudentsDB.id
+    ).outerjoin(
+        NextClassData,
+        NextClassData.id == promoted_subq.c.next_class_id
     ).filter(
         ClassData.id == class_id,
         StudentsDB.school_id == school_id,

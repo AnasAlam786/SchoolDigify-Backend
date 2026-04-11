@@ -36,7 +36,6 @@ def get_admit_cards_api():
     year = data.get('year', '')
     outputType = data.get('outputType', '')
     examScheme = data.get('examScheme', '')
-    print(examScheme)
 
     school_id = session.get('school_id')
     current_session_id = session.get('session_id')

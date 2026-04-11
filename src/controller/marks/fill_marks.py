@@ -105,7 +105,6 @@ def get_marks():
     if not exam.is_enabled and not has_permission('override_marks_lock'):
         return jsonify({"error": "This exam is disabled. You do not have permission to fill marks for disabled exams."}), 403
 
-    print(f"Fetching marks for Class ID: {class_id_int}, Subject ID: {subject_id_int}, Exam ID: {exam_id_int}, School ID: {school_id}, Session ID: {current_session_id}")
 
 
     marks_data = (

@@ -68,7 +68,6 @@ def show_marks_api():
         student_marks_data = result_data(school_id, current_session_id, class_id, 
                                      extra_fields=extra_fields)    
 
-        print(student_marks_data)    
     except Exception as e:
         return jsonify({"message": f"Error fetching marks data: {str(e)}"}), 500
 

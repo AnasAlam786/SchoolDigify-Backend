@@ -122,7 +122,6 @@ def get_result_api():
         .scalar()
     )
     attandance_out_of = working_days if working_days else "N/A"
-    print(f"Working days for session {current_session_id}: {attandance_out_of}")
 
     html = render_template('pdf-components/tall_result.html', students=student_marks, 
                             attandance_out_of = attandance_out_of, 
@@ -136,7 +135,6 @@ def _prepare_certificate_students(student_items):
     certified_students = []
 
     for item in student_items:
-        print(item)
         
         try:
             student_id = int(item.get('student_id'))
@@ -148,11 +146,8 @@ def _prepare_certificate_students(student_items):
 
 
         student = StudentsDB.query.filter_by(id=student_id).first()
-        print(f"Processing student: {student} (ID: {student_id})")
         if not student:
             continue
-
-        
 
         student_session = StudentSessions.query.filter_by(student_id=student_id, session_id=session.get('session_id')).first()
         class_name = None
@@ -160,7 +155,6 @@ def _prepare_certificate_students(student_items):
             class_row = ClassData.query.filter_by(id=student_session.class_id).first()
             class_name = class_row.CLASS if class_row else None
 
-        print(item)
 
         img_src = None
         if student.IMAGE:
@@ -229,7 +223,6 @@ def bulk_print_certificate_api():
 
     certified_students = _prepare_certificate_students(student_items)
 
-    print(f"Prepared certified students data: {certified_students}")  # Debug log
 
     if not certified_students:
         return jsonify({'message': 'No valid student certificate data found.'}), 400
