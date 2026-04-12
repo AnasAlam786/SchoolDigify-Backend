@@ -570,10 +570,14 @@
                 </button>
             `;
         }
-        const disabled = !student.next_class ? 'disabled style="opacity:0.6;cursor:not-allowed;"' : "";
-        const promoteLabel = student.next_class ? "Promote" : "No Classes";
+        const promotable = student.state === "NOT_PROMOTED_NOT_TC" && !student.is_terminal;
+        const disabled = !promotable ? 'disabled style="opacity:0.6;cursor:not-allowed;"' : "";
+        const promoteLabel = student.is_terminal ? "No Classes" : "Promote";
+        const promoteAction = promotable ? `onclick="openPromotionModalForStudent('${student.id}')"` : "";
+        const promoteTitle = student.is_terminal ? 'Terminal class: no further promotion available' : '';
+
         return `
-            <button class="${baseBtn} bg-green-700 hover:bg-green-600 shadow" onclick="openPromotionModalForStudent('${student.id}')" ${disabled}>
+            <button class="${baseBtn} bg-green-700 hover:bg-green-600 shadow" ${promoteAction} ${disabled} title="${promoteTitle}">
                 <i class="fas fa-graduation-cap mr-2"></i>${promoteLabel}
             </button>
             <button class="${baseBtn} bg-amber-700 hover:bg-amber-600 shadow" onclick="openTCCreationModal('${student.id}')">

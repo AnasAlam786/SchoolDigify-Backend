@@ -54,6 +54,7 @@ def get_students_by_class():
         StudentsDB.PHONE,
         StudentsDB.ADMISSION_DATE,
         ClassData.CLASS.label("previous_class"),
+        ClassData.is_terminal.label("current_class_is_terminal"),
         StudentSessions.id.label("student_session_id"),
         StudentSessions.ROLL.label("previous_roll"),
         StudentSessions.class_id,
@@ -116,6 +117,8 @@ def get_students_by_class():
             "tc_number": row.tc_number,
             "tc_date": row.tc_date.isoformat() if row.tc_date else None,
             "left_reason": row.left_reason,
+            "is_terminal": bool(row.current_class_is_terminal),
+            "can_promote": not bool(row.current_class_is_terminal) and state == "NOT_PROMOTED_NOT_TC",
             "state": state,
         })
 
