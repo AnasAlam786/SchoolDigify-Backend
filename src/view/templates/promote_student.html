@@ -1043,11 +1043,14 @@
 
             if (res.ok) {
                 updateStudentInLocalState(studentID, {
-                    state: "PROMOTED",
+                    state: data.state,
                     promoted_session_id: data.promoted_session_id,
                     next_roll: data.next_roll,
-                    promoted_date: data.created_at
+                    promoted_date: data.created_at,
+                    next_class: data.next_class
                 });
+
+
 
                 const response = await fetch('/api/promote/promotion-message', {
                     method: "POST",

@@ -1,6 +1,6 @@
 # src/controller/final_promotion_api.py
 
-from flask import session, request, jsonify, Blueprint
+from flask import current_app, session, request, jsonify, Blueprint
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 
@@ -24,7 +24,7 @@ def promote_student():
     machine:
 
     NOT_PROMOTED_NOT_TC -> promote -> PROMOTED
-
+"state": "PROMOTED"
     - Blocks promotion if TC is already issued.
     - Blocks duplicate promotions.
     - Validates roll uniqueness.
@@ -36,9 +36,6 @@ def promote_student():
     except (KeyError, ValueError):
         return jsonify({"message": "Session data is missing or corrupted. Please logout and login again!"}), 500
 
-    class_len = db.session.query(func.count(ClassData.id)).filter(ClassData.school_id == school_id).scalar()
-    if class_len is None:
-        return jsonify({"message": "Class data not found for the school."}), 404
 
     data = request.get_json()
     if not data:
@@ -84,16 +81,46 @@ def promote_student():
     if not previous_session_row:
         return jsonify({"message": "Student not found in previous session."}), 404
 
-    # TC issued students cannot be promoted.
-    if previous_session_row.status == "tc":
+
+    # --- Check if already exists in current session ---
+    already_promoted = StudentSessions.query.filter_by(
+        student_id=student_id,
+        session_id=current_session
+    ).first()
+
+    # =========================================================
+    # 🚨 SOFT RECOVERY (SAFE VERSION)
+    # =========================================================
+    if previous_session_row.status == "promoted" and not already_promoted:
+        current_app.logger.error(
+            f"[DATA INCONSISTENCY] Student {student_id} marked promoted in session "
+            f"{current_session - 1} but no row in session {current_session}"
+        )
+        # NOTE: do NOT modify DB here (outside transaction)
+        recovered_status = "active"
+    else:
+        recovered_status = previous_session_row.status
+    # =========================================================
+
+
+    # --- State validation (use recovered_status) ---
+    if recovered_status == "tc":
         return jsonify({"message": "TC already issued. Promotion not allowed."}), 400
-    elif previous_session_row.status == "promoted":
-        return jsonify({"message": "Already promoted cannot promote again."}), 400
-    elif previous_session_row.status == "left":
+
+    if recovered_status == "left":
         return jsonify({"message": "Student left the school cannot promote."}), 400
-    
-    if previous_session_row.status not in ("active", None, ""):
+
+    if recovered_status == "promoted":
+        return jsonify({"message": "Already promoted cannot promote again."}), 400
+
+    if recovered_status not in ("active", None, ""):
         return jsonify({"message": "Promotion not allowed."}), 400
+    
+    # --- Prevent duplicate ---
+    if already_promoted and already_promoted.status != "left":
+        return jsonify({
+            "message": "Student already has an active entry in this session."
+        }), 400
 
     # Validate that the selected class exists and is valid
     selected_class = ClassData.query.filter_by(
@@ -110,29 +137,24 @@ def promote_student():
         return jsonify({"message": "Current class information not found."}), 404
     
     # Validate that selected class is current class or above
-    if selected_class.grade_level is not None and current_class.grade_level is not None:
-        if selected_class.grade_level < current_class.grade_level:
-            return jsonify({"message": "Cannot promote to a lower class."}), 400
+    if (selected_class.grade_level is not None and 
+        current_class.grade_level is not None and
+        selected_class.grade_level < current_class.grade_level):
+        return jsonify({"message": "Cannot promote to a lower class."}), 400
     
     class_to_promote = promoted_class_id
-
-    # If an entry exists, reject the request immediately
-    already_promoted = StudentSessions.query.filter_by(
-        student_id=student_id,
-        session_id=current_session
-    ).first()
-    if already_promoted and already_promoted.status != "left":
-        return jsonify({"message": "Student already has an active entry in this session, promotion not allowed!"}), 400
 
     # Check for existing roll number in the target class and session
     roll_conflict = StudentSessions.query.filter_by(
         session_id=current_session,
-        class_id=class_to_promote,
+        class_id=promoted_class_id,
         ROLL=promoted_roll
     ).first()
+
     if roll_conflict:
         return jsonify({"message": "This roll number is already in use in the target class and session."}), 400
 
+    # --- Create new session ---
     new_session = StudentSessions(
         student_id=student_id,
         session_id=current_session,
@@ -142,18 +164,28 @@ def promote_student():
         status="active"
     )
 
-    # Mark previous session as promoted for clarity
-    previous_session_row.status = "promoted"
+    
 
+    # =========================================================
+    # 🔒 FINAL TRANSACTION (ONLY ONE PLACE)
+    # =========================================================
     try:
+        previous_session_row.status = "promoted"
         db.session.add(new_session)
         db.session.commit()
+
     except IntegrityError:
         db.session.rollback()
-        return jsonify({"message": "Failed to promote student due to a roll/class conflict."}), 400
-    except Exception:
+        return jsonify({
+            "message": "Failed to promote student due to a roll/class conflict."
+        }), 400
+
+    except Exception as e:
         db.session.rollback()
-        return jsonify({"message": "Failed to promote student due to a database error."}), 500
+        current_app.logger.error(f"Database error during promotion: {str(e)}")
+        return jsonify({
+            "message": "Failed to promote student due to a database error."
+        }), 500
 
     return jsonify({
         "message": "Student promoted successfully",
@@ -161,6 +193,7 @@ def promote_student():
         "promoted_session_id": new_session.id,
         "next_roll": new_session.ROLL,
         "next_class_id": new_session.class_id,
+        "next_class": selected_class.CLASS,  # ✅ added
         "created_at": promoted_date.isoformat()
     }), 200
 
