@@ -450,66 +450,50 @@
     </div>
 </div>
 
-
-<script src="{{ url_for('static', filename='watsappMessage.js') }}"></script>
+{% include 'html-components/student_attendance_calendar.html' %}
 <script>
-    // =====================================================
-    // ATTENDANCE MANAGEMENT - PROFESSIONAL STRUCTURE
-    // =====================================================
-
-    /**
-     * Global State Manager for Attendance
-     * Maintains real-time attendance data and counts
-     */
     const AttendanceState = {
-        data: [],
-        summary: {},
-        date: null,
         classID: null,
+        date: null,
+        attendanceData: [],
+        summary: {
+            total: 0,
+            present: 0,
+            absent: 0,
+            half_day: 0,
+            not_marked: 0
+        },
 
-        /**
-         * Initialize state with attendance data
-         */
         initialize(attendanceData, attendanceSummary, date, classID) {
-            this.data = attendanceData || [];
-            this.summary = attendanceSummary || {};
-            this.date = date;
-            this.classID = classID;
+            this.attendanceData = Array.isArray(attendanceData) ? attendanceData : [];
+            this.summary = Object.assign({
+                total: 0,
+                present: 0,
+                absent: 0,
+                half_day: 0,
+                not_marked: 0
+            }, attendanceSummary || {});
+            this.date = date || '';
+            this.classID = classID || null;
         },
 
-        /**
-         * Update attendance for a student
-         * @param {string} studentID - Student session ID
-         * @param {string|null} newStatus - PRESENT, ABSENT, HALF_DAY, or null (unmark)
-         */
-        updateAttendance(studentID, newStatus) {
-            const student = this.data.find(s => s.student_session_id == studentID);
-            if (!student) return;
-
-            const oldStatus = student.attendance_status;
-            student.attendance_status = newStatus;
-
-            // Update summary counts
-            this.updateSummary(oldStatus, newStatus);
-        },
-
-        /**
-         * Update summary statistics
-         */
-        updateSummary(oldStatus, newStatus) {
-            // Decrement old status count
-            if (oldStatus && this.summary[oldStatus.toLowerCase()] !== undefined) {
-                this.summary[oldStatus.toLowerCase()]--;
-            } else if (oldStatus === null && this.summary.not_marked !== undefined) {
-                this.summary.not_marked--;
+        updateAttendance(studentSessionId, newStatus) {
+            const record = this.attendanceData.find(item => String(item.student_session_id) === String(studentSessionId));
+            if (record) {
+                record.attendance_status = newStatus ? newStatus : null;
             }
 
-            // Increment new status count
-            if (newStatus && this.summary[newStatus.toLowerCase()] !== undefined) {
-                this.summary[newStatus.toLowerCase()]++;
-            } else if (newStatus === null && this.summary.not_marked !== undefined) {
-                this.summary.not_marked++;
-            }
+            const totals = { present: 0, absent: 0, half_day: 0, not_marked: 0 };
+            this.attendanceData.forEach(item => {
+                const status = (item.attendance_status || '').toUpperCase();
+                if (status === 'PRESENT') totals.present += 1;
+                else if (status === 'ABSENT') totals.absent += 1;
+                else if (status === 'HALF_DAY' || status === 'HALF DAY') totals.half_day += 1;
+                else totals.not_marked += 1;
+            });
+
+            totals.total = this.attendanceData.length;
+            this.summary = totals;
         },
 
         /**
@@ -1244,15 +1228,6 @@
             const closeMessageModal = document.getElementById('closeMessageModal');
             closeMessageModal.addEventListener('click', () => this.closeModal(messageModal));
 
-            // WhatsApp Button
-            const sendWhatsAppBTN = document.getElementById('sendWhatsAppBTN');
-            sendWhatsAppBTN.addEventListener('click', (e) => {
-                e.preventDefault();
-                const message = document.getElementById("WatsappMessageTextArea").value;
-                const phone = sendWhatsAppBTN.getAttribute("data-phone");
-                sendWhatsAppMessage(phone, message);
-            });
-
             // Close modals on background click
             window.addEventListener('click', (event) => {
                 if (event.target.classList.contains('fixed')) {
@@ -1278,6 +1253,7 @@
             document.body.style.overflow = 'auto';
         }
     };
+    window.ModalManager = ModalManager;
 
     /**
      * API Manager
@@ -1373,6 +1349,25 @@
             }
         },
 
+        async getStudentAttendanceMonth(studentSessionId, year, month) {
+            try {
+                const query = new URLSearchParams({ student_session_id: studentSessionId, year, month });
+                const response = await fetch(`/api/get_student_attendance_month?${query}`);
+                const body = await response.json();
+
+                if (!response.ok) {
+                    showAlert(response.status, body.message || 'Failed to load monthly attendance');
+                    return null;
+                }
+
+                return body;
+            } catch (error) {
+                showAlert(500, 'Network error while loading monthly attendance');
+                console.error('Error loading monthly attendance:', error);
+                return null;
+            }
+        },
+
         /**
          * Generate skeleton loaders for loading state
          */
@@ -1409,6 +1404,8 @@
             return skeleton.repeat(3);
         }
     };
+    window.APIManager = APIManager;
+    window.AttendanceState = AttendanceState;
 
     /**
      * Render Manager
@@ -1426,6 +1423,30 @@
                 const status = data.attendance_status;
                 const html = this.getStudentCardHTML(data, status, date);
                 container.insertAdjacentHTML("beforeend", html);
+            });
+
+            this.attachStudentCardListeners();
+        },
+
+        attachStudentCardListeners() {
+            document.querySelectorAll('.student-message-btn').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    const studentName = decodeURIComponent(btn.dataset.studentName || '');
+                    const fathersName = decodeURIComponent(btn.dataset.fathersName || '');
+                    const className = decodeURIComponent(btn.dataset.className || '');
+                    const phone = btn.dataset.phone || '';
+                    const date = btn.dataset.date || '';
+                    await MessageManager.openModal(studentName, fathersName, className, phone, date);
+                });
+            });
+
+            document.querySelectorAll('.student-calendar-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const studentSessionId = btn.dataset.studentSessionId;
+                    const studentName = decodeURIComponent(btn.dataset.studentName || '');
+                    const className = decodeURIComponent(btn.dataset.className || '');
+                    StudentCalendarManager.openModal(studentSessionId, studentName, className);
+                });
             });
         },
 
@@ -1451,8 +1472,18 @@
                         </div>
                     </div>
                     <div class="flex gap-2">
-                        <button class="w-10 h-10 bg-green-600/90 hover:bg-green-600 text-white rounded-xl flex items-center justify-center shadow-lg transition"
-                                onclick="openMessageModal('${data.STUDENTS_NAME}','${data.FATHERS_NAME}','${data.CLASS}','${data.PHONE}','${date}')">
+                        <button type="button" class="student-calendar-btn w-10 h-10 bg-slate-800/90 hover:bg-slate-700 text-white rounded-xl flex items-center justify-center shadow-lg transition"
+                                data-student-session-id="${data.student_session_id}"
+                                data-student-name="${encodeURIComponent(data.STUDENTS_NAME)}"
+                                data-class-name="${encodeURIComponent(data.CLASS)}">
+                            <i class="fas fa-calendar-days"></i>
+                        </button>
+                        <button type="button" class="student-message-btn w-10 h-10 bg-green-600/90 hover:bg-green-600 text-white rounded-xl flex items-center justify-center shadow-lg transition"
+                                data-student-name="${encodeURIComponent(data.STUDENTS_NAME)}"
+                                data-fathers-name="${encodeURIComponent(data.FATHERS_NAME)}"
+                                data-class-name="${encodeURIComponent(data.CLASS)}"
+                                data-phone="${data.PHONE}"
+                                data-date="${date}">
                             <i class="fab fa-whatsapp"></i>
                         </button>
                     </div>
@@ -1460,8 +1491,12 @@
 
                 <!-- Student Details -->
                 <div class="flex gap-2 mb-5 text-sm">
-                    <span class="bg-[#2A2A2A] px-3 py-1.5 rounded-lg">Class: ${data.CLASS}</span>
-                    <span class="bg-[#2A2A2A] px-3 py-1.5 rounded-lg">Roll: ${data.ROLL}</span>
+                    <span class="bg-[#2A2A2A] px-3 py-1.5 rounded-lg"><i class="fas fa-chalkboard-teacher mr-2"></i> ${data.CLASS}</span>
+                    <span class="bg-[#2A2A2A] px-3 py-1.5 rounded-lg"><i class="fas fa-hashtag"></i> ${data.ROLL}</span>
+                    <a href="tel:${data.PHONE}" class="bg-[#2A2A2A] px-3 py-1.5 rounded-lg hover:bg-[#333]">
+                        <i class="fas fa-phone text-blue-400 mr-2"></i>
+                        <span class="text-white text-sm font-semibold">${data.PHONE}</span>
+                    </a>
                 </div>
 
                 <!-- Attendance Buttons -->
@@ -1581,6 +1616,7 @@
             }
         }
     };
+    window.AttendanceManager = AttendanceManager;
 
     /**
      * Message Manager
@@ -1613,6 +1649,7 @@
             sendBtn.setAttribute("data-phone", phone);
         }
     };
+    window.MessageManager = MessageManager;
 
     /**
      * Initialize Application

@@ -250,10 +250,21 @@ function createStudentCard(student) {
                     </div>
 
                     <!-- Contact -->
-                    <a href="tel:${student.PHONE}" class="phone-badge">
-                        <i class="fas fa-phone text-blue-400 mr-2"></i>
-                        <span class="text-white text-sm font-semibold">${student.PHONE}</span>
-                    </a>
+                    <div class="flex items-center gap-2">
+                        
+                        <!-- Phone Call -->
+                        <a href="tel:${student.PHONE}" class="phone-badge flex items-center">
+                            <i class="fas fa-phone text-blue-400 mr-2"></i>
+                            <span class="text-white text-sm font-semibold">${student.PHONE}</span>
+                        </a>
+
+                        <!-- WhatsApp -->
+                        <a href="https://wa.me/${student.PHONE}" class="flex items-center justify-center bg-green-500 rounded-full p-2">
+                            <i class="fab fa-whatsapp text-white"></i>
+                        </a>
+
+                    </div>
+
                 </div>
             </div>
         </div>

@@ -1,11 +1,12 @@
 # src/controller/get_fee.py
 
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
+import calendar
 from sqlalchemy import and_, or_
 from flask import session, request, jsonify, Blueprint
 
 from src.controller.permissions.has_permission import has_permission
-from src.model import StudentsDB, StudentSessions, ClassData
+from src.model import StudentsDB, StudentSessions, ClassData, Sessions
 from src import db
 
 from src.model.Attendance import Attendance
@@ -137,6 +138,204 @@ def get_attendance_data_api():
     }
     
     return jsonify({"attendance_data": attendance_data, "attendance_summary": attendance_summary}), 200
+
+
+@get_attendance_data_api_bp.route('/api/get_student_attendance_month', methods=["GET"])
+@login_required
+@permission_required('attendance')
+def get_student_attendance_month_api():
+    student_session_id = request.args.get('student_session_id')
+    year = request.args.get('year')
+    month = request.args.get('month')
+
+    if not student_session_id or not year or not month:
+        return jsonify({"message": "student_session_id, year, and month are required"}), 400
+
+    try:
+        year = int(year)
+        month = int(month)
+    except ValueError:
+        return jsonify({"message": "Year and month must be numeric"}), 400
+
+    if month < 1 or month > 12 or year < 1900 or year > 2100:
+        return jsonify({"message": "Invalid year or month"}), 400
+
+    current_session = session["session_id"]
+    school_id = session["school_id"]
+
+    student_record = (
+        db.session.query(
+            StudentsDB.STUDENTS_NAME,
+            ClassData.CLASS,
+            StudentSessions.id.label('student_session_id'),
+            StudentSessions.class_id.label('class_id')
+        )
+        .join(StudentSessions, StudentSessions.student_id == StudentsDB.id)
+        .join(ClassData, ClassData.id == StudentSessions.class_id)
+        .filter(
+            StudentSessions.id == student_session_id,
+            StudentSessions.session_id == current_session,
+            StudentsDB.school_id == school_id
+        )
+        .first()
+    )
+
+    if not student_record:
+        return jsonify({"message": "Student session record not found"}), 404
+
+    start_date = date(year, month, 1)
+    end_date = date(year, month, calendar.monthrange(year, month)[1])
+
+    attendance_rows = (
+        Attendance.query
+        .filter(
+            Attendance.student_session_id == student_session_id,
+            Attendance.date >= start_date,
+            Attendance.date <= end_date
+        )
+        .all()
+    )
+
+    holiday_rows = (
+        AttendanceHolidays.query
+        .filter(
+            AttendanceHolidays.school_id == school_id,
+            AttendanceHolidays.session_id == current_session,
+            AttendanceHolidays.date >= start_date,
+            AttendanceHolidays.date <= end_date,
+            or_(
+                AttendanceHolidays.class_id == student_record.class_id,
+                AttendanceHolidays.class_id.is_(None)
+            )
+        )
+        .all()
+    )
+
+    attendance_map = {row.date: row.status for row in attendance_rows}
+    holiday_dates = {row.date for row in holiday_rows}
+
+    records = []
+    for day in range(1, end_date.day + 1):
+        current_date = date(year, month, day)
+        if current_date in attendance_map:
+            status = attendance_map[current_date]
+        elif current_date.weekday() == 6 or current_date in holiday_dates:
+            status = 'HOLIDAY'
+        else:
+            status = 'UNMARKED'
+
+        records.append({
+            'date': current_date.strftime('%Y-%m-%d'),
+            'status': status
+        })
+
+    monthly_summary = {
+        'present': 0,
+        'absent': 0,
+        'half_day': 0,
+        'leave': 0,
+        'holiday': 0,
+        'unmarked': 0
+    }
+    for record in records:
+        key = record['status'].lower()
+        if key == 'half_day':
+            monthly_summary['half_day'] += 1
+        elif key == 'unmarked':
+            monthly_summary['unmarked'] += 1
+        elif key == 'holiday':
+            monthly_summary['holiday'] += 1
+        elif key == 'leave':
+            monthly_summary['leave'] += 1
+        elif key == 'present':
+            monthly_summary['present'] += 1
+        elif key == 'absent':
+            monthly_summary['absent'] += 1
+        else:
+            monthly_summary['unmarked'] += 1
+
+    session_row = Sessions.query.filter_by(id=current_session).first()
+    session_start = session_row.start_date if session_row and session_row.start_date else start_date
+    session_end = session_row.end_date if session_row and session_row.end_date else end_date
+    if session_start > session_end:
+        session_start, session_end = start_date, end_date
+
+    session_attendance_rows = (
+        Attendance.query
+        .filter(
+            Attendance.student_session_id == student_session_id,
+            Attendance.date >= session_start,
+            Attendance.date <= session_end
+        )
+        .all()
+    )
+
+    session_holiday_rows = (
+        AttendanceHolidays.query
+        .filter(
+            AttendanceHolidays.school_id == school_id,
+            AttendanceHolidays.session_id == current_session,
+            AttendanceHolidays.date >= session_start,
+            AttendanceHolidays.date <= session_end,
+            or_(
+                AttendanceHolidays.class_id == student_record.class_id,
+                AttendanceHolidays.class_id.is_(None)
+            )
+        )
+        .all()
+    )
+
+    session_attendance_map = {row.date: row.status for row in session_attendance_rows}
+    session_holiday_dates = {row.date for row in session_holiday_rows}
+
+    total_session_days = (session_end - session_start).days + 1
+    session_summary = {
+        'present': 0,
+        'absent': 0,
+        'half_day': 0,
+        'leave': 0,
+        'holiday': 0,
+        'unmarked': 0,
+        'range': f"{session_start.strftime('%d %b %Y')} - {session_end.strftime('%d %b %Y')}"
+    }
+
+    for offset in range(total_session_days):
+        current_date = session_start + timedelta(days=offset)
+        if current_date in session_attendance_map:
+            status = session_attendance_map[current_date]
+        elif current_date.weekday() == 6 or current_date in session_holiday_dates:
+            status = 'HOLIDAY'
+        else:
+            status = 'UNMARKED'
+
+        key = status.lower()
+        if key == 'half_day':
+            session_summary['half_day'] += 1
+        elif key == 'unmarked':
+            session_summary['unmarked'] += 1
+        elif key == 'holiday':
+            session_summary['holiday'] += 1
+        elif key == 'leave':
+            session_summary['leave'] += 1
+        elif key == 'present':
+            session_summary['present'] += 1
+        elif key == 'absent':
+            session_summary['absent'] += 1
+        else:
+            session_summary['unmarked'] += 1
+
+    session_summary['present_percent'] = round((session_summary['present'] / total_session_days) * 100, 1) if total_session_days else 0
+
+    return jsonify({
+        'success': True,
+        'student_name': student_record.STUDENTS_NAME,
+        'class_name': student_record.CLASS,
+        'year': year,
+        'month': month,
+        'records': records,
+        'monthly_summary': monthly_summary,
+        'session_summary': session_summary
+    }), 200
 
 
 @get_attendance_data_api_bp.route('/api/get_absent_students', methods=["GET"])

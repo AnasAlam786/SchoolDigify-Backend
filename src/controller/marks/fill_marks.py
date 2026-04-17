@@ -156,6 +156,8 @@ def get_marks():
         .order_by(StudentSessions.ROLL)
         .all()
     )
+
+
     
     # Render only the partial template for the marks table
     html = render_template('marks_management/fill_marks_table.html', data=marks_data)

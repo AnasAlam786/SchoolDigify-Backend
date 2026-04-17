@@ -58,7 +58,7 @@ def get_result_api():
                                      class_id, student_ids=[student_id],
                                      extra_fields=extra_fields)
 
-    # print(student_marks_data)
+    print(student_marks_data)
 
     if not student_marks_data:
         return jsonify({"message": "No Data Found"}), 400

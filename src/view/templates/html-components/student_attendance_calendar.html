@@ -1,0 +1,544 @@
+﻿<style>
+    .student-attendance-modal {
+        width: min(100vw - 2rem, 1180px);
+        max-width: min(100vw - 2rem, 1180px);
+        max-height: calc(100vh - 2rem);
+        border-radius: 2rem;
+    }
+
+    .student-attendance-modal .calendar-grid {
+        min-height: 320px;
+        display: grid;
+        grid-template-columns: repeat(7, minmax(0, 1fr));
+        gap: 0.75rem;
+        overflow-x: visible;
+        overflow-y: visible;
+        padding-bottom: 0.35rem;
+    }
+
+    .student-attendance-modal .weekday-row {
+        display: grid;
+        grid-template-columns: repeat(7, minmax(0, 1fr));
+        gap: 0.75rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .student-attendance-modal .weekday-row .calendar-weekday {
+        color: #94a3b8;
+        font-size: 0.68rem;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        text-align: center;
+        font-weight: 600;
+    }
+
+    .student-attendance-modal .calendar-cell {
+        min-height: 88px;
+        border-radius: 1.25rem;
+        border: 1px solid rgba(148, 163, 184, 0.12);
+        background-color: rgba(15, 23, 42, 0.92);
+        padding: 0.85rem;
+        transition: transform 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        backdrop-filter: blur(4px);
+    }
+
+    .student-attendance-modal .calendar-cell:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 14px 40px rgba(15, 23, 42, 0.2);
+    }
+
+    .student-attendance-modal .calendar-cell.today {
+        border-color: rgba(99, 102, 241, 0.8);
+        box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.25);
+    }
+
+    .student-attendance-modal .calendar-cell .day-number {
+        font-weight: 700;
+        color: #f8fafc;
+        font-size: 1.1rem;
+    }
+
+    .student-attendance-modal .calendar-cell .status-chip {
+        display: inline-flex;
+        padding: 0.35rem 0.75rem;
+        border-radius: 999px;
+        font-size: 0.75rem;
+        letter-spacing: 0.01em;
+        line-height: 1.2;
+        font-weight: 700;
+        align-self: flex-start;
+        white-space: nowrap;
+    }
+
+    .student-attendance-modal .status-present { background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.25); }
+    .student-attendance-modal .status-absent { background: rgba(239, 68, 68, 0.14); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.28); }
+    .student-attendance-modal .status-half-day { background: rgba(245, 158, 11, 0.14); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.28); }
+    .student-attendance-modal .status-leave { background: rgba(14, 165, 233, 0.14); color: #0ea5e9; border: 1px solid rgba(14, 165, 233, 0.28); }
+    .student-attendance-modal .status-holiday { background: rgba(139, 92, 246, 0.14); color: #8b5cf6; border: 1px solid rgba(139, 92, 246, 0.28); }
+    .student-attendance-modal .status-unmarked { background: rgba(255, 255, 255, 0.05); color: #cbd5e1; border: 1px solid rgba(203, 213, 225, 0.12); }
+
+    .student-attendance-modal .student-attendance-summary {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 1.75rem;
+        padding: 1.25rem;
+    }
+
+    .student-attendance-modal .student-attendance-summary .summary-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        padding: 0.9rem 1rem;
+        border-radius: 1.25rem;
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        font-size: 0.95rem;
+    }
+
+    .student-attendance-modal .student-attendance-summary .summary-item span:last-child {
+        font-weight: 700;
+        font-size: 1.1rem;
+    }
+
+    .student-attendance-modal .student-attendance-legend {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.75rem;
+    }
+
+    .student-attendance-modal .student-attendance-legend .legend-chip {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 1rem 1.1rem;
+        border-radius: 1.25rem;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(255, 255, 255, 0.03);
+        font-size: 0.9rem;
+    }
+
+    .student-attendance-modal .student-attendance-legend .legend-chip span {
+        width: 0.9rem;
+        height: 0.9rem;
+        border-radius: 999px;
+        display: inline-flex;
+    }
+
+    /* ---------- Mobile: 7‑Column Grid, No Scroll, No Overflow ---------- */
+    @media (max-width: 768px) {
+        .student-attendance-modal {
+            width: calc(100vw - 1rem);
+            max-height: calc(100vh - 1rem);
+            border-radius: 1.5rem;
+        }
+
+        .student-attendance-modal .calendar-grid {
+            gap: 0.3rem;
+            min-height: auto;
+            overflow-x: visible !important;
+            padding-bottom: 0;
+        }
+
+        .student-attendance-modal .calendar-grid > * {
+            min-width: 0;
+        }
+
+        .student-attendance-modal .weekday-row {
+            gap: 0.3rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .student-attendance-modal .weekday-row .calendar-weekday {
+            font-size: 0.5rem;
+            letter-spacing: 0.05em;
+            min-width: 0;
+        }
+
+        .student-attendance-modal .calendar-cell {
+            min-height: 64px;
+            padding: 0.4rem 0.2rem;
+            border-radius: 0.7rem;
+            min-width: 0;
+            overflow: hidden;
+        }
+
+        .student-attendance-modal .calendar-cell .day-number {
+            font-size: 0.85rem;
+            line-height: 1.2;
+        }
+
+        .student-attendance-modal .calendar-cell .flex.items-center.justify-between .text-\[10px\] {
+            display: none !important;
+        }
+
+        .student-attendance-modal .calendar-cell .status-chip {
+            padding: 0.2rem 0.35rem;
+            font-size: 0.65rem;
+            white-space: nowrap;
+            border-radius: 999px;
+            margin-top: 0.25rem;
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: inline-block;
+            line-height: 1.4;
+        }
+
+        .student-attendance-modal .student-attendance-summary {
+            padding: 0.9rem;
+        }
+
+        .student-attendance-modal .student-attendance-summary .summary-item {
+            padding: 0.7rem 0.8rem;
+            font-size: 0.85rem;
+        }
+
+        .student-attendance-modal .student-attendance-summary .summary-item span:last-child {
+            font-size: 1rem;
+        }
+
+        .student-attendance-modal .student-attendance-legend {
+            grid-template-columns: 1fr;
+            gap: 0.5rem;
+        }
+
+        .student-attendance-modal .student-attendance-legend .legend-chip {
+            padding: 0.8rem 0.9rem;
+            font-size: 0.8rem;
+        }
+
+        #prevMonthBtn, #nextMonthBtn {
+            padding-left: 0.5rem;
+            padding-right: 0.5rem;
+            font-size: 0.85rem;
+        }
+
+        #studentAttendanceMonthLabel {
+            min-width: 130px;
+            font-size: 0.8rem;
+            padding: 0.5rem 0.5rem;
+        }
+    }
+
+    /* Extra small phones – single‑letter status chips */
+    @media (max-width: 520px) {
+        .student-attendance-modal .calendar-grid {
+            gap: 0.2rem;
+        }
+
+        .student-attendance-modal .weekday-row {
+            gap: 0.2rem;
+        }
+
+        .student-attendance-modal .weekday-row .calendar-weekday {
+            font-size: 0.45rem;
+        }
+
+        .student-attendance-modal .calendar-cell {
+            min-height: 52px;
+            padding: 0.25rem 0.15rem;
+            border-radius: 0.6rem;
+        }
+
+        .student-attendance-modal .calendar-cell .day-number {
+            font-size: 0.75rem;
+        }
+
+        .student-attendance-modal .calendar-cell .status-chip {
+            padding: 0.15rem 0.25rem;
+            font-size: 0.6rem;
+            min-width: 1.6rem;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: clip;
+        }
+    }
+
+    /* Hide scrollbars on desktop if grid overflows (rare) */
+    @media (max-width: 1024px) {
+        .student-attendance-modal .calendar-grid {
+            overflow-x: auto;
+            padding-bottom: 0.5rem;
+        }
+        .student-attendance-modal .calendar-grid::-webkit-scrollbar {
+            display: none;
+        }
+        .student-attendance-modal .calendar-grid {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    }
+</style>
+
+<div id="studentAttendanceModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" data-modal-close></div>
+    <div class="relative w-full student-attendance-modal mx-auto bg-[#0f172a] border border-white/10 rounded-[30px] shadow-2xl overflow-hidden flex flex-col max-h-[calc(100vh-2rem)]">
+        <div class="flex flex-col gap-4 p-5 border-b border-white/10 sm:flex-row sm:items-center sm:justify-between">
+            <div class="min-w-0">
+                <p id="studentAttendanceModalSubtitle" class="text-sm text-slate-400 mb-1">Class · Session attendance</p>
+                <h3 id="studentAttendanceModalTitle" class="text-2xl sm:text-3xl font-semibold tracking-tight text-white">Student Attendance</h3>
+            </div>
+            <div class="flex flex-wrap items-center gap-3">
+                <button id="prevMonthBtn" type="button" class="inline-flex items-center justify-center h-11 px-4 rounded-2xl bg-slate-800 text-slate-100 hover:bg-slate-700 transition shadow-lg shadow-black/20">
+                    <i class="fas fa-chevron-left mr-2"></i>Prev
+                </button>
+                <div class="inline-flex items-center justify-center min-w-[180px] rounded-2xl bg-slate-900 border border-white/10 px-4 py-3 text-sm font-medium text-slate-100 shadow-inner">
+                    <span id="studentAttendanceMonthLabel">Loading month...</span>
+                </div>
+                <button id="nextMonthBtn" type="button" class="inline-flex items-center justify-center h-11 px-4 rounded-2xl bg-slate-800 text-slate-100 hover:bg-slate-700 transition shadow-lg shadow-black/20">
+                    Next<i class="fas fa-chevron-right ml-2"></i>
+                </button>
+                <button id="closeStudentAttendanceModal" type="button" class="inline-flex items-center justify-center h-11 w-11 rounded-2xl bg-slate-900 text-slate-300 hover:text-white hover:bg-slate-800 transition shadow-lg shadow-black/20">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="grid gap-4 lg:grid-cols-[1fr_0.48fr] p-5 overflow-hidden flex-1 min-h-[420px]">
+            <div class="flex flex-col gap-4 overflow-hidden">
+                <div class="weekday-row">
+                    <div class="calendar-weekday">Sun</div>
+                    <div class="calendar-weekday">Mon</div>
+                    <div class="calendar-weekday">Tue</div>
+                    <div class="calendar-weekday">Wed</div>
+                    <div class="calendar-weekday">Thu</div>
+                    <div class="calendar-weekday">Fri</div>
+                    <div class="calendar-weekday">Sat</div>
+                </div>
+                <div id="studentAttendanceCalendarGrid" class="calendar-grid overflow-hidden"></div>
+            </div>
+
+            <aside class="bg-[#111827] border border-white/10 rounded-[28px] p-5 overflow-y-auto">
+                <div class="space-y-5">
+                    <div class="student-attendance-summary pb-4">
+                        <div class="flex items-center justify-between mb-4 gap-3">
+                            <div>
+                                <p class="text-sm text-slate-400">Session overview</p>
+                                <p id="studentAttendanceSessionRange" class="text-sm text-slate-200">Loading session dates...</p>
+                            </div>
+                            <div class="text-slate-400 text-xs">Total days</div>
+                        </div>
+                        <div class="grid gap-3 sm:grid-cols-2">
+                            <div class="summary-item"><span class="text-slate-400">Present</span><span id="studentAttendanceSessionPresentCount" class="text-emerald-400">0</span></div>
+                            <div class="summary-item"><span class="text-slate-400">Absent</span><span id="studentAttendanceSessionAbsentCount" class="text-red-400">0</span></div>
+                            <div class="summary-item"><span class="text-slate-400">Half Day</span><span id="studentAttendanceSessionHalfDayCount" class="text-amber-400">0</span></div>
+                            <div class="summary-item"><span class="text-slate-400">Holiday</span><span id="studentAttendanceSessionHolidayCount" class="text-violet-400">0</span></div>
+                            <div class="summary-item"><span class="text-slate-400">Leave</span><span id="studentAttendanceSessionLeaveCount" class="text-sky-400">0</span></div>
+                            <div class="summary-item"><span class="text-slate-400">Unmarked</span><span id="studentAttendanceSessionUnmarkedCount" class="text-slate-200">0</span></div>
+                        </div>
+                        <div class="mt-4 rounded-2xl bg-slate-900 border border-white/10 p-4">
+                            <p class="text-slate-400 text-sm">Session attendance</p>
+                            <p id="studentAttendanceSessionPercent" class="text-white text-xl font-semibold mt-2">0% Present</p>
+                        </div>
+                    </div>
+
+                    <div class="student-attendance-summary pb-4">
+                        <div class="flex items-center justify-between mb-4 gap-3">
+                            <div>
+                                <p class="text-sm text-slate-400">Current month</p>
+                                <p id="studentAttendanceMonthlyLabel" class="text-sm text-slate-200">Loading monthly totals...</p>
+                            </div>
+                            <div class="text-slate-400 text-xs">Summary</div>
+                        </div>
+                        <div class="grid gap-3 sm:grid-cols-2">
+                            <div class="summary-item"><span class="text-slate-400">Present</span><span id="studentAttendancePresentCount" class="text-emerald-400">0</span></div>
+                            <div class="summary-item"><span class="text-slate-400">Absent</span><span id="studentAttendanceAbsentCount" class="text-red-400">0</span></div>
+                            <div class="summary-item"><span class="text-slate-400">Half Day</span><span id="studentAttendanceHalfDayCount" class="text-amber-400">0</span></div>
+                            <div class="summary-item"><span class="text-slate-400">Holiday</span><span id="studentAttendanceHolidayCount" class="text-violet-400">0</span></div>
+                            <div class="summary-item"><span class="text-slate-400">Unmarked</span><span id="studentAttendanceUnmarkedCount" class="text-slate-200">0</span></div>
+                            <div class="summary-item"><span class="text-slate-400">Leave</span><span id="studentAttendanceLeaveCount" class="text-sky-400">0</span></div>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    const modal = document.getElementById('studentAttendanceModal');
+    const title = modal.querySelector('#studentAttendanceModalTitle');
+    const subtitle = modal.querySelector('#studentAttendanceModalSubtitle');
+    const monthLabel = modal.querySelector('#studentAttendanceMonthLabel');
+    const monthlyLabel = modal.querySelector('#studentAttendanceMonthlyLabel');
+    const calendarGrid = modal.querySelector('#studentAttendanceCalendarGrid');
+    const sessionRange = modal.querySelector('#studentAttendanceSessionRange');
+    const sessionPercent = modal.querySelector('#studentAttendanceSessionPercent');
+    const sessionCounts = {
+        present: modal.querySelector('#studentAttendanceSessionPresentCount'),
+        absent: modal.querySelector('#studentAttendanceSessionAbsentCount'),
+        halfDay: modal.querySelector('#studentAttendanceSessionHalfDayCount'),
+        holiday: modal.querySelector('#studentAttendanceSessionHolidayCount'),
+        leave: modal.querySelector('#studentAttendanceSessionLeaveCount'),
+        unmarked: modal.querySelector('#studentAttendanceSessionUnmarkedCount')
+    };
+    const monthCounts = {
+        present: modal.querySelector('#studentAttendancePresentCount'),
+        absent: modal.querySelector('#studentAttendanceAbsentCount'),
+        halfDay: modal.querySelector('#studentAttendanceHalfDayCount'),
+        holiday: modal.querySelector('#studentAttendanceHolidayCount'),
+        leave: modal.querySelector('#studentAttendanceLeaveCount'),
+        unmarked: modal.querySelector('#studentAttendanceUnmarkedCount')
+    };
+    const closeButton = modal.querySelector('#closeStudentAttendanceModal');
+    const prevButton = modal.querySelector('#prevMonthBtn');
+    const nextButton = modal.querySelector('#nextMonthBtn');
+    const overlay = modal.querySelector('[data-modal-close]');
+
+    const state = {
+        studentSessionId: null,
+        studentName: '',
+        className: '',
+        year: null,
+        month: null,
+        sessionSummary: null,
+        monthlySummary: null
+    };
+
+    function openModal(studentSessionId, studentName, className) {
+        state.studentSessionId = studentSessionId;
+        state.studentName = studentName;
+        state.className = className;
+        const today = new Date();
+        state.year = today.getFullYear();
+        state.month = today.getMonth() + 1;
+
+        title.textContent = studentName ? studentName : 'Student Attendance';
+        subtitle.textContent = `Class ${className} · Session attendance`;
+        renderMonthLabel();
+        loadMonth();
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal() {
+        modal.classList.add('hidden');
+        document.body.style.overflow = 'auto';
+    }
+
+    async function loadMonth() {
+        if (!state.studentSessionId || !state.year || !state.month) return;
+
+        calendarGrid.innerHTML = '<div class="col-span-7 py-20 text-center text-gray-400">Loading attendance...</div>';
+        const data = await window.APIManager.getStudentAttendanceMonth(state.studentSessionId, state.year, state.month);
+        if (!data) {
+            calendarGrid.innerHTML = '<div class="col-span-7 py-20 text-center text-red-400">Unable to load monthly attendance.</div>';
+            return;
+        }
+
+        state.year = data.year;
+        state.month = data.month;
+        state.monthlySummary = data.monthly_summary || {};
+        state.sessionSummary = data.session_summary || {};
+
+        renderMonthLabel();
+        renderCalendar(data.records || []);
+        renderSessionSummary(state.sessionSummary);
+        renderMonthlySummary(state.monthlySummary);
+    }
+
+    function renderMonthLabel() {
+        monthLabel.textContent = `${monthNames[state.month - 1]} ${state.year}`;
+        monthlyLabel.textContent = `${monthNames[state.month - 1]} ${state.year}`;
+    }
+
+    function renderCalendar(records) {
+        const today = new Date();
+        const isCurrentMonth = state.year === today.getFullYear() && state.month === today.getMonth() + 1;
+        const currentDay = today.getDate();
+        const firstDay = new Date(state.year, state.month - 1, 1).getDay();
+        const daysInMonth = new Date(state.year, state.month, 0).getDate();
+        const recordMap = records.reduce((map, item) => {
+            map[item.date] = item.status;
+            return map;
+        }, {});
+
+        // Determine if we're on a very small screen to use abbreviations
+        const isSmallScreen = window.matchMedia('(max-width: 520px)').matches;
+
+        const cells = [];
+        for (let i = 0; i < firstDay; i += 1) {
+            cells.push('<div class="calendar-cell bg-transparent border-transparent shadow-none"></div>');
+        }
+
+        for (let day = 1; day <= daysInMonth; day += 1) {
+            const dateKey = `${state.year}-${String(state.month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            const status = recordMap[dateKey] || 'UNMARKED';
+            const isToday = isCurrentMonth && day === currentDay;
+            const statusInfo = getStatusInfo(status);
+
+            // Use abbreviation on small screens for cleaner chips
+            const chipText = isSmallScreen ? statusInfo.abbr : statusInfo.label;
+
+            cells.push(`
+                <div class="calendar-cell ${isToday ? 'today' : ''}">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="day-number text-sm text-white">${day}</span>
+                        <span class="text-[10px] uppercase tracking-[0.2em] text-gray-500">${statusInfo.abbr}</span>
+                    </div>
+                    <div class="status-chip ${statusInfo.className}">${chipText}</div>
+                </div>
+            `);
+        }
+
+        calendarGrid.innerHTML = cells.join('');
+    }
+
+    function renderSessionSummary(summary) {
+        sessionRange.textContent = summary.range || 'Session overview';
+        sessionCounts.present.textContent = summary.present || 0;
+        sessionCounts.absent.textContent = summary.absent || 0;
+        sessionCounts.halfDay.textContent = summary.half_day || 0;
+        sessionCounts.holiday.textContent = summary.holiday || 0;
+        sessionCounts.leave.textContent = summary.leave || 0;
+        sessionCounts.unmarked.textContent = summary.unmarked || 0;
+        sessionPercent.textContent = `${summary.present_percent || 0}% Present`;
+    }
+
+    function renderMonthlySummary(summary) {
+        monthCounts.present.textContent = summary.present || 0;
+        monthCounts.absent.textContent = summary.absent || 0;
+        monthCounts.halfDay.textContent = summary.half_day || 0;
+        monthCounts.holiday.textContent = summary.holiday || 0;
+        monthCounts.leave.textContent = summary.leave || 0;
+        monthCounts.unmarked.textContent = summary.unmarked || 0;
+    }
+
+    function getStatusInfo(status) {
+        switch ((status || '').toUpperCase()) {
+            case 'PRESENT': return { label: 'Present', abbr: 'P', className: 'status-present' };
+            case 'ABSENT': return { label: 'Absent', abbr: 'A', className: 'status-absent' };
+            case 'HALF_DAY': return { label: 'Half Day', abbr: 'H', className: 'status-half-day' };
+            case 'LEAVE': return { label: 'Leave', abbr: 'L', className: 'status-leave' };
+            case 'HOLIDAY': return { label: 'Holiday', abbr: 'O', className: 'status-holiday' };
+            default: return { label: 'Unmarked', abbr: '—', className: 'status-unmarked' };
+        }
+    }
+
+    function changeMonth(offset) {
+        const date = new Date(state.year, state.month - 1 + offset, 1);
+        state.year = date.getFullYear();
+        state.month = date.getMonth() + 1;
+        renderMonthLabel();
+        loadMonth();
+    }
+
+    closeButton.addEventListener('click', closeModal);
+    overlay.addEventListener('click', (event) => {
+        if (event.target === overlay) closeModal();
+    });
+    prevButton.addEventListener('click', () => changeMonth(-1));
+    nextButton.addEventListener('click', () => changeMonth(1));
+
+    window.StudentCalendarManager = {
+        openModal
+    };
+})();
+</script>

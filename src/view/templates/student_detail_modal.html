@@ -123,7 +123,6 @@
   }
 
   function closeStudentModal() {
-    if (isLoading) return;
     
     const modal = document.getElementById('studentDetailsModal');
     const container = document.getElementById('modalContainer');
@@ -155,9 +154,7 @@
     admissionImageBlob = null; // Reset for existing students
     
     isLoading = true;
-    
-    isLoading = true;
-    
+        
     const skeleton = document.getElementById('studentModalSkeleton');
     const content = document.getElementById('studentModalContent');
     
