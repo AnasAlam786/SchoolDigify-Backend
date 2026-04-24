@@ -78,6 +78,13 @@ def edit_student(student_id):
 
     student_db, student_session, rte_info = student_query
 
+    # Check if student has previous sessions (sessions other than current)
+    past_sessions_count = StudentSessions.query.filter(
+        StudentSessions.student_id == student_id,
+        StudentSessions.session_id != current_session
+    ).count()
+    hasOtherSessions = past_sessions_count > 0
+
     # Merge student data
     student_data = {}
     
@@ -112,5 +119,6 @@ def edit_student(student_id):
         classes=classes_dict,
         admission_sessions=admission_sessions,
         current_session=current_session,
+        has_other_sessions=hasOtherSessions,
         **get_enum_options()
     )

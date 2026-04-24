@@ -581,15 +581,15 @@
                 </div>
             </div>
 
-            <!-- Student Status (New/Old) - Only for add mode -->
-            {% if mode == 'add' %}
-            <div class="mb-6 sm:mb-8">
+            <!-- Student Status (New/Old) - Only for add mode or edit mode without previous sessions -->
+            {% if mode == 'add' or (mode == 'edit' and not has_other_sessions) %}
+            <div class="mb-4">
                 <label class="block text-sm font-medium text-gray-300 mb-4 required">
                     Student Status
                 </label>
                 <div class="flex flex-col sm:flex-row gap-3 sm:gap-4">
                     <label class="radio-card cursor-pointer flex-1">
-                        <input type="radio" name="student_status" value="new" class="peer hidden" checked>
+                        <input type="radio" name="student_status" value="new" class="peer hidden" {% if mode == 'add' or not has_other_sessions %}checked{% endif %}>
                         <div
                             class="peer-checked:bg-gradient-to-r peer-checked:from-blue-600/20 peer-checked:to-cyan-600/20 peer-checked:border-blue-500/50 peer-checked:text-blue-400 p-4 sm:p-5 rounded-xl border-2 border-gray-800 hover:border-gray-700 transition-all duration-300">
                             <div
@@ -626,6 +626,32 @@
                     </label>
                 </div>
             </div>
+
+            <!-- Info Text -->
+            <div class="mb-4 p-4 rounded-xl border border-gray-800 bg-gradient-to-r from-gray-900/40 to-gray-900/10 text-xs sm:text-sm text-gray-300 leading-relaxed">
+
+                <div>
+                    <span class="font-semibold text-blue-400">New Admission:</span>
+                    <ul class="list-disc ml-5 space-y-1 text-gray-400">
+                        <li>For students joining your school for the first time.</li>
+                        <li><span class="text-white">Admission Class</span> and <span class="text-white">Current Class</span> will be the same.</li>
+                        <li><span class="text-white">Admission Session</span> will be set to the current session automatically.</li>
+                        <li>You cannot change the admission session.</li>
+                    </ul>
+                </div>
+
+                <div>
+                    <span class="mt-2 font-semibold text-emerald-400">Continuing Student:</span>
+                    <ul class="list-disc ml-5 space-y-1 text-gray-400">
+                        <li>For students who studied in previous years and are being added now.</li>
+                        <li>You can select <span class="text-white">Admission Session</span>, <span class="text-white">Admission Class</span>, and <span class="text-white">Current Class</span> separately.</li>
+                    </ul>
+                </div>
+
+            </div>
+            {% else %}
+            <!-- Hidden student_status field for students with previous sessions (always "old") -->
+            <input type="hidden" name="student_status" value="old">
             {% endif %}
 
             <!-- Academic Form Grid -->
@@ -1733,6 +1759,7 @@
 <script>
     window.MODE = '{{ mode }}';
     window.STUDENT_ID = '{{ student.id if student else "" }}';
+    window.has_other_sessions = {{ 'true' if has_other_sessions else 'false' }};
 </script>
 
 <script src="{{ url_for('static', filename='watsappMessage.js') }}"></script>

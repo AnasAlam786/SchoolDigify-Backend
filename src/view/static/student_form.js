@@ -9,6 +9,7 @@ class StudentFormManager {
     this.btnText = document.getElementById('btn-text');
     this.mode = window.MODE;
     this.studentId = window.STUDENT_ID;
+    this.hasOtherSessions = window.has_other_sessions;
   }
 
   init() {
@@ -41,6 +42,90 @@ class StudentFormManager {
   initDateMasks() {
     this.attachDateMask('#DOB', 'DD-MM-YYYY');
     this.attachDateMask('#ADMISSION_DATE', 'DD-MM-YYYY');
+    this.initAgeCalculation();
+  }
+
+  initAgeCalculation() {
+    const dobEl = document.querySelector('#DOB');
+    if (!dobEl) return;
+
+    let ageDisplay = dobEl.parentNode.querySelector('.age-display');
+    if (!ageDisplay) {
+      ageDisplay = document.createElement('div');
+      ageDisplay.className = 'age-display text-sm text-gray-400 mt-1';
+      dobEl.parentNode.insertBefore(ageDisplay, dobEl.nextSibling);
+    }
+
+    const updateDisplays = () => {
+      const value = dobEl.value;
+      if (value.length === 10 && /^\d{2}-\d{2}-\d{4}$/.test(value)) {
+        const age = this.calculateAge(value);
+        ageDisplay.textContent = `Age: ${age} years`;
+        this.updateClassSuggestion(age);
+      } else {
+        ageDisplay.textContent = '';
+        this.updateClassSuggestion(null);
+      }
+    };
+
+    dobEl.addEventListener('input', updateDisplays);
+
+    // Check initial value
+    if (dobEl.value) {
+      updateDisplays();
+    }
+  }
+
+  calculateAge(dobString) {
+    const [day, month, year] = dobString.split('-').map(Number);
+    const birthDate = new Date(year, month - 1, day);
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    return age;
+  }
+
+  updateClassSuggestion(age) {
+    const classEl = document.getElementById('CLASS');
+    if (!classEl) return;
+
+    let suggestionEl = classEl.parentNode.querySelector('.class-suggestion');
+    if (!suggestionEl) {
+      suggestionEl = document.createElement('div');
+      suggestionEl.className = 'class-suggestion text-sm text-blue-400 mt-1';
+      classEl.parentNode.insertBefore(suggestionEl, classEl.nextSibling);
+    }
+
+    if (age !== null) {
+      const suggestedClass = this.getSuggestedClass(age);
+      suggestionEl.textContent = `Suggested class: ${suggestedClass}`;
+    } else {
+      suggestionEl.textContent = '';
+    }
+  }
+
+  getSuggestedClass(age) {
+    if (age === 3) return 'Nursery or Pre-Nursery';
+    if (age === 4) return 'Nursery';
+    if (age === 5) return 'LKG';
+    if (age === 6) return 'UKG';
+    if (age === 7) return '1st';
+    if (age === 8) return '2nd';
+    if (age === 9) return '3rd';
+    if (age === 10) return '4th';
+    if (age === 11) return '5th';
+    if (age === 12) return '6th';
+    if (age === 13) return '7th';
+    if (age === 14) return '8th';
+    if (age === 15) return '9th';
+    if (age === 16) return '10th';
+    if (age === 17) return '11th';
+    if (age > 17) return 'Above 12th';
+    if (age < 3) return 'Too young for admission';
+    return 'Age not suitable';
   }
 
   initRteToggle() {
@@ -54,14 +139,14 @@ class StudentFormManager {
   }
 
   initClassRollLogic() {
-    if (this.mode === 'add') {
-      this.setupAddStudentLogic();
+    if (this.mode === 'add' || !this.hasOtherSessions) {
+      this.setupNewStudentLogic();
     } else {
-      this.setupEditStudentLogic();
+      this.setupOldStudentLogic();
     }
   }
 
-  setupAddStudentLogic() {
+  setupNewStudentLogic() {
     const classSelect = document.getElementById('CLASS');
     const studentStatusRadios = document.querySelectorAll('input[name="student_status"]');
     const checkedStatusRadio = document.querySelector('input[name="student_status"]:checked');
@@ -138,19 +223,23 @@ class StudentFormManager {
     this.updateRollForClass(classSelect.value);
   };
 
-  setupEditStudentLogic() {
+  setupOldStudentLogic() {
     const classSelect = document.getElementById('CLASS');
     const admissionSessionSelect = document.getElementById('admission_session_id');
     const admissionClassSelect = document.getElementById('Admission_Class');
 
     // Disable in edit mode (authoritative)
     if (classSelect) classSelect.disabled = true;
-    if (admissionSessionSelect) admissionSessionSelect.disabled = true;
+    const msg = document.createElement("p");
+    msg.className = "text-xs text-red-400";
+    msg.textContent = "You can change the class from Promotions page.";
+    classSelect.parentNode.insertBefore(msg, classSelect.nextSibling);
+    // if (admissionSessionSelect) admissionSessionSelect.disabled = true;
 
-    // Roll logic (kept for safety / future reuse)
-    classSelect?.addEventListener('change', () => {
-      this.updateRollForClass(classSelect.value);
-    });
+    // // Roll logic (kept for safety / future reuse)
+    // classSelect?.addEventListener('change', () => {
+    //   this.updateRollForClass(classSelect.value);
+    // });
 
     // Optional UX clarity
     if (admissionClassSelect?.disabled) {

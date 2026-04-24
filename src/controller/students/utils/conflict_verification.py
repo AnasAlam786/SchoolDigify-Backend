@@ -29,8 +29,6 @@ def verify_conflicts(verified_data, mode='add', student_id=None):
     if error:
         return [{"message": error}]
 
-    print(mode, values.get("student_status"))
-
     # Validate class order (only for old students in add mode, or always in update)
     if mode == 'add':
         student_status = values.get("student_status")
@@ -70,13 +68,60 @@ def verify_conflicts(verified_data, mode='add', student_id=None):
             StudentSessions.session_id != session_id
         ).first()
         
+        student_status = values.get("student_status")
+        
         if past_records:
-            # Prevent changes to Admission_Class if past records exist
-            original_admission_class = student.Admission_Class
-            new_admission_class = values.get("Admission_Class")
-            if new_admission_class is not None and str(original_admission_class) != str(new_admission_class):
-                final_error = [{'field': 'Admission_Class', 'message': "Cannot modify Admission Class: Student has past academic records."}]
+            # Student has past academic records - they must be "old"
+            if student_status == "new":
+                final_error = [{'field': 'student_status', 'message': "Cannot mark as new: Student has academic records in other sessions. Please select 'old'."}]
                 return final_error
+            
+            # Prevent changes to current class if past records exist
+            new_current_class = values.get("CLASS")
+            original_current_class = (
+                StudentSessions.query
+                .with_entities(StudentSessions.class_id)
+                .filter_by(student_id=student_id, session_id=session_id)
+                .scalar()
+            )
+            if new_current_class is not None and str(original_current_class) != str(new_current_class):
+                final_error = [{'field': 'CLASS', 'message': "Cannot modify Current Class: Student has past academic records."}]
+                return final_error
+            
+            # For old students, validate class order
+            try:
+                adm_class = int(values.get("Admission_Class", student.Admission_Class or ""))
+                cur_class = int(values.get("CLASS", ""))
+            except ValueError:
+                return [{'message': "Invalid class selections."}]
+            error = StudentService.validate_class_order(adm_class, cur_class)
+            if error:
+                final_error = [{'field': 'Admission_Class', 'message': error}, {'field': 'CLASS', 'message': error}]
+                return final_error
+        
+        else:
+            # No past records - student can be marked as new
+            if student_status == "new":
+                # For new students, admission class should be same as current class
+                try:
+                    adm_class = int(values.get("Admission_Class", ""))
+                    cur_class = int(values.get("CLASS", ""))
+                    if adm_class != cur_class:
+                        final_error = [{'field': 'Admission_Class', 'message': "For new students, Admission Class must be same as Current Class."}]
+                        return final_error
+                except ValueError:
+                    return [{'message': "Invalid class selections."}]
+            elif student_status == "old":
+                # For old students, validate class order
+                try:
+                    adm_class = int(values.get("Admission_Class", student.Admission_Class or ""))
+                    cur_class = int(values.get("CLASS", ""))
+                except ValueError:
+                    return [{'message': "Invalid class selections."}]
+                error = StudentService.validate_class_order(adm_class, cur_class)
+                if error:
+                    final_error = [{'field': 'Admission_Class', 'message': error}, {'field': 'CLASS', 'message': error}]
+                    return final_error
 
             # Prevent changes to admission_session_id if past records exist
             original_session_id = student.admission_session_id

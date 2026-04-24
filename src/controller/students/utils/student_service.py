@@ -263,6 +263,17 @@ class StudentService:
 
         data = {item["field"]: item["value"] for item in verified_data}
 
+        # Handle student_status to set admission_session_id appropriately
+        student_status = data.get('student_status')
+        if student_status == 'new':
+            # New student - set admission_session_id to current session
+            data['admission_session_id'] = session_id
+        elif student_status == 'old':
+            # Old student - keep existing admission_session_id (don't override)
+            # Remove it from data so it doesn't get updated
+            if 'admission_session_id' in data:
+                del data['admission_session_id']
+
         studentsdb_updates = {k: v for k, v in data.items() if k in StudentsDB.__table__.columns}
         sessions_updates = {k: v for k, v in data.items() if k in StudentSessions.__table__.columns}
         rte_updates = {k: v for k, v in data.items() if k in RTEInfo.__table__.columns}

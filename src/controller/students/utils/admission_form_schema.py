@@ -115,7 +115,7 @@ class AdmissionFormModel(GetVerifiedData):
     bank_name: Optional[str] = Field(None)
     bank_branch: Optional[str] = Field(None)
     account_holder: Optional[str] = Field(None)
-    registration_no: Optional[constr(min_length=6, max_length=6)] = Field(None) #exact 6 characters
+    registration_no: Optional[constr(min_length=3, max_length=8)] = Field(None) #exact 6 characters
 
     @field_validator("ifsc", mode="after")
     def normalize_ifsc(cls, v):
