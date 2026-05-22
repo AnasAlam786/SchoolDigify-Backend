@@ -96,6 +96,7 @@ def admission():
         default_admission_no=new_adm,
         default_sr=new_sr,
         default_admission_date=current_date,
+        is_admitted_new=True,  # New students are admitted as new by default
         **get_enum_options()
     )
 

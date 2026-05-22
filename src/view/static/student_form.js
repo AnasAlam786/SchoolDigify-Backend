@@ -10,10 +10,10 @@ class StudentFormManager {
     this.mode = window.MODE;
     this.studentId = window.STUDENT_ID;
     this.hasOtherSessions = window.has_other_sessions;
+    this.originalAcademicValues = null;
   }
 
   init() {
-    // document.getElementById('successModal').remove();
     this.initImageUploader();
     this.initFormBehaviors();
     this.initEventListeners();
@@ -128,6 +128,18 @@ class StudentFormManager {
     return 'Age not suitable';
   }
 
+  showRollHint(gappedRolls, nextRoll) {
+    let rollHint = document.getElementById('rollHint');
+    if (!rollHint) {
+      rollHint = document.createElement('div');
+      rollHint.id = 'rollHint';
+      rollHint.className = 'text-sm text-gray-400 mt-1';
+      document.getElementById('ROLL').parentNode.insertBefore(rollHint, document.getElementById('ROLL').nextSibling);
+    }
+    const allowedRolls = [...gappedRolls, nextRoll].join(', ');
+    rollHint.textContent = `Available rolls: ${allowedRolls}`;
+  }
+
   initRteToggle() {
     const rteCheckbox = document.getElementById('is_RTE');
     const rteFields = document.getElementById('rteFields');
@@ -148,8 +160,18 @@ class StudentFormManager {
 
   setupNewStudentLogic() {
     const classSelect = document.getElementById('CLASS');
+    const admissionSessionSelect = document.getElementById('admission_session_id');
+    const admissionClassSelect = document.getElementById('Admission_Class');
+    const rollInput = document.getElementById('ROLL');
     const studentStatusRadios = document.querySelectorAll('input[name="student_status"]');
     const checkedStatusRadio = document.querySelector('input[name="student_status"]:checked');
+
+    this.originalAcademicValues = {
+      admissionSession: admissionSessionSelect?.dataset.originalSession || admissionSessionSelect?.value || '',
+      admissionClass: admissionClassSelect?.dataset.originalAdmissionClass || admissionClassSelect?.value || '',
+      currentClass: classSelect?.dataset.originalCurrentClass || classSelect?.value || '',
+      roll: rollInput?.dataset.originalRoll || rollInput?.value || ''
+    };
 
     // Status change
     studentStatusRadios.forEach(radio => {
@@ -165,63 +187,12 @@ class StudentFormManager {
       });
     }
 
-    // Initialize
-    if (checkedStatusRadio?.value === 'new') this.handleStudentStatusChange('new');
-  }
-
-  handleStudentStatusChange(status) {
-    const admissionClassSelect = document.getElementById('Admission_Class');
-    const classSelect = document.getElementById('CLASS');
-    const admissionSessionSelect = document.getElementById('admission_session_id');
-
-    if (status === 'new') {
-
-
-      classSelect.value = admissionClassSelect.value;
-
-      // Admission session = current session (server provided)
-      const currentSession = admissionSessionSelect.dataset.currentSession;
-      if (currentSession) {
-        admissionSessionSelect.value = currentSession;
-      }
-
-      classSelect.disabled = true;
-      admissionSessionSelect.disabled = true;
-
-      admissionClassSelect?.removeEventListener(
-        'change',
-        this.handleAdmissionClassChange
-      );
-      admissionClassSelect?.addEventListener(
-        'change',
-        this.handleAdmissionClassChange
-      );
-
-      // Admission class = current class
-      if (admissionClassSelect) {
-        classSelect.value = admissionClassSelect.value;
-        this.updateRollForClass(classSelect.value);
-      }
-
-    } else {
-      classSelect.disabled = false;
-      admissionSessionSelect.disabled = false;
-
-      // Detach mirroring logic
-      admissionClassSelect?.removeEventListener(
-        'change',
-        this.handleAdmissionClassChange
-      );
+    // Initialize UI state based on current selection
+    if (checkedStatusRadio) {
+      this.handleStudentStatusChange(checkedStatusRadio.value);
     }
   }
-
-  handleAdmissionClassChange = () => {
-    const admissionClassSelect = document.getElementById('Admission_Class');
-    const classSelect = document.getElementById('CLASS');
-
-    classSelect.value = admissionClassSelect.value;
-    this.updateRollForClass(classSelect.value);
-  };
+  
 
   setupOldStudentLogic() {
     const classSelect = document.getElementById('CLASS');
@@ -238,7 +209,6 @@ class StudentFormManager {
 
     // // Roll logic (kept for safety / future reuse)
     // classSelect?.addEventListener('change', () => {
-    //   this.updateRollForClass(classSelect.value);
     // });
 
     // Optional UX clarity
@@ -251,8 +221,76 @@ class StudentFormManager {
     }
   }
 
+
+  handleStudentStatusChange(status) {
+    const admissionClassSelect = document.getElementById('Admission_Class');
+    const classSelect = document.getElementById('CLASS');
+    const admissionSessionSelect = document.getElementById('admission_session_id');
+    const rollInput = document.getElementById('ROLL');
+
+    this.showRollHint([], ''); // Clear previous hints
+
+    if (status === 'new') {
+      const currentSession = admissionSessionSelect?.dataset.currentSession;
+      if (currentSession) {
+        admissionSessionSelect.value = currentSession;
+      }
+      if (admissionClassSelect) {
+        classSelect.value = admissionClassSelect.value;
+      }
+
+      classSelect.disabled = true;
+      admissionSessionSelect.disabled = true;
+
+      admissionClassSelect?.removeEventListener(
+        'change',
+        this.handleAdmissionClassChange
+      );
+      admissionClassSelect?.addEventListener(
+        'change',
+        this.handleAdmissionClassChange
+      );
+
+      if (classSelect.value) {
+        this.updateRollForClass(classSelect.value);
+      }
+    } else {
+      classSelect.disabled = false;
+      admissionSessionSelect.disabled = false;
+      admissionClassSelect?.removeEventListener(
+        'change',
+        this.handleAdmissionClassChange
+      );
+
+      if (this.originalAcademicValues) {
+        if (admissionSessionSelect && this.originalAcademicValues.admissionSession) {
+          admissionSessionSelect.value = this.originalAcademicValues.admissionSession;
+        }
+        if (admissionClassSelect && this.originalAcademicValues.admissionClass) {
+          admissionClassSelect.value = this.originalAcademicValues.admissionClass;
+        }
+        if (classSelect && this.originalAcademicValues.currentClass) {
+          classSelect.value = this.originalAcademicValues.currentClass;
+        }
+        if (rollInput && this.originalAcademicValues.roll) {
+          rollInput.value = this.originalAcademicValues.roll;
+        }
+      }
+    }
+  }
+
+  handleAdmissionClassChange = () => {
+    const admissionClassSelect = document.getElementById('Admission_Class');
+    const classSelect = document.getElementById('CLASS');
+
+    classSelect.value = admissionClassSelect.value;
+    this.updateRollForClass(classSelect.value);
+  };
+
+
   async updateRollForClass(classId) {
     const rollInput = document.getElementById('ROLL');
+    
     if (!classId || !rollInput) return;
 
     try {
@@ -273,17 +311,7 @@ class StudentFormManager {
     }
   }
 
-  showRollHint(gappedRolls, nextRoll) {
-    let rollHint = document.getElementById('rollHint');
-    if (!rollHint) {
-      rollHint = document.createElement('div');
-      rollHint.id = 'rollHint';
-      rollHint.className = 'text-sm text-gray-400 mt-1';
-      document.getElementById('ROLL').parentNode.insertBefore(rollHint, document.getElementById('ROLL').nextSibling);
-    }
-    const allowedRolls = [...gappedRolls, nextRoll].join(', ');
-    rollHint.textContent = `Available rolls: ${allowedRolls}`;
-  }
+
 
   initEventListeners() {
     this.submitBtn.addEventListener('click', (e) => this.handleSubmit(e));

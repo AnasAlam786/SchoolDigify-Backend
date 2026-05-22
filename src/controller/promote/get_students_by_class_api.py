@@ -1,12 +1,13 @@
 # src/controller/prv_year_students.py
 
 from flask import session, request, Blueprint, jsonify
-from sqlalchemy import select
+from sqlalchemy import select, and_
 from sqlalchemy.orm import aliased
 
 from src.model import StudentsDB
 from src.model import StudentSessions
 from src.model import ClassData
+from src.model import TCRecords
 
 from src import db
 
@@ -28,6 +29,7 @@ def get_students_by_class():
 
     PromotedSession = aliased(StudentSessions)
     NextClassData = aliased(ClassData)
+    TCRecord = aliased(TCRecords)
     promoted_subq = (
         select(
             PromotedSession.student_id,
@@ -51,7 +53,7 @@ def get_students_by_class():
         StudentsDB.IMAGE,
         StudentsDB.GENDER,
         StudentsDB.FATHERS_NAME,
-        StudentsDB.PHONE,
+        StudentsDB.PEN,
         StudentsDB.ADMISSION_DATE,
         ClassData.CLASS.label("previous_class"),
         ClassData.is_terminal.label("current_class_is_terminal"),
@@ -59,9 +61,10 @@ def get_students_by_class():
         StudentSessions.ROLL.label("previous_roll"),
         StudentSessions.class_id,
         StudentSessions.status.label("previous_status"),
-        StudentSessions.tc_number,
-        StudentSessions.tc_date,
-        StudentSessions.left_reason,
+        TCRecord.tc_no.label("tc_number"),
+        TCRecord.tc_date,
+        TCRecord.tc_reason.label("left_reason"),
+        TCRecord.status.label("tc_record_status"),
 
         promoted_subq.c.next_roll,
         promoted_subq.c.promoted_date,
@@ -80,6 +83,9 @@ def get_students_by_class():
     ).outerjoin(
         NextClassData,
         NextClassData.id == promoted_subq.c.next_class_id
+    ).outerjoin(
+        TCRecord,
+        TCRecord.student_session_id == StudentSessions.id
     ).filter(
         ClassData.id == class_id,
         StudentsDB.school_id == school_id,
@@ -92,7 +98,7 @@ def get_students_by_class():
     for row in rows:
         # Determine UI state
         state = "NOT_PROMOTED_NOT_TC"
-        if str(row.previous_status) == "tc":
+        if str(row.previous_status) == "tc" or str(row.tc_record_status) == "issued":
             state = "TC_ISSUED"
         elif row.promoted_session_id and str(row.promoted_status) != "left":
             state = "PROMOTED"
@@ -104,9 +110,9 @@ def get_students_by_class():
             "STUDENTS_NAME": row.STUDENTS_NAME,
             "ADMISSION_NO": row.ADMISSION_NO,
             "IMAGE": row.IMAGE,
-            "GENDER": row.GENDER,
             "FATHERS_NAME": row.FATHERS_NAME,
-            "PHONE": row.PHONE,
+            "PEN": row.PEN,
+            "GENDER": row.GENDER,
             "ADMISSION_DATE": row.ADMISSION_DATE.isoformat() if row.ADMISSION_DATE else None,
             "previous_class": row.previous_class,
             "previous_roll": row.previous_roll,
@@ -117,6 +123,10 @@ def get_students_by_class():
             "tc_number": row.tc_number,
             "tc_date": row.tc_date.isoformat() if row.tc_date else None,
             "left_reason": row.left_reason,
+            "has_cancelled_tc": True if row.tc_record_status == 'cancelled' else False,
+            "cancelled_tc_number": row.tc_number if row.tc_record_status == 'cancelled' else None,
+            "cancelled_tc_date": row.tc_date.isoformat() if row.tc_date and row.tc_record_status == 'cancelled' else None,
+            "cancelled_left_reason": row.left_reason if row.tc_record_status == 'cancelled' else None,
             "is_terminal": bool(row.current_class_is_terminal),
             "can_promote": not bool(row.current_class_is_terminal) and state == "NOT_PROMOTED_NOT_TC",
             "state": state,

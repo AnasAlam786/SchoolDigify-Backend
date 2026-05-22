@@ -5,6 +5,7 @@ from src.model import SchoolSession, StudentsDB
 from src.model import ClassData
 from src.model import Schools
 from src.model import StudentSessions
+from src.model import TCRecords
 from src import db
 
 from src.controller.auth.login_required import login_required
@@ -52,6 +53,11 @@ def reprint_tc():
         .all()
     )
 
+    # Fetch TC record for the requested student session
+    tc_record = TCRecords.query.filter_by(student_session_id=student_session_id, status='issued').order_by(TCRecords.id.desc()).first()
+    if not tc_record:
+        return jsonify({"message": "No issued TC record found for this student."}), 404
+
     # Bulk load student details
     student_data = (
         db.session.query(
@@ -69,9 +75,6 @@ def reprint_tc():
             StudentSessions.Height,
             StudentSessions.Weight,
             StudentSessions.status,
-            StudentSessions.tc_number,
-            func.to_char(StudentSessions.tc_date, 'Dy, DD Mon YYYY').label('tc_date'),
-            StudentSessions.left_reason,
             ClassData.CLASS.label('current_class'),
             ClassData.is_terminal,
 
@@ -126,7 +129,7 @@ def reprint_tc():
     )
     working_days = working_days if working_days else "N/A"
     
-    tc_number_text = f"TC-{student_session.tc_number}"  # Format TC number with leading zeros (e.g., TC-0001)
+    tc_number_text = f"TC-{tc_record.tc_no}"  # Format TC number with leading zeros (e.g., TC-0001)
 
     # Render HTML directly with existing TC data
     html = render_template(
@@ -135,16 +138,16 @@ def reprint_tc():
         working_days=working_days,
         general_conduct="Very Good",  # Default for reprint
         other_remarks="",  # Default for reprint
-        leaving_reason=student_session.left_reason or "TC Issued",
+        leaving_reason=tc_record.tc_reason or "TC Issued",
         promoted_class=promoted_class,
         tc_number=tc_number_text,
-        leaving_date=student_data.tc_date,
-        left_reason=student_session.left_reason
+        leaving_date=tc_record.tc_date.strftime('%A, %d %B %Y') if tc_record.tc_date else None,
+        left_reason=tc_record.tc_reason
     )
 
     return jsonify({
         'html': html,
-        'tc_number': student_session.tc_number,
-        'leaving_date': student_data.tc_date,
-        'left_reason': student_session.left_reason
+        'tc_number': tc_record.tc_no,
+        'leaving_date': tc_record.tc_date.isoformat() if tc_record.tc_date else None,
+        'left_reason': tc_record.tc_reason
     })

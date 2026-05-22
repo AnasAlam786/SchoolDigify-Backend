@@ -1,6 +1,7 @@
 from sqlalchemy import (
-    Column, Integer, BigInteger, Text, Date, Numeric, JSON,
+    Column, Integer, BigInteger, Text, Date, Numeric, JSON, Boolean,
     ForeignKey, TypeDecorator, UniqueConstraint)
+from sqlalchemy.orm import synonym
 
 from src import db
 from .enums import StudentsDBEnums
@@ -74,6 +75,9 @@ class StudentsDB(db.Model):
     PEN = Column(Text, unique=True, nullable=True)
 
     ADMISSION_SESSION = Column(Text, nullable=True)
+    admitted_as_new = Column(Boolean, nullable=False)
+    is_admitted_new = synonym('admitted_as_new')
+    created_at = Column(db.DateTime, server_default=db.func.now())
     ADDRESS = Column(Text, nullable=True)
     Caste = Column(Text, nullable=True)
 

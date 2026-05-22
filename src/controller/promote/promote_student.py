@@ -33,5 +33,61 @@ def promoteStudent():
         .order_by(ClassData.id.asc())
         .all()
     )
-    return render_template('promote_student.html', classes=classes)
+
+    try:
+        school_id = session["school_id"]
+        current_session = int(session["session_id"])
+        previous_session = current_session - 1
+    except (KeyError, ValueError):
+        previous_session = None
+        school_id = None
+
+    overall_all = 0
+    overall_promoted = 0
+    overall_tc = 0
+    overall_none = 0
+
+    if school_id is not None and previous_session is not None:
+        overall_all = (
+            db.session.query(func.count(StudentSessions.id))
+            .join(StudentsDB, StudentsDB.id == StudentSessions.student_id)
+            .filter(
+                StudentSessions.session_id == previous_session,
+                StudentsDB.school_id == school_id
+            )
+            .scalar() or 0
+        )
+
+        overall_tc = (
+            db.session.query(func.count(StudentSessions.id))
+            .join(StudentsDB, StudentsDB.id == StudentSessions.student_id)
+            .filter(
+                StudentSessions.session_id == previous_session,
+                StudentsDB.school_id == school_id,
+                StudentSessions.status == 'tc'
+            )
+            .scalar() or 0
+        )
+
+        overall_promoted = (
+            db.session.query(func.count(StudentSessions.id))
+            .join(StudentsDB, StudentsDB.id == StudentSessions.student_id)
+            .filter(
+                StudentSessions.session_id == current_session,
+                StudentsDB.school_id == school_id,
+                StudentSessions.status == 'promoted'
+            )
+            .scalar() or 0
+        )
+
+        overall_none = max(overall_all - overall_promoted - overall_tc, 0)
+
+    return render_template(
+        'promote_student/main.html',
+        classes=classes,
+        overall_all=overall_all,
+        overall_promoted=overall_promoted,
+        overall_tc=overall_tc,
+        overall_none=overall_none
+    )
 

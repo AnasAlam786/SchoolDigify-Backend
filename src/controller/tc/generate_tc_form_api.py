@@ -7,7 +7,7 @@ from src.model import SchoolSession, StudentsDB
 from src.model import ClassData
 from src.model import Schools
 from src.model import StudentSessions
-from src.model import ClassAccess
+from src.model import TCRecords
 from src import db
 
 from datetime import datetime
@@ -44,16 +44,20 @@ def generate_and_save_tc():
     if not student_session_id:
         return jsonify({"message": "Student session ID is not provided."}), 400
 
-    if not leaving_reason or not leaving_date or not general_conduct:
+    cancelled_tc_record = TCRecords.query.filter_by(student_session_id=student_session_id, status='cancelled').order_by(TCRecords.id.desc()).first()
+    restore_cancelled = bool(cancelled_tc_record)
+
+    if not restore_cancelled and (not leaving_reason or not leaving_date or not general_conduct):
         return jsonify({"message": "All fields are required."}), 400
 
     # ------------------------------
     # Leaving Date Validation
     # ------------------------------
-    try:
-        leaving_date_parsed = datetime.strptime(leaving_date, "%Y-%m-%d").date()
-    except Exception:
-        return jsonify({"message": "Invalid leaving date format. Use YYYY-MM-DD."}), 400
+    if not restore_cancelled:
+        try:
+            leaving_date_parsed = datetime.strptime(leaving_date, "%Y-%m-%d").date()
+        except Exception:
+            return jsonify({"message": "Invalid leaving date format. Use YYYY-MM-DD."}), 400
 
     # ------------------------------
     # Validate student_session
@@ -128,7 +132,6 @@ def generate_and_save_tc():
         min_order = float('inf')
 
         for c in classes:
-            print(c)
             display_order = c[2]
 
             if display_order is not None and current_display_order < display_order < min_order:
@@ -149,26 +152,46 @@ def generate_and_save_tc():
     tc_number_input = data.get('tc_number')
     tc_number = None
 
-    if not tc_number_input:
-        return jsonify({"message": "TC number must be a valid integer."}), 400
+    if restore_cancelled:
+        tc_number = int(cancelled_tc_record.tc_no) if cancelled_tc_record.tc_no is not None else None
+        leaving_date_parsed = cancelled_tc_record.tc_date
+        leaving_reason = cancelled_tc_record.tc_reason or leaving_reason
+    else:
+        if not tc_number_input:
+            return jsonify({"message": "TC number must be a valid integer."}), 400
 
-    try:
-        tc_number = int(tc_number_input)
-    except ValueError:
-        return jsonify({"message": "TC number must be a valid integer."}), 400
+        try:
+            tc_number = int(tc_number_input)
+        except ValueError:
+            return jsonify({"message": "TC number must be a valid integer."}), 400
 
-    if tc_number <= 0:
-        return jsonify({"message": "TC number must be greater than 0."}), 400
+        if tc_number <= 0:
+            return jsonify({"message": "TC number must be greater than 0."}), 400
 
-    duplicate = (
-        db.session.query(StudentSessions)
-        .join(StudentsDB, StudentsDB.id == StudentSessions.student_id)
-        .filter(StudentsDB.school_id == school_id, StudentSessions.tc_number == tc_number)
-        .first()
-    )
+        duplicate = (
+            db.session.query(TCRecords)
+            .join(StudentSessions, TCRecords.student_session_id == StudentSessions.id)
+            .join(StudentsDB, StudentsDB.id == StudentSessions.student_id)
+            .filter(StudentsDB.school_id == school_id, TCRecords.tc_no == tc_number)
+            .first()
+        )
 
-    if duplicate:
-        return jsonify({"message": "This TC number is already in use. Please choose another."}), 400
+        duplicate_session_number = (
+            db.session.query(StudentSessions)
+            .join(StudentsDB, StudentsDB.id == StudentSessions.student_id)
+            .filter(StudentsDB.school_id == school_id, StudentSessions.tc_number == tc_number)
+            .first()
+        )
+
+        if duplicate:
+            return jsonify({"message": "This TC number is already in use. Please choose another."}), 400
+        if duplicate_session_number:
+            return jsonify({"message": "This TC number is already in use. Please choose another."}), 400
+
+    # Prevent multiple issued TCRecords for the same student_session
+    existing_tc_record = TCRecords.query.filter_by(student_session_id=student_session_id, status='issued').first()
+    if existing_tc_record:
+        return jsonify({"message": "An issued TC already exists for this student session."}), 400
 
 
     # ------------------------------
@@ -186,6 +209,21 @@ def generate_and_save_tc():
     tc_row.left_reason = leaving_reason
     tc_row.tc_date = leaving_date_parsed
     tc_row.tc_number = tc_number
+
+    if restore_cancelled:
+        tc_record = cancelled_tc_record
+        tc_record.status = "issued"
+        tc_record.tc_date = leaving_date_parsed
+        tc_record.tc_reason = leaving_reason
+    else:
+        tc_record = TCRecords(
+            student_session_id=student_session_id,
+            tc_no=tc_number,
+            tc_date=leaving_date_parsed,
+            tc_reason=leaving_reason,
+            status="issued"
+        )
+        db.session.add(tc_record)
 
     # ------------------------------
     # Attempt Commit
@@ -209,7 +247,7 @@ def generate_and_save_tc():
     working_days = working_days if working_days else "N/A"
     
     tc_number_text = f"TC-{tc_number}"  # Format TC number with leading zeros (e.g., TC-0001)
-    leaving_date = tc_row.tc_date.strftime("%A, %d %B %Y")
+    leaving_date = tc_record.tc_date.strftime("%A, %d %B %Y")
 
 
     html = render_template(
@@ -222,27 +260,42 @@ def generate_and_save_tc():
         leaving_reason=leaving_reason,
         promoted_class=promoted_class,
         tc_number=tc_number_text,
-        tc_date=tc_row.tc_date.isoformat(),
-        left_reason=tc_row.left_reason
+        tc_date=tc_record.tc_date.isoformat(),
+        left_reason=tc_record.tc_reason
     )
 
     return jsonify({
         'html': html,
         'state': "TC_ISSUED",
         'tc_number': tc_number_text,
-        'tc_date': tc_row.tc_date.isoformat(),
-        'left_reason': tc_row.left_reason
+        'tc_date': tc_record.tc_date.isoformat(),
+        'left_reason': tc_record.tc_reason
     })
 
 
 def get_highest_tc_no():
     school_id = session.get('school_id')
     highest_tc = ( 
-        db.session.query(func.max(StudentSessions.tc_number))
+        db.session.query(func.max(TCRecords.tc_no))
+        .join(StudentSessions, TCRecords.student_session_id == StudentSessions.id)
         .join(StudentsDB, StudentsDB.id == StudentSessions.student_id)
         .filter(StudentsDB.school_id == school_id)
         .scalar() 
     )
+
+    highest_session_tc = (
+        db.session.query(func.max(StudentSessions.tc_number))
+        .join(StudentsDB, StudentsDB.id == StudentSessions.student_id)
+        .filter(StudentsDB.school_id == school_id)
+        .scalar()
+    )
+
+    if highest_session_tc is not None:
+        try:
+            highest_session_tc = int(highest_session_tc)
+        except (TypeError, ValueError):
+            highest_session_tc = 0
+        highest_tc = max(highest_tc or 0, highest_session_tc)
 
     if highest_tc is None:
         return 0

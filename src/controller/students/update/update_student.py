@@ -37,7 +37,6 @@ def get_enum_options():
 def edit_student(student_id):
     """Render the edit student form."""
     user_id = session["user_id"]
-    school_id = session["school_id"]
     current_session = session["session_id"]
 
     # Get classes accessible to user
@@ -63,8 +62,8 @@ def edit_student(student_id):
     student_query = (
         db.session.query(StudentsDB, StudentSessions, RTEInfo)
         .join(StudentSessions, StudentSessions.student_id == StudentsDB.id)
-        .join(AdmissionClass, StudentsDB.Admission_Class == AdmissionClass.id)
         .join(CurrentClass, StudentSessions.class_id == CurrentClass.id)
+        .outerjoin(AdmissionClass, StudentsDB.Admission_Class == AdmissionClass.id)
         .outerjoin(RTEInfo, RTEInfo.student_id == StudentsDB.id)
         .filter(
             StudentsDB.id == student_id,
@@ -78,12 +77,20 @@ def edit_student(student_id):
 
     student_db, student_session, rte_info = student_query
 
-    # Check if student has previous sessions (sessions other than current)
-    past_sessions_count = StudentSessions.query.filter(
-        StudentSessions.student_id == student_id,
-        StudentSessions.session_id != current_session
-    ).count()
-    hasOtherSessions = past_sessions_count > 0
+    # print(f"Student DB: {student_db.__dict__}")
+    # print(f"Student Session: {student_session.__dict__}")
+    # print(f"RTE Info: {rte_info.__dict__ if rte_info else 'No RTE Info'}")
+
+    if student_db.is_admitted_new:
+        # NEW student for current session
+        has_other_session_records = False
+    else:
+        # Check if student has previous sessions (sessions other than current)
+        past_sessions_count = StudentSessions.query.filter(
+            StudentSessions.student_id == student_id,
+            StudentSessions.session_id != current_session
+        ).count()
+        has_other_session_records = past_sessions_count > 0
 
     # Merge student data
     student_data = {}
@@ -119,6 +126,7 @@ def edit_student(student_id):
         classes=classes_dict,
         admission_sessions=admission_sessions,
         current_session=current_session,
-        has_other_sessions=hasOtherSessions,
+        has_other_sessions=has_other_session_records,
+        is_admitted_new = student_db.is_admitted_new,
         **get_enum_options()
     )

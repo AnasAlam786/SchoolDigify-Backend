@@ -31,11 +31,14 @@ from .FeeHeads import FeeHeads
 from .FeeSessionData import FeeSessionData
 from .FeeTransaction import FeeTransaction
 
+from .TCRecords import TCRecords
+
 # Optional: control what `from src.model import *` brings in
 __all__ = [
     "Schools",
     "Sessions",
     "SchoolSession",
+    "TCRecords",
     "ClassData",
     "ClassAccess",
     

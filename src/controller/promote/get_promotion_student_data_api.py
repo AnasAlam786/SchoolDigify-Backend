@@ -8,6 +8,7 @@ from src import db
 from src.model import StudentsDB
 from src.model import StudentSessions
 from src.model import ClassData
+from src.model import TCRecords
 
 import datetime
 
@@ -171,5 +172,26 @@ def get_student_promotion_data():
         "gapped_rolls": gapped_rolls,
         "next_roll": next_roll
     }
+
+    # If the student already has a cancelled TC for the previous session, expose it.
+    cancelled_tc = db.session.query(TCRecords).join(
+        StudentSessions,
+        TCRecords.student_session_id == StudentSessions.id
+    ).filter(
+        StudentSessions.student_id == student_id,
+        StudentSessions.session_id == previous_session_id,
+        TCRecords.status == 'cancelled'
+    ).order_by(TCRecords.id.desc()).first()
+
+    if cancelled_tc:
+        result["has_cancelled_tc"] = True
+        result["cancelled_tc_number"] = int(cancelled_tc.tc_no) if cancelled_tc.tc_no is not None else None
+        result["cancelled_tc_date"] = cancelled_tc.tc_date.isoformat() if cancelled_tc.tc_date else None
+        result["cancelled_tc_reason"] = cancelled_tc.tc_reason
+    else:
+        result["has_cancelled_tc"] = False
+        result["cancelled_tc_number"] = None
+        result["cancelled_tc_date"] = None
+        result["cancelled_tc_reason"] = None
 
     return jsonify(result), 200

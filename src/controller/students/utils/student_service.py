@@ -220,6 +220,7 @@ class StudentService:
 
         studentsdb_data["school_id"] = school_id
         studentsdb_data["Admission_Class"] = data["CLASS"]
+        studentsdb_data["admitted_as_new"] = data.get('student_status') == 'new'
 
         sessions_data["class_id"] = data["CLASS"]
         sessions_data["session_id"] = session_id
@@ -270,11 +271,12 @@ class StudentService:
             data['admission_session_id'] = session_id
         elif student_status == 'old':
             # Old student - keep existing admission_session_id (don't override)
-            # Remove it from data so it doesn't get updated
             if 'admission_session_id' in data:
                 del data['admission_session_id']
 
         studentsdb_updates = {k: v for k, v in data.items() if k in StudentsDB.__table__.columns}
+        if student_status in ('new', 'old'):
+            studentsdb_updates['admitted_as_new'] = (student_status == 'new')
         sessions_updates = {k: v for k, v in data.items() if k in StudentSessions.__table__.columns}
         rte_updates = {k: v for k, v in data.items() if k in RTEInfo.__table__.columns}
 

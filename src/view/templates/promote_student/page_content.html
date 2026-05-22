@@ -1,0 +1,548 @@
+<style>
+    /* Hide scrollbar for modals */
+    .hide-scrollbar {
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+    .hide-scrollbar::-webkit-scrollbar {
+        display: none;
+    }
+
+    /* Skeleton animation */
+    .shimmer {
+        background: linear-gradient(90deg, #2a2a2a 25%, #3a3a3a 50%, #2a2a2a 75%);
+        background-size: 200% 100%;
+        animation: shimmer 1.5s infinite;
+    }
+    @keyframes shimmer {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+    }
+
+    /* Card grid - exactly as before */
+    .promotion-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(0, 420px));
+        gap: 16px;
+        justify-content: center;
+        width: 100%;
+        box-sizing: border-box;
+    }
+    @media (max-width: 480px) {
+        .promotion-cards {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* Card hover effect */
+    .student-card {
+        transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+        background: linear-gradient(145deg, #1e1e1e, #2a2a2a);
+        border: 1px solid #333;
+    }
+    .student-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
+        border-color: #4e54c8;
+    }
+
+    /* Student image */
+    .student-image {
+        border: 3px solid #8f94fb;
+        object-position: top;
+        object-fit: cover;
+        display: block;
+        width: 120px;
+        height: 160px;
+    }
+
+    /* Modal animations */
+    .modal {
+        transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+    .modal-hidden {
+        opacity: 0;
+        pointer-events: none;
+        transform: scale(0.95);
+    }
+    .modal-visible {
+        opacity: 1;
+        pointer-events: auto;
+        transform: scale(1);
+    }
+
+    /* Custom scrollbar for modern browsers */
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: #1e1e1e;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #4a4a4a;
+        border-radius: 20px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: #5a5a5a;
+    }
+</style>
+
+<!-- Toast notification container -->
+<div id="toastContainer" class="fixed top-4 right-4 z-50 flex flex-col gap-2"></div>
+
+<div class="container mx-auto" id="student-container">
+    <!-- Page Header -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
+        <div>
+            <h1 class="text-2xl md:text-3xl font-bold text-green-400">Student Promotion Portal</h1>
+            <p class="text-gray-400 mt-1 text-sm md:text-base max-w-2xl">
+                Manage promotions, issue TCs, and track student progress across academic sessions.
+            </p>
+        </div>
+    </div>
+
+    <!-- Search and Filter Section -->
+    <div class="space-y-4 mb-8">
+        <!-- Search Box with clear button -->
+        <div class="relative">
+            <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"></i>
+            <input type="text" id="search-input" placeholder="Search by name or roll number..." 
+                class="w-full bg-[#1e1e1e] border border-gray-800 rounded-xl py-3.5 pl-12 pr-12 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all duration-200">
+            <button id="clearSearch" class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors hidden">
+                <i class="fas fa-times-circle"></i>
+            </button>
+        </div>
+
+        <!-- Class selector -->
+        <div class="relative">
+            <i class="fas fa-layer-group absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 z-10"></i>
+            <select id="classView" class="w-full bg-[#1e1e1e] border border-gray-800 rounded-xl py-3.5 pl-12 pr-10 text-white appearance-none focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all duration-200 cursor-pointer">
+                <option value="" selected disabled>Select a class</option>
+                {% if classes %}
+                    {% for class in classes %}
+                        <option value="{{ class.id }}">{{ class.CLASS }}</option>
+                    {% endfor %}
+                {% endif %}
+            </select>
+            <i class="fas fa-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+        </div>
+
+        <!-- State filter badges -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
+            <button data-filter-button="ALL" class="filter-btn bg-gray-800 hover:bg-gray-700 text-white rounded-xl px-4 py-3 flex items-center justify-between gap-2 transition-all duration-200 border border-transparent hover:border-gray-600">
+                <span class="font-medium">All</span>
+                <span class="bg-gray-900 px-3 py-1 rounded-full text-sm tabular-nums" id="badge-all-count">-</span>
+            </button>
+            <button data-filter-button="PROMOTED" class="filter-btn bg-gray-800 hover:bg-gray-700 text-white rounded-xl px-4 py-3 flex items-center justify-between gap-2 transition-all duration-200 border border-transparent hover:border-emerald-600">
+                <span class="font-medium">Promoted</span>
+                <span class="bg-green-900/50 px-3 py-1 rounded-full text-sm tabular-nums text-green-300" id="badge-promoted-count">0</span>
+            </button>
+            <button data-filter-button="TC_ISSUED" class="filter-btn bg-gray-800 hover:bg-gray-700 text-white rounded-xl px-4 py-3 flex items-center justify-between gap-2 transition-all duration-200 border border-transparent hover:border-amber-600">
+                <span class="font-medium">TC Issued</span>
+                <span class="bg-amber-900/50 px-3 py-1 rounded-full text-sm tabular-nums text-amber-300" id="badge-tc-count">0</span>
+            </button>
+            <button data-filter-button="NOT_PROMOTED_NOT_TC" class="filter-btn bg-gray-800 hover:bg-gray-700 text-white rounded-xl px-4 py-3 flex items-center justify-between gap-2 transition-all duration-200 border border-transparent hover:border-gray-600">
+                <span class="font-medium">No Action</span>
+                <span class="bg-slate-900/50 px-3 py-1 rounded-full text-sm tabular-nums text-slate-300" id="badge-none-count">0</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Dynamic content area -->
+    <div id="contentArea">
+        <!-- Initial state (no class selected) -->
+        <div id="initialState" class="flex flex-col items-center justify-center py-16 px-4 text-center">
+            <div class="w-32 h-32 bg-gradient-to-br from-green-500/20 to-blue-500/20 rounded-full flex items-center justify-center mb-6 animate-pulse">
+                <i class="fas fa-graduation-cap text-5xl text-green-400/60"></i>
+            </div>
+            <h3 class="text-2xl font-bold text-white mb-3">Welcome to Promotion Portal</h3>
+            <p class="text-gray-400 max-w-md mb-8">Select a class from the dropdown above to view and manage students.</p>
+            <a href="/admission" class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white font-medium rounded-xl shadow-lg transition-all duration-200">
+                <i class="fas fa-plus-circle mr-2"></i> Add New Student
+            </a>
+        </div>
+
+        <!-- Loading skeleton -->
+        <div id="loadingState" class="hidden">
+            <div class="promotion-cards">
+                {% for i in range(6) %}
+                <div class="bg-[#1e1e1e] rounded-2xl overflow-hidden border border-gray-800">
+                    <div class="h-2 w-full bg-gradient-to-r from-transparent via-gray-700 to-transparent shimmer"></div>
+                    <div class="p-6">
+                        <div class="flex gap-4">
+                            <div class="w-24 h-32 rounded-lg shimmer flex-shrink-0"></div>
+                            <div class="flex-1 space-y-3">
+                                <div class="h-5 w-3/4 shimmer rounded"></div>
+                                <div class="h-4 w-1/2 shimmer rounded"></div>
+                                <div class="h-4 w-full shimmer rounded"></div>
+                                <div class="h-4 w-2/3 shimmer rounded"></div>
+                            </div>
+                        </div>
+                        <div class="flex gap-3 mt-4">
+                            <div class="h-10 w-full shimmer rounded-lg"></div>
+                            <div class="h-10 w-full shimmer rounded-lg"></div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Error state -->
+        <div id="errorState" class="hidden flex flex-col items-center justify-center py-16 px-4 text-center">
+            <div class="w-24 h-24 bg-red-500/10 rounded-full flex items-center justify-center mb-6">
+                <i class="fas fa-exclamation-triangle text-4xl text-red-400"></i>
+            </div>
+            <h3 class="text-2xl font-bold text-white mb-2">Oops! Something went wrong</h3>
+            <p id="errorMessage" class="text-gray-400 max-w-md mb-6">Unable to load students. Please try again.</p>
+            <button id="retryButton" class="px-6 py-3 bg-red-600 hover:bg-red-500 text-white font-medium rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl">
+                <i class="fas fa-sync-alt mr-2"></i> Retry
+            </button>
+        </div>
+
+        <!-- Empty state (no students) -->
+        <div id="emptyState" class="hidden flex flex-col items-center justify-center py-16 px-4 text-center">
+            <div class="w-24 h-24 bg-gray-800 rounded-full flex items-center justify-center mb-6">
+                <i class="fas fa-users-slash text-4xl text-gray-500"></i>
+            </div>
+            <h3 class="text-2xl font-bold text-white mb-2">No students found</h3>
+            <p class="text-gray-400 max-w-md mb-8" id="emptyStateMessage">This class doesn't have any students yet.</p>
+            <a href="/admission" class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white font-medium rounded-xl shadow-lg transition-all duration-200">
+                <i class="fas fa-plus-circle mr-2"></i> Add Student
+            </a>
+        </div>
+
+        <!-- Student cards container -->
+        <div id="studentCardsContainer" class="hidden">
+            <div class="promotion-cards" id="StudentData"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+/*
+  StudentsModule
+  - Responsible for fetching students by class, rendering student cards and badges,
+    search/filter UI and maintaining local students state.
+  - Exposes a minimal public API used by other modules:
+      StudentsModule.fetchStudentsByClass(classId)
+      StudentsModule.updateStudentInLocalState(id, payload)
+      StudentsModule.renderStudentCards()
+*/
+window.StudentsModule = (function () {
+    const placeholderBoy = "{{ url_for('static', filename='no-student-boy-image.png') }}";
+    const placeholderGirl = "{{ url_for('static', filename='no-student-girl-image.png') }}";
+
+    let students = [];
+    let activeFilter = "ALL";
+    let loading = false;
+    let error = null;
+    let currentClassId = null;
+    let searchTerm = "";
+    let searchTimeout = null;
+
+    const initialBadgeCounts = {
+        all: {{ overall_all | default(0) }},
+        promoted: {{ overall_promoted | default(0) }},
+        tc: {{ overall_tc | default(0) }},
+        none: {{ overall_none | default(0) }}
+    };
+
+    const stateLabels = {
+        "PROMOTED": "Promoted",
+        "TC_ISSUED": "TC Issued",
+        "NOT_PROMOTED_NOT_TC": "No Action"
+    };
+
+    const stateColors = {
+        PROMOTED: "bg-emerald-500/20 text-emerald-300 border border-emerald-500/50",
+        TC_ISSUED: "bg-amber-500/20 text-amber-300 border border-amber-500/50",
+        NOT_PROMOTED_NOT_TC: "bg-slate-500/20 text-slate-200 border border-slate-500/50"
+    };
+
+    /* ------------------ Small shared toast / alert ------------------ */
+    function showToast(message, type = 'info', duration = 4000) {
+        const container = document.getElementById('toastContainer');
+        if (!container) return;
+        const toast = document.createElement('div');
+        const bgColor = type === 'success' ? 'bg-green-600' : type === 'error' ? 'bg-red-600' : 'bg-blue-600';
+        toast.className = `${bgColor} text-white px-5 py-3 rounded-xl shadow-lg flex items-center gap-3 transform transition-all duration-300 translate-x-full opacity-0`;
+        toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i><span class="flex-1">${message}</span><button class="text-white/80 hover:text-white" onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>`;
+        container.appendChild(toast);
+        setTimeout(() => toast.classList.remove('translate-x-full', 'opacity-0'), 10);
+        setTimeout(() => { toast.classList.add('translate-x-full', 'opacity-0'); setTimeout(() => toast.remove(), 300); }, duration);
+    }
+    window.showAlert = function (status, message) {
+        if (status >= 200 && status < 300) showToast(message, 'success');
+        else showToast(message, 'error');
+    };
+
+    /* ------------------ Rendering helpers ------------------ */
+    function buildStudentStateBadge(state) {
+        const label = stateLabels[state] || "No Action";
+        const color = stateColors[state] || stateColors.NOT_PROMOTED_NOT_TC;
+        return `<span class="px-3 py-1 rounded-full text-xs font-semibold inline-flex items-center gap-2 ${color}"><span class="h-2 w-2 rounded-full bg-current"></span>${label}</span>`;
+    }
+
+    function buildStudentActionButtons(student) {
+        // Buttons call ModalsModule / ActionsModule functions (namespaced) to keep modules isolated
+        const baseBtn = "flex-1 py-2.5 rounded-lg font-medium transition-all duration-200 flex items-center justify-center text-white text-sm";
+        if (student.state === "PROMOTED") {
+            return `
+                <button class="${baseBtn} bg-blue-700 hover:bg-blue-600 shadow" onclick="window.ModalsModule.openUpdatePromotionModal('${student.promoted_session_id}')">
+                    <i class="fas fa-sync-alt mr-2"></i> Update
+                </button>
+                <button class="${baseBtn} bg-red-700 hover:bg-red-600 shadow" onclick="window.ModalsModule.openDepromotionModal('${student.promoted_session_id}')">
+                    <i class="fas fa-undo mr-2"></i> Depromote
+                </button>
+            `;
+        }
+        if (student.state === "TC_ISSUED") {
+            return `
+                <button class="${baseBtn} bg-green-700 hover:bg-green-600 shadow" onclick="window.ActionsModule.reprintIssuedTC('${student.student_session_id}')">
+                    <i class="fas fa-file-alt mr-2"></i> Get TC
+                </button>
+                <button class="${baseBtn} bg-yellow-700 hover:bg-yellow-600 shadow" onclick="window.ModalsModule.openTCRevertConfirm('${student.student_session_id}')">
+                    <i class="fas fa-ban mr-2"></i> Cancel TC
+                </button>
+            `;
+        }
+        const promotable = student.state === "NOT_PROMOTED_NOT_TC" && !student.is_terminal;
+        const disabled = !promotable ? 'disabled style="opacity:0.6;cursor:not-allowed;"' : "";
+        const promoteLabel = student.is_terminal ? "No Classes" : "Promote";
+        const promoteAction = promotable ? `onclick="window.ModalsModule.openPromotionModalForStudent('${student.id}')"` : "";
+        const createLabel = student.has_cancelled_tc ? 'Restore TC' : 'Create TC';
+        const createAction = student.has_cancelled_tc ? `onclick="window.ActionsModule.submitTCRestore('${student.id}')"` : `onclick="window.ModalsModule.openTCCreationModal('${student.id}')"`;
+        return `
+            <button class="${baseBtn} bg-green-700 hover:bg-green-600 shadow" ${promoteAction} ${disabled} title="${promoteLabel}">
+                <i class="fas fa-graduation-cap mr-2"></i>${promoteLabel}
+            </button>
+            <button class="${baseBtn} bg-amber-700 hover:bg-amber-600 shadow" ${createAction} title="${createLabel}">
+                <i class="fas fa-file-alt mr-2"></i> ${createLabel}
+            </button>
+        `;
+    }
+
+    function buildStudentCard(student) {
+        const stateBadge = buildStudentStateBadge(student.state);
+        const promotedInfo = student.state === "PROMOTED" ? `
+            <div class="flex justify-between text-sm"><span class="text-gray-400">New Class:</span><span class="font-medium text-green-400">${student.next_class}</span></div>
+            <div class="flex justify-between text-sm"><span class="text-gray-400">New Roll:</span><span class="font-medium text-green-400">${student.next_roll || "-"}</span></div>` : "";
+        const tcInfo = student.state === "TC_ISSUED" ? `
+            <div class="flex justify-between text-sm"><span class="text-gray-400">TC No.:</span><span class="font-medium text-amber-400">${student.tc_number || "-"}</span></div>
+            <div class="flex justify-between text-sm"><span class="text-gray-400">TC Date:</span><span class="font-medium text-amber-400">${student.tc_date || "-"}</span></div>` : "";
+
+        const cancelledInfo = student.has_cancelled_tc ? `
+            <div class="flex justify-between text-sm"><span class="text-gray-400">Cancelled TC</span><span class="font-medium text-amber-300">${student.cancelled_tc_number || '-'} on ${student.cancelled_tc_date || '-'}</span></div>
+            <div class="flex justify-between text-sm"><span class="text-gray-400">Reason</span><span class="font-medium text-amber-300">${student.cancelled_left_reason || '-'}</span></div>` : "";
+
+        const imageSrc = student.IMAGE ? `https://lh3.googleusercontent.com/d/${student.IMAGE}=s200` : (student.GENDER === 'Male' ? placeholderBoy : placeholderGirl);
+
+        return `
+            <div class="student-card rounded-2xl overflow-hidden shadow-lg" data-name="${student.STUDENTS_NAME}" data-roll="${student.previous_roll || ''}">
+                <div class="flex items-center justify-end gap-3 px-4 py-2 bg-transparent relative border-b border-gray-700">
+                    ${stateBadge}
+                    ${student.state === "TC_ISSUED" ? `<button type="button" title="Delete TC record and reactivate student" onclick="window.ActionsModule.confirmDeleteTCRecord('${student.student_session_id}')" class="text-gray-300 hover:text-white transition-colors"><i class="fas fa-times-circle"></i></button>` : ''}
+                </div>
+                <div class="p-5">
+                    <div class="flex gap-4">
+                        <img src="${imageSrc}" alt="Student" class="student-image" loading="lazy">
+                        <div class="flex-1 min-w-0">
+                            <h3 class="font-bold text-green-400 text-lg truncate">${student.STUDENTS_NAME}</h3>
+                            <p class="text-sm text-gray-400 truncate">C/O ${student.FATHERS_NAME || "-"}</p>
+                            <p class="text-sm text-gray-400 truncate">PEN: ${student.PEN || "-"}</p>
+                            <div class="mt-3 space-y-1 text-sm">
+                                <div class="flex justify-between"><span class="text-gray-400">Class:</span><span class="font-medium text-white">${student.previous_class}</span></div>
+                                <div class="flex justify-between"><span class="text-gray-400">Roll:</span><span class="font-medium text-white">${student.previous_roll || "-"}</span></div>
+                                ${promotedInfo}
+                                ${tcInfo}
+                                ${cancelledInfo}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-4 flex gap-2">
+                        ${buildStudentActionButtons(student)}
+                    </div>
+                </div>
+            </div>`;
+    }
+
+    /* ------------------ UI / badge logic ------------------ */
+    function updateStateBadgeCounts() {
+        if (!currentClassId) {
+            document.getElementById("badge-promoted-count").textContent = initialBadgeCounts.promoted;
+            document.getElementById("badge-tc-count").textContent = initialBadgeCounts.tc;
+            document.getElementById("badge-none-count").textContent = initialBadgeCounts.none;
+            document.getElementById("badge-all-count").textContent = initialBadgeCounts.all;
+            return;
+        }
+        const promoted = students.filter(s => s.state === "PROMOTED").length;
+        const tc = students.filter(s => s.state === "TC_ISSUED").length;
+        const none = students.filter(s => s.state === "NOT_PROMOTED_NOT_TC").length;
+        const all = students.length;
+
+        document.getElementById("badge-promoted-count").textContent = promoted;
+        document.getElementById("badge-tc-count").textContent = tc;
+        document.getElementById("badge-none-count").textContent = none;
+        document.getElementById("badge-all-count").textContent = all;
+    }
+
+    function renderStudentCards() {
+        const container = document.getElementById("StudentData");
+        if (!container) return;
+
+        const filtered = students.filter(s => {
+            const matchesFilter = activeFilter === "ALL" || s.state === activeFilter;
+            const matchesSearch = searchTerm === '' ||
+                s.STUDENTS_NAME.toLowerCase().includes(searchTerm) ||
+                (s.previous_roll && String(s.previous_roll).toLowerCase().includes(searchTerm));
+            return matchesFilter && matchesSearch;
+        });
+
+        if (filtered.length === 0) {
+            document.getElementById('studentCardsContainer').classList.add('hidden');
+            document.getElementById('emptyState').classList.remove('hidden');
+            document.getElementById('emptyStateMessage').innerText = searchTerm
+                ? `No students match "${searchTerm}"`
+                : 'No students found in this class.';
+        } else {
+            container.innerHTML = filtered.map(buildStudentCard).join("");
+            document.getElementById('studentCardsContainer').classList.remove('hidden');
+            document.getElementById('emptyState').classList.add('hidden');
+        }
+        updateStateBadgeCounts();
+    }
+
+    /* ------------------ Data fetch ------------------ */
+    async function fetchStudentsByClass(classId) {
+        loading = true;
+        error = null;
+        currentClassId = classId;
+        updateUI();
+
+        try {
+            const res = await fetch('/api/promote/students-by-class', {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ class_id: classId })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                students = data.students || [];
+                error = null;
+            } else {
+                students = [];
+                error = { message: data.message || 'Unable to load students', status: res.status };
+            }
+        } catch (err) {
+            console.error(err);
+            students = [];
+            error = { message: 'Network error. Please check your connection.', status: 0 };
+        } finally {
+            loading = false;
+            updateUI();
+        }
+    }
+
+    function updateUI() {
+        const initialStateDiv = document.getElementById('initialState');
+        const loadingDiv = document.getElementById('loadingState');
+        const errorDiv = document.getElementById('errorState');
+        const emptyDiv = document.getElementById('emptyState');
+        const cardsContainer = document.getElementById('studentCardsContainer');
+
+        [initialStateDiv, loadingDiv, errorDiv, emptyDiv, cardsContainer].forEach(el => el?.classList.add('hidden'));
+
+        if (!currentClassId) {
+            initialStateDiv?.classList.remove('hidden');
+            return;
+        }
+        if (loading) {
+            loadingDiv?.classList.remove('hidden');
+            return;
+        }
+        if (error) {
+            document.getElementById('errorMessage').innerText = error.message;
+            errorDiv?.classList.remove('hidden');
+            return;
+        }
+        if (students.length === 0) {
+            document.getElementById('emptyStateMessage').innerText = 'No students found in this class.';
+            emptyDiv?.classList.remove('hidden');
+        } else {
+            cardsContainer?.classList.remove('hidden');
+            renderStudentCards();
+        }
+    }
+
+    /* ------------------ Public helpers (used by other modules) ------------------ */
+    function updateStudentInLocalState(studentSessionId, payload) {
+        const idx = students.findIndex(s => String(s.student_session_id) === String(studentSessionId) || String(s.id) === String(studentSessionId));
+        if (idx === -1) return;
+        students[idx] = { ...students[idx], ...payload };
+        updateStateBadgeCounts();
+    }
+
+    /* ------------------ Event bindings for search / filters / UI ------------------ */
+    function initUI() {
+        const searchInput = document.getElementById('search-input');
+        searchInput?.addEventListener('input', function (e) {
+            searchTerm = e.target.value.trim().toLowerCase();
+            document.getElementById('clearSearch')?.classList.toggle('hidden', !searchTerm);
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(renderStudentCards, 300);
+        });
+
+        document.getElementById('clearSearch')?.addEventListener('click', function () {
+            searchInput.value = '';
+            searchTerm = '';
+            this.classList.add('hidden');
+            renderStudentCards();
+        });
+
+        document.getElementById("classView")?.addEventListener("change", (e) => {
+            const classId = e.target.value;
+            if (classId) {
+                document.getElementById('search-input').value = '';
+                searchTerm = '';
+                fetchStudentsByClass(classId);
+            } else {
+                currentClassId = null;
+                updateUI();
+            }
+        });
+
+        document.querySelectorAll("[data-filter-button]").forEach(btn => {
+            btn.addEventListener("click", () => {
+                activeFilter = btn.dataset.filterButton;
+                renderStudentCards();
+                document.querySelectorAll("[data-filter-button]").forEach(b => {
+                    const isActive = b.dataset.filterButton === activeFilter;
+                    b.classList.toggle("bg-blue-600", isActive);
+                    b.classList.toggle("hover:bg-blue-500", isActive);
+                    b.classList.toggle("border-blue-500", isActive);
+                    b.classList.toggle("bg-gray-800", !isActive);
+                    b.classList.toggle("hover:bg-gray-700", !isActive);
+                });
+            });
+        });
+
+        document.getElementById('retryButton')?.addEventListener('click', () => {
+            if (currentClassId) fetchStudentsByClass(currentClassId);
+        });
+
+        // default visuals
+        document.querySelector("[data-filter-button='ALL']")?.classList.add('bg-blue-600','border-blue-500');
+        updateStateBadgeCounts();
+    }
+
+    /* ------------------ Initialization ------------------ */
+    initUI();
+
+    return {
+        fetchStudentsByClass,
+        updateStudentInLocalState,
+        renderStudentCards
+    };
+})();
+</script>

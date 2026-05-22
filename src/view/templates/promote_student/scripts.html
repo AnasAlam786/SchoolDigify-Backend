@@ -1,0 +1,295 @@
+<!-- ...existing code... -->
+<script src="{{ url_for('static', filename='watsappMessage.js') }}"></script>
+<script>
+/*
+  ActionsModule
+  - Handles final actions invoked from modals (promote, update, depromote, tc generation, reprint, delete).
+  - Calls backend APIs and updates StudentsModule (local state) via public API.
+*/
+window.ActionsModule = (function () {
+    async function submitPromotion(studentID) {
+        const form = document.getElementById("promotionForm");
+        const promoted_class_id = document.getElementById("promotedClass")?.value;
+        if (!promoted_class_id) return window.showAlert(400, "Please select a class to promote to.");
+
+        const btn = document.getElementById("promoteButton");
+        const spinner = document.getElementById("promoteSpinner");
+        btn.disabled = true; spinner.classList.remove("hidden");
+
+        const promoted_date = document.getElementById("promotion_date")?.value;
+        const promoted_roll = document.getElementById("newRoll")?.value;
+
+        try {
+            const res = await fetch("/api/promote/student", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    'student_id': studentID, 'promoted_date': promoted_date,
+                    'promoted_roll': promoted_roll, 'promoted_class_id': promoted_class_id,
+                }),
+            });
+            const data = await res.json();
+            if (res.ok) {
+                window.StudentsModule.updateStudentInLocalState(studentID, {
+                    state: data.state,
+                    promoted_session_id: data.promoted_session_id,
+                    next_roll: data.next_roll,
+                    promoted_date: data.created_at,
+                    next_class: data.next_class
+                });
+
+                // try to generate message
+                const response = await fetch('/api/promote/promotion-message', {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ 'student_id': studentID }),
+                });
+                const generate_message = await response.json();
+                if (generate_message.PHONE && generate_message.whatsappMessage && response.ok) {
+                    window.ModalsModule.setFooterButtons({ message: true });
+                    const messageButton = document.getElementById("messageButton");
+                    if (messageButton) {
+                        messageButton.onclick = () => sendWhatsAppMessage(generate_message.PHONE, generate_message.whatsappMessage);
+                        messageButton.disabled = false;
+                    }
+                } else {
+                    window.ModalsModule.closeModal();
+                }
+            }
+            window.showAlert(res.status, data.message);
+            window.StudentsModule.renderStudentCards();
+        } catch (err) {
+            console.error(err);
+            window.showAlert(400, "An unexpected error occurred. Please try again.");
+        } finally {
+            spinner.classList.add("hidden");
+            btn.disabled = false;
+        }
+    }
+
+    async function submitPromotionUpdate(studentSessionID) {
+        const promoted_class_id = document.getElementById("promotedClass")?.value;
+        if (!promoted_class_id) return window.showAlert(400, "Please select a class.");
+
+        const btn = document.getElementById("updateButton");
+        const spinner = document.getElementById("updateSpinner");
+        btn.disabled = true; spinner.classList.remove("hidden");
+
+        const promoted_date = document.getElementById("promotion_date")?.value;
+        const promoted_roll = document.getElementById("newRoll")?.value;
+
+        try {
+            const res = await fetch("/api/promote/update-promotion", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    'student_session_id': studentSessionID, 'promoted_date': promoted_date,
+                    'promoted_roll': promoted_roll, 'promoted_class_id': promoted_class_id,
+                }),
+            });
+            const data = await res.json();
+            if (res.ok) {
+                const studentId = document.getElementById("studentName")?.getAttribute("data-id");
+                window.StudentsModule.updateStudentInLocalState(studentId, {
+                    next_roll: data.next_roll,
+                    promoted_date: data.created_at,
+                    next_class: data.new_class
+                });
+                window.ModalsModule.closeModal();
+            }
+            window.showAlert(res.status, data.message);
+            window.StudentsModule.renderStudentCards();
+        } catch (err) {
+            console.error(err);
+            window.showAlert(400, "An unexpected error occurred. Please try again.");
+        } finally {
+            spinner.classList.add("hidden");
+            btn.disabled = false;
+        }
+    }
+
+    async function submitDepromotion(studentSessionID) {
+        const isChecked = document.getElementById('depromoteCheckbox')?.checked;
+        if (!isChecked) return window.showAlert(400, "Please check the checkbox to confirm depromotion.");
+
+        const btn = document.getElementById("depromoteButton");
+        const spinner = document.getElementById("depromoteSpinner");
+        btn.disabled = true; spinner.classList.remove("hidden");
+
+        try {
+            const res = await fetch("/api/promote/depromote-student", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ 'promoted_session_id': studentSessionID }),
+            });
+            const data = await res.json();
+            if (res.ok) {
+                const studentId = document.getElementById("studentName")?.getAttribute("data-id");
+                window.StudentsModule.updateStudentInLocalState(studentId, {
+                    state: "NOT_PROMOTED_NOT_TC",
+                    promoted_session_id: null,
+                    next_roll: null
+                });
+                window.ModalsModule.closeModal();
+            }
+            window.showAlert(res.status, data.message);
+            window.StudentsModule.renderStudentCards();
+        } catch (err) {
+            console.error(err);
+            window.showAlert(400, "An unexpected error occurred. Please try again.");
+        } finally {
+            spinner.classList.add("hidden");
+            btn.disabled = false;
+        }
+    }
+
+    async function submitTCGeneration(studentSessionId, leavingReason, leavingDate, generalConduct, otherRemarks = "", tcNumber = "") {
+        const tcNumberErrorEl = document.getElementById('tcNumberError');
+        tcNumberErrorEl?.classList.add('hidden');
+
+        if (!leavingReason) return window.showAlert(400, "Please select a reason for leaving.");
+        if (!leavingDate) return window.showAlert(400, "Please select a leaving date.");
+        if (!generalConduct) return window.showAlert(400, "Please provide general conduct remarks.");
+        if (!tcNumber) {
+            tcNumberErrorEl.innerText = 'Please enter a TC number.';
+            tcNumberErrorEl.classList.remove('hidden');
+            return;
+        }
+
+        try {
+            const resp = await fetch("/api/tc/generate-and-save", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    student_session_id: studentSessionId,
+                    leavingReason,
+                    leavingDate,
+                    generalConduct,
+                    otherRemarks,
+                    tc_number: tcNumber
+                }),
+            });
+            const content = await resp.json();
+            if (!resp.ok) {
+                window.showAlert(resp.status, content.message);
+                return;
+            }
+
+            window.StudentsModule.updateStudentInLocalState(studentSessionId, {
+                state: "TC_ISSUED",
+                tc_date: content.tc_date,
+                tc_number: content.tc_number,
+                left_reason: content.left_reason
+            });
+            window.StudentsModule.renderStudentCards();
+            window.ModalsModule.closeTCModal();
+
+            const printWindow = window.open("", "_blank");
+            if (!printWindow) {
+                window.showAlert(400, "Unable to open print window");
+                return;
+            }
+            printWindow.document.open();
+            printWindow.document.write(content.html);
+            printWindow.document.close();
+            printWindow.onload = () => { printWindow.focus(); printWindow.print(); };
+        } catch (err) {
+            console.error(err);
+            window.showAlert(400, "Unable to generate TC.");
+        }
+    }
+
+    async function submitTCRevert(studentSessionId) {
+        try {
+            const res = await fetch("/api/tc/revert", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ student_session_id: studentSessionId })
+            });
+            const data = await res.json();
+            if (!res.ok) return window.showAlert(res.status, data.message);
+            window.StudentsModule.updateStudentInLocalState(studentSessionId, {
+                state: "NOT_PROMOTED_NOT_TC",
+                tc_date: null,
+                tc_number: null,
+                left_reason: null
+            });
+            window.StudentsModule.renderStudentCards();
+            window.showAlert(res.status, data.message);
+        } catch (error) {
+            console.error(error);
+            window.showAlert(400, "Unable to cancel TC.");
+        }
+    }
+
+    async function confirmDeleteTCRecord(studentSessionId) {
+        const confirmed = window.confirm("This will permanently delete the TC record and reactivate the student. Continue?");
+        if (!confirmed) return;
+        await deleteTCRecord(studentSessionId);
+    }
+
+    async function deleteTCRecord(studentSessionId) {
+        try {
+            const res = await fetch("/api/tc/delete", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ student_session_id: studentSessionId })
+            });
+            const data = await res.json();
+            if (!res.ok) return window.showAlert(res.status, data.message);
+            window.StudentsModule.updateStudentInLocalState(student_session_id, {
+                state: "NOT_PROMOTED_NOT_TC",
+                tc_date: null,
+                tc_number: null,
+                left_reason: null
+            });
+            window.StudentsModule.renderStudentCards();
+            window.showAlert(res.status, data.message);
+        } catch (error) {
+            console.error(error);
+            window.showAlert(400, "Unable to delete TC record.");
+        }
+    }
+
+    async function reprintIssuedTC(studentSessionId) {
+        try {
+            const resp = await fetch("/api/tc/reprint", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ student_session_id: studentSessionId }),
+            });
+            const content = await resp.json();
+            if (!resp.ok) {
+                window.showAlert(resp.status, content.message);
+                return;
+            }
+            const printWindow = window.open("", "_blank");
+            if (!printWindow) {
+                window.showAlert(400, "Unable to open print window");
+                return;
+            }
+            printWindow.document.open();
+            printWindow.document.write(content.html);
+            printWindow.document.close();
+            printWindow.onload = () => { printWindow.focus(); printWindow.print(); };
+        } catch (err) {
+            console.error(err);
+            window.showAlert(400, "Unable to reprint TC.");
+        }
+    }
+
+    // Expose API used by other modules / inline handlers
+    return {
+        submitPromotion,
+        submitPromotionUpdate,
+        submitDepromotion,
+        submitTCGeneration,
+        submitTCRevert,
+        confirmDeleteTCRecord,
+        deleteTCRecord,
+        reprintIssuedTC,
+        submitTCRestore: submitTCRevert // alias (restore uses same endpoint on server-side)
+    };
+})();
+</script>
+<!-- ...existing code... -->

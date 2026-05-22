@@ -107,9 +107,6 @@ def promote_student():
     if recovered_status == "tc":
         return jsonify({"message": "TC already issued. Promotion not allowed."}), 400
 
-    if recovered_status == "left":
-        return jsonify({"message": "Student left the school cannot promote."}), 400
-
     if recovered_status == "promoted":
         return jsonify({"message": "Already promoted cannot promote again."}), 400
 
@@ -196,4 +193,3 @@ def promote_student():
         "next_class": selected_class.CLASS,  # ✅ added
         "created_at": promoted_date.isoformat()
     }), 200
-

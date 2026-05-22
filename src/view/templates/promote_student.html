@@ -255,7 +255,7 @@
                 </div>
 
                 <!-- Form Fields -->
-                <div class="space-y-4">
+                <div id="tcFormFields" class="space-y-4">
                     <div>
                         <label class="block text-gray-300 mb-2 font-medium">Promote To Class <span class="text-red-400">*</span></label>
                         <select id="promotedClass" name="promotedClass" required class="w-full bg-gray-700 rounded-xl py-3 px-4 text-white focus:outline-none focus:ring-2 focus:ring-green-500 appearance-none cursor-pointer">
@@ -354,6 +354,13 @@
                     <p id="tcNumberError" class="error-message hidden mt-1 text-sm text-red-400"></p>
                 </div>
 
+                <div id="cancelledTcInfo" class="mb-5 bg-amber-900/10 border border-amber-500/20 rounded-2xl p-4 hidden">
+                    <div class="text-sm text-amber-200 font-semibold mb-3">This TC was previously cancelled.</div>
+                    <p class="text-gray-300 mb-2">TC number <span class="font-semibold text-white" id="cancelledTcNumber"></span> was cancelled on <span class="font-semibold text-white" id="cancelledTcDate"></span>.</p>
+                    <p class="text-gray-300 mb-4">Reason: <span class="font-medium text-white" id="cancelledTcReason"></span></p>
+                    <p class="text-sm text-gray-200 leading-relaxed">By restoring this record, the original TC will be re-issued with the same number and cancellation details will be reversed. The student status will move back to <span class="font-semibold text-white">TC</span>.</p>
+                </div>
+
                 <!-- Form Fields -->
                 <div class="space-y-4">
                     <div>
@@ -405,6 +412,9 @@
                 <button type="button" class="px-5 py-2.5 bg-green-600 hover:bg-green-500 text-white rounded-xl font-medium transition-colors hidden" id="tc-messageButton">
                     <i class="fab fa-whatsapp mr-2"></i> Send
                 </button>
+                <button type="button" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-medium transition-colors hidden" id="tc-restoreButton">
+                    <i class="fas fa-undo mr-2"></i> Restore TC
+                </button>
                 <button type="button" class="px-5 py-2.5 bg-green-600 hover:bg-green-500 text-white rounded-xl font-medium transition-colors" id="tc-generateButton">
                     <i class="fas fa-file-pdf mr-2"></i> Generate TC
                 </button>
@@ -417,7 +427,7 @@
 <div class="fixed inset-0 bg-black/70 backdrop-blur-sm transition-all z-50 flex items-center justify-center p-4 modal-hidden" id="tcRevertConfirmModal" role="dialog" aria-labelledby="tcRevertTitle" aria-modal="true">
     <div class="bg-gray-900 rounded-2xl w-full max-w-lg shadow-2xl border border-gray-700 overflow-hidden">
         <div class="px-6 py-4 bg-gradient-to-r from-purple-700 to-indigo-600 text-white flex items-center justify-between">
-            <h3 class="text-lg font-bold" id="tcRevertTitle">Confirm TC Redo</h3>
+            <h3 class="text-lg font-bold" id="tcRevertTitle">Confirm Cancel TC</h3>
             <button class="text-white hover:text-gray-200" type="button" onclick="closeTCRevertConfirmModal()">
                 <i class="fas fa-times"></i>
             </button>
@@ -425,7 +435,7 @@
         <div class="p-6 space-y-4 text-gray-100">
             <div class="flex items-start gap-3">
                 <span class="text-xl text-amber-300 mt-1"><i class="fas fa-exclamation-triangle"></i></span>
-                <p id="revertWarningText" class="leading-relaxed">You are about to delete TC details and reset this student record.</p>
+                <p id="revertWarningText" class="leading-relaxed">After cancelling the TC, the TC number will be marked cancelled and the student will become active. This TC number cannot be assigned to anyone else.</p>
             </div>
             <div class="bg-gray-800 rounded-xl p-4 border border-purple-500/40">
                 <label class="inline-flex items-center gap-3">
@@ -437,7 +447,7 @@
         </div>
         <div class="flex flex-col sm:flex-row gap-3 p-4 bg-gray-950 border-t border-gray-700">
             <button id="revertCancelButton" class="w-full sm:w-auto px-5 py-2 rounded-xl bg-gray-700 hover:bg-gray-600 text-white font-semibold" type="button">Cancel</button>
-            <button id="revertConfirmButton" class="w-full sm:w-auto px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-gray-900 font-semibold disabled:opacity-60" type="button" disabled>Confirm Remove TC</button>
+            <button id="revertConfirmButton" class="w-full sm:w-auto px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-gray-900 font-semibold disabled:opacity-60" type="button" disabled>Confirm Cancel TC</button>
         </div>
     </div>
 </div>
@@ -460,6 +470,12 @@
     let currentClassId = null;
     let searchTerm = '';
     let searchTimeout;
+    const initialBadgeCounts = {
+        all: {{ overall_all | default(0) }},
+        promoted: {{ overall_promoted | default(0) }},
+        tc: {{ overall_tc | default(0) }},
+        none: {{ overall_none | default(0) }}
+    };
 
     const stateColors = {
         PROMOTED: "bg-emerald-500/20 text-emerald-300 border border-emerald-500/50",
@@ -499,6 +515,13 @@
 
     // Update filter badge counts
     function updateStateBadgeCounts() {
+        if (!currentClassId) {
+            document.getElementById("badge-promoted-count").textContent = initialBadgeCounts.promoted;
+            document.getElementById("badge-tc-count").textContent = initialBadgeCounts.tc;
+            document.getElementById("badge-none-count").textContent = initialBadgeCounts.none;
+            document.getElementById("badge-all-count").textContent = initialBadgeCounts.all;
+            return;
+        }
         const promoted = students.filter(s => s.state === "PROMOTED").length;
         const tc = students.filter(s => s.state === "TC_ISSUED").length;
         const none = students.filter(s => s.state === "NOT_PROMOTED_NOT_TC").length;
@@ -566,7 +589,7 @@
                     <i class="fas fa-file-alt mr-2"></i> Get TC
                 </button>
                 <button class="${baseBtn} bg-yellow-700 hover:bg-yellow-600 shadow" onclick="openTCRevertConfirm('${student.student_session_id}')">
-                    <i class="fas fa-redo mr-2"></i> TC Revert
+                    <i class="fas fa-ban mr-2"></i> Cancel TC
                 </button>
             `;
         }
@@ -576,12 +599,14 @@
         const promoteAction = promotable ? `onclick="openPromotionModalForStudent('${student.id}')"` : "";
         const promoteTitle = student.is_terminal ? 'Terminal class: no further promotion available' : '';
 
+        const createLabel = student.has_cancelled_tc ? 'Restore TC' : 'Create TC';
+        const createTitle = student.has_cancelled_tc ? 'This student has a cancelled TC. Restore the original record.' : '';
         return `
             <button class="${baseBtn} bg-green-700 hover:bg-green-600 shadow" ${promoteAction} ${disabled} title="${promoteTitle}">
                 <i class="fas fa-graduation-cap mr-2"></i>${promoteLabel}
             </button>
-            <button class="${baseBtn} bg-amber-700 hover:bg-amber-600 shadow" onclick="openTCCreationModal('${student.id}')">
-                <i class="fas fa-file-alt mr-2"></i> Create TC
+            <button class="${baseBtn} bg-amber-700 hover:bg-amber-600 shadow" onclick="openTCCreationModal('${student.id}')" title="${createTitle}">
+                <i class="fas fa-file-alt mr-2"></i> ${createLabel}
             </button>
         `;
     }
@@ -595,26 +620,33 @@
             <div class="flex justify-between text-sm"><span class="text-gray-400">TC No.:</span><span class="font-medium text-amber-400">${student.tc_number || "-"}</span></div>
             <div class="flex justify-between text-sm"><span class="text-gray-400">TC Date:</span><span class="font-medium text-amber-400">${student.tc_date || "-"}</span></div>` : "";
 
+        const cancelledInfo = student.has_cancelled_tc ? `
+            <div class="flex justify-between text-sm"><span class="text-gray-400">Cancelled TC</span><span class="font-medium text-amber-300">${student.cancelled_tc_number || '-'} on ${student.cancelled_tc_date || '-'}</span></div>
+            <div class="flex justify-between text-sm"><span class="text-gray-400">Reason</span><span class="font-medium text-amber-300">${student.cancelled_left_reason || '-'}</span></div>` : "";
+
         const imageSrc = student.IMAGE
             ? `https://lh3.googleusercontent.com/d/${student.IMAGE}=s200`
             : (student.GENDER === 'Male' ? placeholderBoy : placeholderGirl);
 
         return `
             <div class="student-card rounded-2xl overflow-hidden shadow-lg" data-name="${student.STUDENTS_NAME}" data-roll="${student.previous_roll || ''}">
-                <div class="flex items-center justify-end px-4 py-2 bg-transparent relative border-b border-gray-700">
+                <div class="flex items-center justify-end gap-3 px-4 py-2 bg-transparent relative border-b border-gray-700">
                     ${stateBadge}
+                    ${student.state === "TC_ISSUED" ? `<button type="button" title="Delete TC record and reactivate student" onclick="confirmDeleteTCRecord('${student.student_session_id}')" class="text-gray-300 hover:text-white transition-colors"><i class="fas fa-times-circle"></i></button>` : ''}
                 </div>
                 <div class="p-5">
                     <div class="flex gap-4">
                         <img src="${imageSrc}" alt="Student" class="student-image" loading="lazy">
                         <div class="flex-1 min-w-0">
                             <h3 class="font-bold text-green-400 text-lg truncate">${student.STUDENTS_NAME}</h3>
-                            <p class="text-sm text-gray-400 mt-1 truncate">C/O ${student.FATHERS_NAME || "-"}</p>
+                            <p class="text-sm text-gray-400 truncate">C/O ${student.FATHERS_NAME || "-"}</p>
+                            <p class="text-sm text-gray-400 truncate">PEN: ${student.PEN || "-"}</p>
                             <div class="mt-3 space-y-1 text-sm">
                                 <div class="flex justify-between"><span class="text-gray-400">Class:</span><span class="font-medium text-white">${student.previous_class}</span></div>
                                 <div class="flex justify-between"><span class="text-gray-400">Roll:</span><span class="font-medium text-white">${student.previous_roll || "-"}</span></div>
                                 ${promotedInfo}
                                 ${tcInfo}
+                                    ${cancelledInfo}
                             </div>
                         </div>
                     </div>
@@ -946,7 +978,6 @@
             const data = await res.json();
             if (!res.ok) return showAlert(res.status, data.message);
 
-            document.getElementById("tc-modalTitle").innerText = "Generate TC";
             document.getElementById("studentNameTC").innerText = data.STUDENTS_NAME;
             document.getElementById("studentNameTC").setAttribute("data-student-session-id", data.student_session_id);
             document.getElementById("leavingDate").value = data.promoted_date;
@@ -958,48 +989,73 @@
                 ? 'https://lh3.googleusercontent.com/d/' + data.IMAGE + '=s200'
                 : 'https://cdn.pixabay.com/photo/2016/04/22/04/57/graduation-1345143_1280.png';
 
-            // populate TC number from backend and let user override it
             const tcNumberInput = document.getElementById('tcNumber');
-            tcNumberInput.value = '';
-            tcNumberInput.placeholder = 'Loading TC number...';
+            const tcNumberWrapper = tcNumberInput.closest('div');
+            const tcFormFields = document.getElementById('tcFormFields');
+            const cancelledTcInfo = document.getElementById('cancelledTcInfo');
+            const tc_modal_footer = document.getElementById("tc-modal-footer");
+            const generateTCButton = tc_modal_footer.querySelector("#tc-generateButton");
+            const restoreTCButton = tc_modal_footer.querySelector("#tc-restoreButton");
+
             tcNumberInput.classList.remove('border-red-400');
             document.getElementById('tcNumberError').classList.add('hidden');
 
-            try {
-                const tcRes = await fetch('/api/tc/get-new-tc-number', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' }
-                });
-                const tcJson = await tcRes.json();
-                if (tcRes.ok && tcJson.next_tc_number) {
-                    tcNumberInput.value = tcJson.next_tc_number;
-                    tcNumberInput.placeholder = 'Enter TC Number';
-                } else {
-                    tcNumberInput.placeholder = 'Enter TC Number';
-                    if (tcJson.message) {
-                        document.getElementById('tcNumberError').innerText = tcJson.message;
-                        document.getElementById('tcNumberError').classList.remove('hidden');
+            if (data.has_cancelled_tc) {
+                document.getElementById("tc-modalTitle").innerText = "Restore Cancelled TC";
+                tcFormFields.classList.add('hidden');
+                tcNumberWrapper.classList.add('hidden');
+                cancelledTcInfo.classList.remove('hidden');
+                document.getElementById('cancelledTcNumber').innerText = data.cancelled_tc_number || '-';
+                document.getElementById('cancelledTcDate').innerText = data.cancelled_tc_date || '-';
+                document.getElementById('cancelledTcReason').innerText = data.cancelled_tc_reason || '-';
+                generateTCButton.classList.add('hidden');
+                restoreTCButton.classList.remove('hidden');
+                restoreTCButton.onclick = () => submitTCRestore(data.student_session_id);
+            } else {
+                document.getElementById("tc-modalTitle").innerText = "Generate TC";
+                tcFormFields.classList.remove('hidden');
+                tcNumberWrapper.classList.remove('hidden');
+                cancelledTcInfo.classList.add('hidden');
+                document.getElementById('cancelledTcNumber').innerText = '';
+                document.getElementById('cancelledTcDate').innerText = '';
+                document.getElementById('cancelledTcReason').innerText = '';
+                generateTCButton.classList.remove('hidden');
+                restoreTCButton.classList.add('hidden');
+
+                tcNumberInput.value = '';
+                tcNumberInput.placeholder = 'Loading TC number...';
+
+                try {
+                    const tcRes = await fetch('/api/tc/get-new-tc-number', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+                    const tcJson = await tcRes.json();
+                    if (tcRes.ok && tcJson.next_tc_number) {
+                        tcNumberInput.value = tcJson.next_tc_number;
+                        tcNumberInput.placeholder = 'Enter TC Number';
+                    } else {
+                        tcNumberInput.placeholder = 'Enter TC Number';
+                        if (tcJson.message) {
+                            document.getElementById('tcNumberError').innerText = tcJson.message;
+                            document.getElementById('tcNumberError').classList.remove('hidden');
+                        }
                     }
+                } catch (err) {
+                    tcNumberInput.placeholder = 'Enter TC Number';
+                    document.getElementById('tcNumberError').innerText = 'Unable to load default TC. Enter manually.';
+                    document.getElementById('tcNumberError').classList.remove('hidden');
                 }
-            } catch (err) {
-                tcNumberInput.placeholder = 'Enter TC Number';
-                document.getElementById('tcNumberError').innerText = 'Unable to load default TC. Enter manually.';
-                document.getElementById('tcNumberError').classList.remove('hidden');
+
+                generateTCButton.onclick = () => {
+                    const leavingReason = document.getElementById("leavingReason").value;
+                    const leavingDate = document.getElementById("leavingDate").value;
+                    const generalConduct = document.getElementById("generalConduct").value;
+                    const otherRemarks = document.getElementById("otherRemark").value;
+                    const tcNumber = document.getElementById("tcNumber").value.trim();
+                    submitTCGeneration(data.student_session_id, leavingReason, leavingDate, generalConduct, otherRemarks, tcNumber);
+                };
             }
-
-            const tc_modal_footer = document.getElementById("tc-modal-footer");
-            tc_modal_footer.querySelector("#tc-messageButton").classList.add("hidden");
-            tc_modal_footer.querySelector("#tc-generateButton").classList.remove("hidden");
-
-            const generateTCButton = tc_modal_footer.querySelector("#tc-generateButton");
-            generateTCButton.onclick = () => {
-                const leavingReason = document.getElementById("leavingReason").value;
-                const leavingDate = document.getElementById("leavingDate").value;
-                const generalConduct = document.getElementById("generalConduct").value;
-                const otherRemarks = document.getElementById("otherRemark").value;
-                const tcNumber = document.getElementById("tcNumber").value.trim();
-                submitTCGeneration(data.student_session_id, leavingReason, leavingDate, generalConduct, otherRemarks, tcNumber);
-            };
 
             const modal = document.getElementById('studenttcModal');
             modal.classList.remove("modal-hidden");
@@ -1257,7 +1313,36 @@
             showAlert(res.status, data.message);
         } catch (error) {
             console.error(error);
-            showAlert(400, "Unable to revert TC.");
+            showAlert(400, "Unable to cancel TC.");
+        }
+    }
+
+    async function confirmDeleteTCRecord(studentSessionId) {
+        const confirmed = window.confirm("This will permanently delete the TC record and reactivate the student. Continue?");
+        if (!confirmed) return;
+        await deleteTCRecord(studentSessionId);
+    }
+
+    async function deleteTCRecord(studentSessionId) {
+        try {
+            const res = await fetch("/api/tc/delete", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ student_session_id: studentSessionId })
+            });
+            const data = await res.json();
+            if (!res.ok) return showAlert(res.status, data.message);
+            updateStudentInLocalState(studentSessionId, {
+                state: "NOT_PROMOTED_NOT_TC",
+                tc_date: null,
+                tc_number: null,
+                left_reason: null
+            });
+            renderStudentCards();
+            showAlert(res.status, data.message);
+        } catch (error) {
+            console.error(error);
+            showAlert(400, "Unable to delete TC record.");
         }
     }
 

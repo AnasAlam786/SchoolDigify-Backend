@@ -79,8 +79,8 @@ def save_student(validated_data, mode, student_id=None):
             student_id=student.id,
             session_id=validated_data.academic.admission_session_id,
             class_id=validated_data.academic.CLASS,
-            section=validated_data.academic.Section,
-            roll=validated_data.academic.ROLL
+            Section=validated_data.academic.Section,
+            ROLL=validated_data.academic.ROLL
         )
         db.session.add(session_entry)
         db.session.commit()
@@ -129,8 +129,8 @@ def save_student(validated_data, mode, student_id=None):
             session_entry = StudentSessions.query.filter_by(student_id=student_id, session_id=session["session_id"]).first()
             if session_entry:
                 session_entry.class_id = validated_data.academic.CLASS
-                session_entry.section = validated_data.academic.Section
-                session_entry.roll = validated_data.academic.ROLL
+                session_entry.Section = validated_data.academic.Section
+                session_entry.ROLL = validated_data.academic.ROLL
             db.session.commit()
 
 

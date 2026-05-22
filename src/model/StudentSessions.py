@@ -7,9 +7,7 @@ from src import db
 PromotionStatusEnum = Enum(
     "promoted",
     "active",
-    "left",
     "passed_out",
-    "archived",
     "tc",
     name="Promotion_Status",
     create_type=False,          # Important: reuse existing type in DB
@@ -39,8 +37,9 @@ class StudentSessions(db.Model):
     session = db.relationship("Sessions", back_populates="student_sessions")
     fee_data = db.relationship("FeeData", back_populates="student_sessions")
     attendance = db.relationship("Attendance", back_populates="student_sessions")
+    tc_records = db.relationship("TCRecords", back_populates="student_sessions")
 
     __table_args__ = (
         UniqueConstraint('session_id', 'tc_number', name='uix_tc_session'),
-        UniqueConstraint('class_id', 'ROLL', 'session_id' ,'Section', name='uix_school_SR'),
+        UniqueConstraint('class_id', 'ROLL', 'session_id' , name='uix_school_SR'),
     )

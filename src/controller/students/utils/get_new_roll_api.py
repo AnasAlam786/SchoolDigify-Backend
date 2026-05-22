@@ -17,6 +17,8 @@ def get_new_roll_api():
     class_id = data.get('class_id')
     session_id = data.get('session_id')
 
+    print(session_id, class_id)
+
     if not session_id:
         session_id = session["session_id"]
 
