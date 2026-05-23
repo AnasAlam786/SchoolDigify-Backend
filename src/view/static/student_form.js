@@ -183,6 +183,9 @@ class StudentFormManager {
     // CLASS change → ALWAYS update roll
     if (classSelect) {
       classSelect.addEventListener('change', () => {
+        if (admissionClassSelect?.disabled) {
+          admissionClassSelect.value = classSelect.value;
+        }
         this.updateRollForClass(classSelect.value);
       });
     }
@@ -235,28 +238,26 @@ class StudentFormManager {
       if (currentSession) {
         admissionSessionSelect.value = currentSession;
       }
-      if (admissionClassSelect) {
+      if (admissionClassSelect && classSelect) {
         classSelect.value = admissionClassSelect.value;
       }
 
-      classSelect.disabled = true;
-      admissionSessionSelect.disabled = true;
+      if (admissionClassSelect) admissionClassSelect.disabled = true;
+      if (classSelect) classSelect.disabled = false;
+      if (admissionSessionSelect) admissionSessionSelect.disabled = true;
 
       admissionClassSelect?.removeEventListener(
         'change',
         this.handleAdmissionClassChange
       );
-      admissionClassSelect?.addEventListener(
-        'change',
-        this.handleAdmissionClassChange
-      );
 
-      if (classSelect.value) {
+      if (classSelect?.value) {
         this.updateRollForClass(classSelect.value);
       }
     } else {
-      classSelect.disabled = false;
-      admissionSessionSelect.disabled = false;
+      if (admissionClassSelect) admissionClassSelect.disabled = false;
+      if (classSelect) classSelect.disabled = false;
+      if (admissionSessionSelect) admissionSessionSelect.disabled = false;
       admissionClassSelect?.removeEventListener(
         'change',
         this.handleAdmissionClassChange
@@ -281,10 +282,9 @@ class StudentFormManager {
 
   handleAdmissionClassChange = () => {
     const admissionClassSelect = document.getElementById('Admission_Class');
-    const classSelect = document.getElementById('CLASS');
+    if (!admissionClassSelect) return;
 
-    classSelect.value = admissionClassSelect.value;
-    this.updateRollForClass(classSelect.value);
+    this.updateRollForClass(admissionClassSelect.value);
   };
 
 

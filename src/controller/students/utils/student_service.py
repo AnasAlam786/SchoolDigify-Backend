@@ -94,51 +94,6 @@ class StudentService:
         return None
 
     @staticmethod
-    def validate_admission_consistency(values: Dict[str, str]) -> Optional[str]:
-        """Validate admission year, session, and number consistency."""
-
-        admission_no = values.get("ADMISSION_NO", "")
-        admission_session_raw = values.get("admission_session_id", "")
-        admission_date_raw = values.get("ADMISSION_DATE", "")
-
-        if admission_no is not None:
-            admission_no = str(admission_no).strip()
-        
-        admission_date = StudentService.str_to_date(admission_date_raw)
-        if not isinstance(admission_date, date):
-            return "Invalid or missing Admission Date."
-
-        # --- Parse session start year ---
-        try:
-            session_start_year = int(str(admission_session_raw).strip())
-        except Exception:
-            return "Invalid or missing Admission Session."
-        
-        # --- Define academic session range ---
-        session_start_date = date(session_start_year, 4, 1)
-        session_end_date = date(session_start_year + 1, 3, 31)
-
-        # --- Validate admission date ---
-        if not (session_start_date <= admission_date <= session_end_date):
-            return (
-                f"Admission Date ({admission_date.strftime('%d-%m-%Y')}) must fall within "
-                f"Academic Session ({session_start_date.strftime('%d-%m-%Y')} to {session_end_date.strftime('%d-%m-%Y')})."
-            )
-
-        # --- Validate admission number prefix ---
-        if admission_no:
-            prefix = admission_no[:2]
-            expected_suffix = str(session_start_year)[-2:]
-
-            if prefix != expected_suffix:
-                return (
-                    f"Admission Number prefix ({prefix}) must match "
-                    f"session year suffix ({expected_suffix})."
-                )
-
-        return None
-
-    @staticmethod
     def validate_class_order(adm_class_id: int, cur_class_id: int) -> Optional[str]:
         """Ensure admission class display_order < current class display_order."""
         orders = db.session.query(ClassData.id, ClassData.display_order).filter(

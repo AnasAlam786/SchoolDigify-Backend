@@ -9,7 +9,6 @@ from src import db
 
 from src.controller.auth.login_required import login_required
 from src.controller.permissions.permission_required import permission_required
-from enum import Enum as PyEnum
 
 
 pydantic_verification_api_bp = Blueprint('pydantic_verification_bp', __name__)

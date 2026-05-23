@@ -6,7 +6,6 @@ from pydantic import ValidationError
 from sqlalchemy import func
 from psycopg2.errors import UniqueViolation
 
-
 from src.model.StaffPermissions import StaffPermissions
 from src.model.TeachersLogin import TeachersLogin
 from src.model.Roles import Roles

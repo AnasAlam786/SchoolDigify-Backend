@@ -72,7 +72,7 @@ class AdmissionFormModel(GetVerifiedData):
     # ------------------------- Academic Info -------------------------
     student_status: Optional[Literal["new", "old"]] = Field(None)
     admission_session_id: str = Field(...)
-    Admission_Class: str = Field(...)
+    Admission_Class: Optional[str] = Field(None)
     CLASS: str = Field(...)
     ROLL: conint(gt=0) = Field(...) # type: ignore
     SR: conint(gt=0) = Field(...) # type: ignore
