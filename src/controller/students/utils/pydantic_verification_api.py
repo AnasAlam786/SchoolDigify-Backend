@@ -64,43 +64,6 @@ def verify_admission():
         errors = format_pydantic_errors(e)
         print(errors)
         return jsonify({"message": "Please fix the validation errors below.", "errors": errors}), 400
-    
 
-    # Business logic checks
-    student_status = data.get('student_status')
-    if student_status == "new":
-        if data.get("Admission_Class") != data.get("CLASS"):
-            return jsonify({
-                "message": "Validation failed",
-                "errors": [{"field": "CLASS", "message": "For new students, Admission Class must be the same as Current Class."}]
-            }), 400
-        
-    elif student_status == "old":
-        adm_id = data.get("Admission_Class")
-        cur_id = data.get("CLASS")
-        if not adm_id or not cur_id:
-            return jsonify({
-                "message": "Validation failed",
-                "errors": [{"field": "Admission_Class", "message": "Admission Class and Current Class are required for existing students."}]
-            }), 400
-        try:
-            adm_id_int = int(adm_id)
-            cur_id_int = int(cur_id)
-        except (ValueError, TypeError):
-            return jsonify({
-                "message": "Validation failed",
-                "errors": [{"field": "Admission_Class", "message": "Invalid class selection."}]
-            }), 400
-
-        # Check display_order
-        adm_order = db.session.query(ClassData.display_order).filter(ClassData.id == adm_id_int).scalar()
-        cur_order = db.session.query(ClassData.display_order).filter(ClassData.id == cur_id_int).scalar()
-        adm_order = adm_order or 0
-        cur_order = cur_order or 0
-        if adm_order > cur_order:
-            return jsonify({
-                "message": "Validation failed",
-                "errors": [{"field": "Admission_Class", "message": "Admission Class must be lower than or same as Current Class."}]
-            }), 400
     
     return jsonify({"message": "All validations passed.", "verifiedData": verified_data}), 200
