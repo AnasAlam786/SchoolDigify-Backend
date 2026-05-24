@@ -118,6 +118,8 @@ def edit_student(student_id):
 
     student_obj = StudentData(student_data)
 
+    print(f"Final Student Object: {student_obj.__dict__}")
+
     return render_template(
         'student_form.html',
         mode='edit',

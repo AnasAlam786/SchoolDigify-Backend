@@ -251,7 +251,9 @@ class StudentFormManager {
         this.handleAdmissionClassChange
       );
 
-      if (classSelect?.value) {
+      // Only fetch a new roll when adding a student.
+      // When editing an existing student, keep the loaded roll value.
+      if (classSelect?.value && this.mode === 'add') {
         this.updateRollForClass(classSelect.value);
       }
     } else {
