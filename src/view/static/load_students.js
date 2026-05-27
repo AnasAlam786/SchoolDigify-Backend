@@ -162,6 +162,7 @@ function createStudentCard(student) {
     card.setAttribute('data-PEN', student.PEN);
     card.setAttribute('data-roll', student.ROLL);
     card.setAttribute('data-status', student.student_status);
+    card.setAttribute('data-SR', student.SR);
     
     // Detect new admission based on admission number matching current session
     // This logic should match the backend logic in get_students_data_api.py

@@ -85,11 +85,20 @@
     }
 
     .card-header h4 {
-        font-size: 2rem;
+        font-size: clamp(1.2rem, 2vw, 2rem);
         font-weight: 900;
-        letter-spacing: 2px;
+        letter-spacing: 1px;
         text-transform: uppercase;
         margin: 0;
+
+        /* Prevent wrapping */
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+
+        /* Better fitting */
+        width: 100%;
+        text-align: center;
     }
 
     .card-header p {

@@ -63,7 +63,8 @@ def fetch_fee_data(session_id, school_id, phone = None, class_id =None, student_
         .filter(
             # FeeData.student_session_id.in_(student_session_ids),
             FeeSessionData.class_id.in_(class_ids),
-            FeeStructure.school_id == school_id
+            FeeStructure.school_id == school_id,
+            FeeSessionData.session_id == session_id
         )
         .order_by(FeeStructure.sequence_number.asc())
         .all()

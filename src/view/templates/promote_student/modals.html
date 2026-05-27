@@ -5,7 +5,7 @@
         <div class="relative bg-gradient-to-r from-blue-600 to-blue-500 p-5 rounded-t-2xl flex items-center">
             <i class="fas fa-school text-white text-xl mr-3"></i>
             <h5 class="text-white text-xl font-bold" id="modalTitle">Promote Student</h5>
-            <button type="button" class="absolute right-5 top-1/2 -translate-y-1/2 text-white/80 hover:text-white text-xl" id="closeModal">
+            <button type="button" class="closeModalabsolute right-5 top-1/2 -translate-y-1/2 text-white/80 hover:text-white text-xl" id="closeModal">
                 <i class="fas fa-times"></i>
             </button>
         </div>
@@ -563,6 +563,11 @@ window.ModalsModule = (function () {
     document.getElementById('studentPromotionModal')?.addEventListener("click", (e) => {
         if (!document.getElementById('modalContent').contains(e.target)) closeModal();
     });
+
+    // Expose modal close helpers so inline onclick handlers can resolve them.
+    window.closeModal = closeModal;
+    window.closeTCModal = closeTCModal;
+    window.closeTCRevertConfirmModal = closeTCRevertConfirmModal;
 
     return {
         openPromotionModalForStudent,

@@ -69,11 +69,10 @@ const studentData = document.getElementById('StudentData');
   const GLOBAL_FIELDS = [
     "STUDENTS_NAME",
     "FATHERS_NAME",
-    "ADMISSION_NO",
+    "SR",
     "ROLL",
     "PHONE",
     "AADHAAR",
-    "CLASS",
     "PEN"
   ];
 
