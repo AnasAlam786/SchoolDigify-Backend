@@ -47,50 +47,17 @@ def revert_tc():
 
     db.session.commit()
 
+    # Return cancelled TC details so frontend can show cancelled TC info immediately
+    cancelled_tc_no = None
+    try:
+        cancelled_tc_no = int(tc_record.tc_no) if tc_record and tc_record.tc_no is not None else None
+    except Exception:
+        cancelled_tc_no = tc_record.tc_no if tc_record else None
+
     return jsonify({
         "message": "TC cancelled successfully.",
-        "state": "NOT_PROMOTED_NOT_TC"
+        "state": "CANCELLED_TC",
+        "cancelled_tc_number": cancelled_tc_no,
     }), 200
 
-
-@revert_tc_api_bp.route('/api/tc/delete', methods=['POST'])
-@login_required
-@permission_required('tc')
-def delete_tc_record():
-    payload = request.get_json() or {}
-    student_session_id = payload.get("student_session_id")
-
-    if not student_session_id:
-        return jsonify({"message": "Student session ID is required."}), 400
-
-    try:
-        student_session_id = int(student_session_id)
-    except (TypeError, ValueError):
-        return jsonify({"message": "Session information is invalid. Please login again."}), 400
-
-    student_session = StudentSessions.query.filter_by(
-        id=student_session_id,
-    ).first()
-
-    if not student_session or student_session.status != "tc":
-        return jsonify({"message": "No TC record found to delete."}), 404
-
-    tc_records = TCRecords.query.filter_by(student_session_id=student_session_id).all()
-    if not tc_records:
-        return jsonify({"message": "No TC record found to delete."}), 404
-
-    for record in tc_records:
-        db.session.delete(record)
-
-    student_session.status = "active"
-    student_session.tc_number = None
-    student_session.tc_date = None
-    student_session.left_reason = None
-
-    db.session.commit()
-
-    return jsonify({
-        "message": "TC record deleted successfully and student reactivated.",
-        "state": "NOT_PROMOTED_NOT_TC"
-    }), 200
 

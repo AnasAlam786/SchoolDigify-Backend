@@ -251,13 +251,15 @@ window.StudentsModule = (function () {
     const stateLabels = {
         "PROMOTED": "Promoted",
         "TC_ISSUED": "TC Issued",
-        "NOT_PROMOTED_NOT_TC": "No Action"
+        "NOT_PROMOTED_NOT_TC": "No Action",
+        "CANCELLED_TC": "TC Cancelled"
     };
 
     const stateColors = {
         PROMOTED: "bg-emerald-500/20 text-emerald-300 border border-emerald-500/50",
         TC_ISSUED: "bg-amber-500/20 text-amber-300 border border-amber-500/50",
-        NOT_PROMOTED_NOT_TC: "bg-slate-500/20 text-slate-200 border border-slate-500/50"
+        NOT_PROMOTED_NOT_TC: "bg-slate-500/20 text-slate-200 border border-slate-500/50",
+        CANCELLED_TC: "bg-amber-500/20 text-amber-300 border border-amber-500/50"
     };
 
     /* ------------------ Small shared toast / alert ------------------ */
@@ -277,8 +279,27 @@ window.StudentsModule = (function () {
         else showToast(message, 'error');
     };
 
+    /* ------------------ Date formatting helper ------------------ */
+    function formatDate(dateString) {
+        if (!dateString) return "-";
+        try {
+            const date = new Date(dateString);
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
+            return `${day}/${month}/${year}`;
+        } catch (e) {
+            return "-";
+        }
+    }
+
     /* ------------------ Rendering helpers ------------------ */
-    function buildStudentStateBadge(state) {
+    function buildStudentStateBadge(state, hasCancelledTC = false) {
+        if (hasCancelledTC) {
+            const label = stateLabels.CANCELLED_TC;
+            const color = stateColors.CANCELLED_TC;
+            return `<span class="px-3 py-1 rounded-full text-xs font-semibold inline-flex items-center gap-2 ${color}"><span class="h-2 w-2 rounded-full bg-current"></span>${label}</span>`;
+        }
         const label = stateLabels[state] || "No Action";
         const color = stateColors[state] || stateColors.NOT_PROMOTED_NOT_TC;
         return `<span class="px-3 py-1 rounded-full text-xs font-semibold inline-flex items-center gap-2 ${color}"><span class="h-2 w-2 rounded-full bg-current"></span>${label}</span>`;
@@ -312,7 +333,7 @@ window.StudentsModule = (function () {
         const promoteLabel = student.is_terminal ? "No Classes" : "Promote";
         const promoteAction = promotable ? `onclick="window.ModalsModule.openPromotionModalForStudent('${student.id}')"` : "";
         const createLabel = student.has_cancelled_tc ? 'Restore TC' : 'Create TC';
-        const createAction = student.has_cancelled_tc ? `onclick="window.ActionsModule.submitTCRestore('${student.id}')"` : `onclick="window.ModalsModule.openTCCreationModal('${student.id}')"`;
+        const createAction = `onclick="window.ModalsModule.openTCCreationModal('${student.id}')"`;
         return `
             <button class="${baseBtn} bg-green-700 hover:bg-green-600 shadow" ${promoteAction} ${disabled} title="${promoteLabel}">
                 <i class="fas fa-graduation-cap mr-2"></i>${promoteLabel}
@@ -324,17 +345,16 @@ window.StudentsModule = (function () {
     }
 
     function buildStudentCard(student) {
-        const stateBadge = buildStudentStateBadge(student.state);
+        const stateBadge = buildStudentStateBadge(student.state, student.has_cancelled_tc);
         const promotedInfo = student.state === "PROMOTED" ? `
             <div class="flex justify-between text-sm"><span class="text-gray-400">New Class:</span><span class="font-medium text-green-400">${student.next_class}</span></div>
             <div class="flex justify-between text-sm"><span class="text-gray-400">New Roll:</span><span class="font-medium text-green-400">${student.next_roll || "-"}</span></div>` : "";
         const tcInfo = student.state === "TC_ISSUED" ? `
-            <div class="flex justify-between text-sm"><span class="text-gray-400">TC No.:</span><span class="font-medium text-amber-400">${student.tc_number || "-"}</span></div>
-            <div class="flex justify-between text-sm"><span class="text-gray-400">TC Date:</span><span class="font-medium text-amber-400">${student.tc_date || "-"}</span></div>` : "";
+            <div class="flex justify-between text-sm"><span class="text-gray-400">TC No:</span><span class="font-medium text-amber-400">${student.tc_number || "-"}</span></div>
+            <div class="flex justify-between text-sm"><span class="text-gray-400">TC Date:</span><span class="font-medium text-amber-400">${formatDate(student.tc_date)}</span></div>` : "";
 
-        const cancelledInfo = student.has_cancelled_tc ? `
-            <div class="flex justify-between text-sm"><span class="text-gray-400">Cancelled TC</span><span class="font-medium text-amber-300">${student.cancelled_tc_number || '-'} on ${student.cancelled_tc_date || '-'}</span></div>
-            <div class="flex justify-between text-sm"><span class="text-gray-400">Reason</span><span class="font-medium text-amber-300">${student.cancelled_left_reason || '-'}</span></div>` : "";
+        const cancelledInfo = (student.has_cancelled_tc || student.state === "CANCELLED_TC") ? `
+            <div class="flex justify-between text-sm"><span class="text-gray-400">Cancelled TC:</span><span class="font-medium text-amber-300">${student.cancelled_tc_number || '-'} </span></div>` : "";
 
         const imageSrc = student.IMAGE ? `https://lh3.googleusercontent.com/d/${student.IMAGE}=s200` : (student.GENDER === 'Male' ? placeholderBoy : placeholderGirl);
 
@@ -342,7 +362,6 @@ window.StudentsModule = (function () {
             <div class="student-card rounded-2xl overflow-hidden shadow-lg" data-name="${student.STUDENTS_NAME}" data-roll="${student.previous_roll || ''}">
                 <div class="flex items-center justify-end gap-3 px-4 py-2 bg-transparent relative border-b border-gray-700">
                     ${stateBadge}
-                    ${student.state === "TC_ISSUED" ? `<button type="button" title="Delete TC record and reactivate student" onclick="window.ActionsModule.confirmDeleteTCRecord('${student.student_session_id}')" class="text-gray-300 hover:text-white transition-colors"><i class="fas fa-times-circle"></i></button>` : ''}
                 </div>
                 <div class="p-5">
                     <div class="flex gap-4">

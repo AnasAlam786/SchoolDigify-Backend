@@ -125,8 +125,6 @@ def get_students_by_class():
             "left_reason": row.left_reason,
             "has_cancelled_tc": True if row.tc_record_status == 'cancelled' else False,
             "cancelled_tc_number": row.tc_number if row.tc_record_status == 'cancelled' else None,
-            "cancelled_tc_date": row.tc_date.isoformat() if row.tc_date and row.tc_record_status == 'cancelled' else None,
-            "cancelled_left_reason": row.left_reason if row.tc_record_status == 'cancelled' else None,
             "is_terminal": bool(row.current_class_is_terminal),
             "can_promote": not bool(row.current_class_is_terminal) and state == "NOT_PROMOTED_NOT_TC",
             "state": state,

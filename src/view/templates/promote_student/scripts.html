@@ -143,17 +143,19 @@ window.ActionsModule = (function () {
         }
     }
 
-    async function submitTCGeneration(studentSessionId, leavingReason, leavingDate, generalConduct, otherRemarks = "", tcNumber = "") {
+    async function submitTCGeneration(studentSessionId, leavingReason, leavingDate, generalConduct, otherRemarks = "", tcNumber = "", isRestore = false) {
         const tcNumberErrorEl = document.getElementById('tcNumberError');
         tcNumberErrorEl?.classList.add('hidden');
 
-        if (!leavingReason) return window.showAlert(400, "Please select a reason for leaving.");
-        if (!leavingDate) return window.showAlert(400, "Please select a leaving date.");
-        if (!generalConduct) return window.showAlert(400, "Please provide general conduct remarks.");
-        if (!tcNumber) {
-            tcNumberErrorEl.innerText = 'Please enter a TC number.';
-            tcNumberErrorEl.classList.remove('hidden');
-            return;
+        if (!isRestore) {
+            if (!leavingReason) return window.showAlert(400, "Please select a reason for leaving.");
+            if (!leavingDate) return window.showAlert(400, "Please select a leaving date.");
+            if (!generalConduct) return window.showAlert(400, "Please provide general conduct remarks.");
+            if (!tcNumber) {
+                tcNumberErrorEl.innerText = 'Please enter a TC number.';
+                tcNumberErrorEl.classList.remove('hidden');
+                return;
+            }
         }
 
         try {
@@ -166,7 +168,8 @@ window.ActionsModule = (function () {
                     leavingDate,
                     generalConduct,
                     otherRemarks,
-                    tc_number: tcNumber
+                    tc_number: tcNumber,
+                    restore_tc: isRestore
                 }),
             });
             const content = await resp.json();
@@ -179,7 +182,11 @@ window.ActionsModule = (function () {
                 state: "TC_ISSUED",
                 tc_date: content.tc_date,
                 tc_number: content.tc_number,
-                left_reason: content.left_reason
+                left_reason: content.left_reason,
+                has_cancelled_tc: false,
+                cancelled_tc_number: null,
+                cancelled_tc_date: null,
+                cancelled_left_reason: null
             });
             window.StudentsModule.renderStudentCards();
             window.ModalsModule.closeTCModal();
@@ -209,45 +216,18 @@ window.ActionsModule = (function () {
             const data = await res.json();
             if (!res.ok) return window.showAlert(res.status, data.message);
             window.StudentsModule.updateStudentInLocalState(studentSessionId, {
-                state: "NOT_PROMOTED_NOT_TC",
+                state: "CANCELLED_TC",
                 tc_date: null,
                 tc_number: null,
-                left_reason: null
+                left_reason: null,
+                has_cancelled_tc: true,
+                cancelled_tc_number: data.cancelled_tc_number || null,
             });
             window.StudentsModule.renderStudentCards();
             window.showAlert(res.status, data.message);
         } catch (error) {
             console.error(error);
             window.showAlert(400, "Unable to cancel TC.");
-        }
-    }
-
-    async function confirmDeleteTCRecord(studentSessionId) {
-        const confirmed = window.confirm("This will permanently delete the TC record and reactivate the student. Continue?");
-        if (!confirmed) return;
-        await deleteTCRecord(studentSessionId);
-    }
-
-    async function deleteTCRecord(studentSessionId) {
-        try {
-            const res = await fetch("/api/tc/delete", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ student_session_id: studentSessionId })
-            });
-            const data = await res.json();
-            if (!res.ok) return window.showAlert(res.status, data.message);
-            window.StudentsModule.updateStudentInLocalState(student_session_id, {
-                state: "NOT_PROMOTED_NOT_TC",
-                tc_date: null,
-                tc_number: null,
-                left_reason: null
-            });
-            window.StudentsModule.renderStudentCards();
-            window.showAlert(res.status, data.message);
-        } catch (error) {
-            console.error(error);
-            window.showAlert(400, "Unable to delete TC record.");
         }
     }
 
@@ -285,10 +265,8 @@ window.ActionsModule = (function () {
         submitDepromotion,
         submitTCGeneration,
         submitTCRevert,
-        confirmDeleteTCRecord,
-        deleteTCRecord,
         reprintIssuedTC,
-        submitTCRestore: submitTCRevert // alias (restore uses same endpoint on server-side)
+        submitTCRestore: (studentSessionId) => submitTCGeneration(studentSessionId, null, null, null, null, null, true)
     };
 })();
 </script>

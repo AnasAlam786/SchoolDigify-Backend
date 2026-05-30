@@ -632,7 +632,6 @@
             <div class="student-card rounded-2xl overflow-hidden shadow-lg" data-name="${student.STUDENTS_NAME}" data-roll="${student.previous_roll || ''}">
                 <div class="flex items-center justify-end gap-3 px-4 py-2 bg-transparent relative border-b border-gray-700">
                     ${stateBadge}
-                    ${student.state === "TC_ISSUED" ? `<button type="button" title="Delete TC record and reactivate student" onclick="confirmDeleteTCRecord('${student.student_session_id}')" class="text-gray-300 hover:text-white transition-colors"><i class="fas fa-times-circle"></i></button>` : ''}
                 </div>
                 <div class="p-5">
                     <div class="flex gap-4">
@@ -1317,34 +1316,6 @@
         }
     }
 
-    async function confirmDeleteTCRecord(studentSessionId) {
-        const confirmed = window.confirm("This will permanently delete the TC record and reactivate the student. Continue?");
-        if (!confirmed) return;
-        await deleteTCRecord(studentSessionId);
-    }
-
-    async function deleteTCRecord(studentSessionId) {
-        try {
-            const res = await fetch("/api/tc/delete", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ student_session_id: studentSessionId })
-            });
-            const data = await res.json();
-            if (!res.ok) return showAlert(res.status, data.message);
-            updateStudentInLocalState(studentSessionId, {
-                state: "NOT_PROMOTED_NOT_TC",
-                tc_date: null,
-                tc_number: null,
-                left_reason: null
-            });
-            renderStudentCards();
-            showAlert(res.status, data.message);
-        } catch (error) {
-            console.error(error);
-            showAlert(400, "Unable to delete TC record.");
-        }
-    }
 
     async function reprintIssuedTC(studentSessionId) {
         try {

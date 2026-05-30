@@ -45,7 +45,11 @@ def generate_and_save_tc():
         return jsonify({"message": "Student session ID is not provided."}), 400
 
     cancelled_tc_record = TCRecords.query.filter_by(student_session_id=student_session_id, status='cancelled').order_by(TCRecords.id.desc()).first()
-    restore_cancelled = bool(cancelled_tc_record)
+    restore_requested = bool(data.get('restore_tc'))
+    restore_cancelled = restore_requested and bool(cancelled_tc_record)
+
+    if restore_requested and not cancelled_tc_record:
+        return jsonify({"message": "No cancelled TC record found to restore."}), 400
 
     if not restore_cancelled and (not leaving_reason or not leaving_date or not general_conduct):
         return jsonify({"message": "All fields are required."}), 400

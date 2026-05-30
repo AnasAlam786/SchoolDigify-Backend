@@ -449,7 +449,8 @@ window.ModalsModule = (function () {
 
             document.getElementById("studentNameTC").innerText = data.STUDENTS_NAME || '';
             document.getElementById("studentNameTC").setAttribute("data-student-session-id", data.student_session_id || '');
-            document.getElementById("leavingDate").value = data.promoted_date || '';
+            const leavingDateValue = data.has_cancelled_tc ? (data.cancelled_tc_date || '') : (data.promoted_date || '');
+            document.getElementById("leavingDate").value = leavingDateValue;
             document.getElementById("oldClassTC").innerText = `${data.CLASS} | Roll: ${data.ROLL}` || '';
             document.getElementById("newClassTC").innerText = data.promoted_class || '';
             document.getElementById("fatherNameTC").innerText = data.FATHERS_NAME || '';
@@ -472,11 +473,12 @@ window.ModalsModule = (function () {
                 tcNumberWrapper?.classList.add('hidden');
                 cancelledTcInfo.classList.remove('hidden');
                 document.getElementById('cancelledTcNumber').innerText = data.cancelled_tc_number || '-';
-                document.getElementById('cancelledTcDate').innerText = data.cancelled_tc_date || '-';
+                document.getElementById('cancelledTcDate').innerText = data.cancelled_tc_date ? new Date(data.cancelled_tc_date).toLocaleDateString('en-GB', {day: '2-digit', month: '2-digit', year: 'numeric'}) : '-';
                 document.getElementById('cancelledTcReason').innerText = data.cancelled_tc_reason || '-';
-                generateTCButton.classList.add('hidden');
-                restoreTCButton.classList.remove('hidden');
-                restoreTCButton.onclick = () => window.ActionsModule.submitTCRestore(data.student_session_id);
+                generateTCButton.classList.remove('hidden');
+                generateTCButton.innerHTML = '<i class="fas fa-undo mr-2"></i> Restore TC';
+                generateTCButton.onclick = () => window.ActionsModule.submitTCGeneration(data.student_session_id, null, null, null, null, null, true);
+                restoreTCButton.classList.add('hidden');
             } else {
                 document.getElementById("tc-modalTitle").innerText = "Generate TC";
                 tcFormFields.classList.remove('hidden');
@@ -486,6 +488,7 @@ window.ModalsModule = (function () {
                 document.getElementById('cancelledTcDate').innerText = '';
                 document.getElementById('cancelledTcReason').innerText = '';
                 generateTCButton.classList.remove('hidden');
+                generateTCButton.innerHTML = '<i class="fas fa-file-pdf mr-2"></i> Generate TC';
                 restoreTCButton.classList.add('hidden');
 
                 tcNumberInput.value = '';
@@ -516,7 +519,7 @@ window.ModalsModule = (function () {
                     const generalConduct = document.getElementById("generalConduct").value;
                     const otherRemarks = document.getElementById("otherRemark").value;
                     const tcNumber = document.getElementById("tcNumber").value.trim();
-                    window.ActionsModule.submitTCGeneration(data.student_session_id, leavingReason, leavingDate, generalConduct, otherRemarks, tcNumber);
+                    window.ActionsModule.submitTCGeneration(data.student_session_id, leavingReason, leavingDate, generalConduct, otherRemarks, tcNumber, false);
                 };
             }
 
