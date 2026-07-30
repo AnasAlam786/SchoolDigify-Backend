@@ -3,7 +3,7 @@
 
 async function sendMessage(studentId) {
     try {
-      const resp = await fetch(`/create_watsapp_message_api?student_id=${encodeURIComponent(studentId)}`);
+      const resp = await fetch(`/api/create_watsapp_message_api?student_id=${encodeURIComponent(studentId)}`);
       const data = await resp.json();
       if (resp.ok) {
         sendWhatsAppMessage(data.phone, data.watsapp_message);

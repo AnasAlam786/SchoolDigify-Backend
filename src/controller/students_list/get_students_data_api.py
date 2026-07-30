@@ -53,6 +53,7 @@ def get_students_data():
         StudentSessions.id.label("student_session_id"),
 
         ClassData.CLASS,
+        ClassData.id.label("class_id"),
         ClassData.display_order,
 
         RTEInfo.is_RTE,
@@ -197,7 +198,6 @@ def get_students_data():
     # ---------------------------------------------------
     # FINAL RESPONSE
     # ---------------------------------------------------
-
     return jsonify({
 
         'status': 'success',

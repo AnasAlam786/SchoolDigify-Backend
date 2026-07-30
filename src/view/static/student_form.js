@@ -150,6 +150,7 @@ class StudentFormManager {
     }
   }
 
+
   initClassRollLogic() {
     if (this.mode === 'add' || !this.hasOtherSessions) {
       this.setupNewStudentLogic();
@@ -196,7 +197,6 @@ class StudentFormManager {
     }
   }
   
-
   setupOldStudentLogic() {
     const classSelect = document.getElementById('CLASS');
     const admissionSessionSelect = document.getElementById('admission_session_id');
@@ -208,11 +208,6 @@ class StudentFormManager {
     msg.className = "text-xs text-red-400";
     msg.textContent = "You can change the class from Promotions page.";
     classSelect.parentNode.insertBefore(msg, classSelect.nextSibling);
-    // if (admissionSessionSelect) admissionSessionSelect.disabled = true;
-
-    // // Roll logic (kept for safety / future reuse)
-    // classSelect?.addEventListener('change', () => {
-    // });
 
     // Optional UX clarity
     if (admissionClassSelect?.disabled) {
@@ -223,7 +218,6 @@ class StudentFormManager {
       admissionSessionSelect.title = 'Cannot modify: Student has past academic records';
     }
   }
-
 
   handleStudentStatusChange(status) {
     const admissionClassSelect = document.getElementById('Admission_Class');
@@ -290,6 +284,9 @@ class StudentFormManager {
   };
 
 
+
+
+
   async updateRollForClass(classId) {
     const rollInput = document.getElementById('ROLL');
     
@@ -312,8 +309,6 @@ class StudentFormManager {
       console.error('Error fetching next roll:', err);
     }
   }
-
-
 
   initEventListeners() {
     this.submitBtn.addEventListener('click', (e) => this.handleSubmit(e));

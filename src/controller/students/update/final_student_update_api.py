@@ -18,6 +18,7 @@ final_update_student_api_bp = Blueprint('final_update_student_api_bp', __name__)
 def student_update_api():
     """Update an existing student after all validations."""
     payload = request.get_json() or {}
+    
     student_id = payload.get("student_id")
     verified_data = payload.get("verifiedData", [])
     image_b64 = payload.get("image")

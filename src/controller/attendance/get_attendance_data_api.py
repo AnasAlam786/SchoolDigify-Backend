@@ -45,8 +45,6 @@ def get_attendance_data_api():
     current_date = datetime.today().date()
 
 
-
-
     date = parse_date(date_str)
     if date is None:
         return jsonify({"message": "Invalid date format. Use DD/MM/YYYY or DD-MM-YYYY"}), 400
@@ -88,8 +86,7 @@ def get_attendance_data_api():
         db.session.query(
             StudentsDB.STUDENTS_NAME,
             StudentsDB.FATHERS_NAME,
-            StudentsDB.IMAGE,
-            StudentsDB.PHONE,
+            StudentsDB.IMAGE, StudentsDB.PHONE,
             ClassData.CLASS,
             StudentSessions.ROLL,
             StudentSessions.id.label("student_session_id"),
@@ -136,6 +133,8 @@ def get_attendance_data_api():
         "half_day": half_day,
         "not_marked": not_marked
     }
+    print(attendance_summary)
+    print(attendance_data)
     
     return jsonify({"attendance_data": attendance_data, "attendance_summary": attendance_summary}), 200
 
@@ -149,16 +148,16 @@ def get_student_attendance_month_api():
     month = request.args.get('month')
 
     if not student_session_id or not year or not month:
-        return jsonify({"message": "student_session_id, year, and month are required"}), 400
+        return jsonify({"error": "student_session_id, year, and month are required"}), 400
 
     try:
         year = int(year)
         month = int(month)
     except ValueError:
-        return jsonify({"message": "Year and month must be numeric"}), 400
+        return jsonify({"error": "Year and month must be numeric"}), 400
 
     if month < 1 or month > 12 or year < 1900 or year > 2100:
-        return jsonify({"message": "Invalid year or month"}), 400
+        return jsonify({"error": "Invalid year or month"}), 400
 
     current_session = session["session_id"]
     school_id = session["school_id"]
@@ -181,7 +180,7 @@ def get_student_attendance_month_api():
     )
 
     if not student_record:
-        return jsonify({"message": "Student session record not found"}), 404
+        return jsonify({"error": "Student session record not found"}), 404
 
     start_date = date(year, month, 1)
     end_date = date(year, month, calendar.monthrange(year, month)[1])
@@ -327,11 +326,8 @@ def get_student_attendance_month_api():
     session_summary['present_percent'] = round((session_summary['present'] / total_session_days) * 100, 1) if total_session_days else 0
 
     return jsonify({
-        'success': True,
         'student_name': student_record.STUDENTS_NAME,
         'class_name': student_record.CLASS,
-        'year': year,
-        'month': month,
         'records': records,
         'monthly_summary': monthly_summary,
         'session_summary': session_summary

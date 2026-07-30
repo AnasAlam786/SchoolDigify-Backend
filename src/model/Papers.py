@@ -9,7 +9,7 @@ class Papers(db.Model):
     __tablename__ = 'Papers'
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
-    user_id = Column(Text, ForeignKey('TeachersLogin.id', onupdate='CASCADE'), nullable=False)
+    user_id = Column(Integer, ForeignKey('TeachersLogin.id', onupdate='CASCADE'), nullable=False)
     staff_data = db.relationship("TeachersLogin", back_populates="papers")
 
     session_id = Column(BigInteger, ForeignKey('Sessions.id', onupdate="CASCADE"), nullable=False)
@@ -17,6 +17,9 @@ class Papers(db.Model):
 
     school_id = Column(Text, ForeignKey('Schools.id', onupdate='CASCADE'), nullable=False)
     school = db.relationship("Schools", back_populates="papers")
+
+    # self-reffering column
+    cloned_from = Column( BigInteger, ForeignKey("Papers.id", ondelete="SET NULL"),nullable=True)
 
     # Metadata columns
     event = Column(String(255), nullable=False)  # e.g., "Formative Assessment - I"

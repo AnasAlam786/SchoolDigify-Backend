@@ -28,7 +28,7 @@ class StudentService:
         'Height': 'Height (cm)',
         'Weight': 'Weight (kg)',
         'BLOOD_GROUP': 'Blood Group',
-        'student_status': 'Student Status (new/old)',
+        'admitted_as_new': 'Student Status (new/old)',
         'admission_session_id': 'Admission Session',
         'Admission_Class': 'Admission Class',
         'CLASS': 'Current Class',
@@ -67,7 +67,7 @@ class StudentService:
 
     REQUIRED_FIELDS = [
         'STUDENTS_NAME', 'DOB', 'GENDER', 'Caste_Type', 'RELIGION',
-        'admission_session_id', 'Admission_Class', 'CLASS', 'ROLL', 'SR', 'ADMISSION_NO', 'ADMISSION_DATE',
+        'admission_session_id', 'admission_class_id', 'class_id', 'ROLL', 'SR', 'ADMISSION_NO', 'ADMISSION_DATE',
         'FATHERS_NAME', 'MOTHERS_NAME', 'ADDRESS', 'PHONE', 'PIN'
     ]
 
@@ -104,29 +104,52 @@ class StudentService:
             return "Admission Class must be same or lower than Current Class."
         return None
 
+
     @staticmethod
-    def check_unique_conflicts(values: Dict[str, str], school_id: int, school_fields: list, exclude_student_id: Optional[int] = None) -> Optional[str]:
+    def check_unique_conflicts(
+        values: Dict[str, str],
+        school_id: int,
+        school_fields: List[str],
+        exclude_student_id: Optional[int] = None
+    ) -> Tuple[List[str], Optional[StudentsDB]]:
         """Check for unique field conflicts."""
 
-        school_filters = []        
+        school_filters = [
+            getattr(StudentsDB, field) == values[field]
+            for field in school_fields
+            if values.get(field)
+        ]
+
+        if not school_filters:
+            return [], None
+
+        query = db.session.query(StudentsDB).filter(
+            StudentsDB.school_id == school_id,
+            or_(*school_filters)
+        )
+
+        if exclude_student_id is not None:
+            query = query.filter(StudentsDB.id != exclude_student_id)
+
+        duplicate_student = query.first()
+
+        if not duplicate_student:
+            return [], None
+        
+        
+        duplicate_fields = []
         for field in school_fields:
-            value = values.get(field, None)
-            if value:
-                school_filters.append(getattr(StudentsDB, field) == value)
+            value = values.get(field)
 
-        if school_filters:
-            query = db.session.query(StudentsDB).filter(
-                StudentsDB.school_id == school_id,
-                or_(*school_filters)
-            )
-            if exclude_student_id:
-                query = query.filter(StudentsDB.id != exclude_student_id)
-            conflict = query.first()
-            if conflict:
-                conflicting = [f for f, v in zip(school_fields, [values.get(f, "") for f in school_fields]) if v and getattr(conflict, f) == v]
-                return f"Student '{conflict.STUDENTS_NAME}' already has the same {', '.join(conflicting)}."
+            # Skip empty values
+            if value in (None, ""):
+                continue
 
-        return None
+            if getattr(duplicate_student, field) == value:
+                duplicate_fields.append(field)
+                
+        return duplicate_fields, duplicate_student
+    
 
     @staticmethod
     def check_roll_availability(class_id: int, session_id: int, roll: int, exclude_student_id: Optional[int] = None) -> Optional[str]:
@@ -158,12 +181,11 @@ class StudentService:
     @staticmethod
     def create_student(verified_data: List[Dict], image_b64: Optional[str], school_id: int, session_id: int) -> Tuple[Optional[int], Optional[str]]:
         """Create a new student with all related data."""
-        data = {item["field"]: item["value"] for item in verified_data}
 
         # Prepare data
-        studentsdb_data = {k: v for k, v in data.items() if k in StudentsDB.__table__.columns}
-        sessions_data = {k: v for k, v in data.items() if k in StudentSessions.__table__.columns}
-        rte_data = {k: v for k, v in data.items() if k in RTEInfo.__table__.columns}
+        studentsdb_data = {k: v for k, v in verified_data.items() if k in StudentsDB.__table__.columns}
+        sessions_data = {k: v for k, v in verified_data.items() if k in StudentSessions.__table__.columns}
+        rte_data = {k: v for k, v in verified_data.items() if k in RTEInfo.__table__.columns}
 
         # Convert dates
         for field in ["DOB", "ADMISSION_DATE"]:
@@ -174,12 +196,13 @@ class StudentService:
                     return None, f"Invalid date format for {field}."
 
         studentsdb_data["school_id"] = school_id
-        studentsdb_data["Admission_Class"] = data["CLASS"]
-        studentsdb_data["admitted_as_new"] = data.get('student_status') == 'new'
+        studentsdb_data["admission_class_id"] = verified_data.get("class_id")
+        studentsdb_data["admitted_as_new"] = verified_data.get('admitted_as_new')
 
-        sessions_data["class_id"] = data["CLASS"]
+        sessions_data["class_id"] = verified_data.get("class_id")
         sessions_data["session_id"] = session_id
-        sessions_data["created_at"] = studentsdb_data["ADMISSION_DATE"]
+        sessions_data["created_at"] = datetime.now()
+        sessions_data["promoted_on"] = studentsdb_data["ADMISSION_DATE"]
 
         try:
             new_student = StudentsDB(**studentsdb_data)
@@ -196,7 +219,7 @@ class StudentService:
                 school = Schools.query.filter_by(id=school_id).first()
                 if school:
                     encoded = image_b64.split(",")[1]
-                    image_id = upload_image(encoded, data.get("ADMISSION_NO"), school.students_image_folder_id)
+                    image_id = upload_image(encoded, verified_data.get("ADMISSION_NO"), school.students_image_folder_id)
                     new_student.IMAGE = image_id
             db.session.commit()
 
@@ -219,19 +242,18 @@ class StudentService:
 
         data = {item["field"]: item["value"] for item in verified_data}
 
-        # Handle student_status to set admission_session_id appropriately
-        student_status = data.get('student_status')
-        if student_status == 'new':
+        # Handle admitted_as_new to set admission_session_id appropriately
+        admitted_as_new = data.get('admitted_as_new')
+        if admitted_as_new:
             # New student - set admission_session_id to current session
             data['admission_session_id'] = session_id
-        elif student_status == 'old':
+        elif not admitted_as_new:
             # Old student - keep existing admission_session_id (don't override)
             if 'admission_session_id' in data:
                 del data['admission_session_id']
 
         studentsdb_updates = {k: v for k, v in data.items() if k in StudentsDB.__table__.columns}
-        if student_status in ('new', 'old'):
-            studentsdb_updates['admitted_as_new'] = (student_status == 'new')
+
         sessions_updates = {k: v for k, v in data.items() if k in StudentSessions.__table__.columns}
         rte_updates = {k: v for k, v in data.items() if k in RTEInfo.__table__.columns}
 
@@ -329,7 +351,7 @@ class StudentService:
                 return class_map[key]
 
         return None
-   
+
     
     @staticmethod
     def read_excel_rows(file, class_map, field_map=None):

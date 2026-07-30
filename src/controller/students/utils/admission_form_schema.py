@@ -1,10 +1,9 @@
-from pydantic import BaseModel, Field, EmailStr, constr, conint, ConfigDict, field_validator, model_validator
-from typing import Optional, Literal, Any, get_origin, get_args, Union
+from pydantic import BaseModel, Field, EmailStr, constr, conint, field_validator
+from typing import Optional, Literal
 from enum import Enum as PyEnum
 from .validate_aadhaar import verify_aadhaar
 from .str_to_date import str_to_date
 from src.model.enums import StudentsDBEnums
-from datetime import date
 
 
 # Build Python Enums from SQLAlchemy Enum values
@@ -37,23 +36,8 @@ FatherOccupationEnum = _build_python_enum("FATHERS_OCCUPATION", StudentsDBEnums.
 MotherOccupationEnum = _build_python_enum("MOTHERS_OCCUPATION", StudentsDBEnums.MOTHERS_OCCUPATION)
 HomeDistanceEnum = _build_python_enum("Home_Distance", StudentsDBEnums.HOME_DISTANCE)
 
-class GetVerifiedData(BaseModel):
-    def to_verified_data(self):
-        data = self.model_dump()
-
-        result = []
-        for field_name, value in data.items():
-            if isinstance(value, PyEnum):
-                value = value.value
-            result.append({
-                "field": field_name,
-                "value": value,
-            })
-        return result
-
-
 # ------------------------- Personal Info -------------------------
-class AdmissionFormModel(GetVerifiedData):
+class AdmissionFormModel(BaseModel):
     
     STUDENTS_NAME: constr(pattern=r'^[^\W\d_]+(?: [^\W\d_]+)*$') = Field(...) # type: ignore
     DOB: str = Field(...)
@@ -70,10 +54,10 @@ class AdmissionFormModel(GetVerifiedData):
     BLOOD_GROUP: Optional[BloodGroupEnum] = Field(None)
         
     # ------------------------- Academic Info -------------------------
-    student_status: Optional[Literal["new", "old"]] = Field(None)
+    admitted_as_new: bool = Field(..., description="Indicates if admitted as new")
     admission_session_id: str = Field(...)
-    Admission_Class: Optional[str] = Field(None)
-    CLASS: str = Field(...)
+    admission_class_id: Optional[str] = Field(None)
+    class_id: str = Field(...)
     ROLL: conint(gt=0) = Field(...) # type: ignore
     SR: conint(gt=0) = Field(...) # type: ignore
     ADMISSION_NO: conint(gt=0) = Field(...) # type: ignore

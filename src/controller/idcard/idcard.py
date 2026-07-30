@@ -17,8 +17,6 @@ from src.controller.permissions.permission_required import permission_required
 
 idcard_bp = Blueprint( 'idcard_bp',   __name__)
 
-#add the aadhar of aarish in database after taking from udise
-
 @idcard_bp.route('/idcard', methods=['GET'])
 @login_required
 @permission_required('idcard')
@@ -48,7 +46,7 @@ def idcards_page():
 
     return render_template('/idcard.html', school=school, classes=classes)
 
-@idcard_bp.route('/idcard/api/students/<int:class_id>', methods=['GET'])
+@idcard_bp.route('/api/idcard_students/<int:class_id>', methods=['GET'])
 @login_required
 @permission_required('idcard')
 def get_students_by_class(class_id):
@@ -67,9 +65,9 @@ def get_students_by_class(class_id):
 
     # Query students for the specific class
     students_query = db.session.query(
-        StudentsDB.id,
+        StudentsDB.id.label("student_id"),
         StudentsDB.STUDENTS_NAME,
-        func.to_char(StudentsDB.DOB, 'Dy, DD Month YYYY').label('dob'),
+        func.to_char(StudentsDB.DOB, 'Dy, DD Mon YYYY').label('dob'),
         StudentsDB.FATHERS_NAME,
         StudentsDB.IMAGE,
         StudentsDB.PHONE,
@@ -115,10 +113,10 @@ def get_students_by_class(class_id):
     students_data = []
     for student in students_query:
         students_data.append({
-            'id': student.id,
-            'name': student.STUDENTS_NAME,
+            'student_id': student.student_id,
+            'student_name': student.STUDENTS_NAME,
             'dob': student.dob,
-            'father': student.FATHERS_NAME,
+            'student_father': student.FATHERS_NAME,
             'image': student.IMAGE,
             'phone': student.PHONE,
             'address': student.ADDRESS,

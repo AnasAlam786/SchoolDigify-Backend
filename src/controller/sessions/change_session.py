@@ -8,7 +8,7 @@ from src import r
 change_session_bp = Blueprint( 'change_session_bp',   __name__)
 
 
-@change_session_bp.route('/change_session', methods=["POST"])
+@change_session_bp.route('/api/change_session', methods=["POST"])
 @login_required
 @permission_required('change_session')
 def change_session():
@@ -19,7 +19,7 @@ def change_session():
 
     # Validate input
     if not selected_session or not selected_session.isdigit():
-        return jsonify({"message": "Invalid session ID"}), 400
+        return jsonify({"error": "Invalid session ID"}), 400
     
 
     selected_session = int(selected_session)
@@ -30,6 +30,6 @@ def change_session():
         session["session_id"] = selected_session
         return jsonify({"message": f"Session Updated to {selected_session}-{(selected_session+1)}"}), 200
 
-    return jsonify({"message": "Session not found"}), 404
+    return jsonify({"error": "Session not found"}), 404
 
     

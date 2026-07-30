@@ -24,7 +24,8 @@
         body {
             background: #4a4a4a;
             /* dark preview background */
-            flex-direction: column;   /* key fix */
+            flex-direction: column;
+            /* key fix */
             display: flex;
             justify-content: center;
             align-items: center;
@@ -51,6 +52,7 @@
             /* inner spacing to avoid content touching border edges */
             padding: 8mm 12mm 10mm 12mm;
         }
+
         .certificate-card {
             page-break-after: always;
             break-after: page;
@@ -279,7 +281,7 @@
         /* ========== PRINT PERFECTION ========== */
         @page {
             size: A4;
-            margin:0;
+            margin: 0;
         }
 
         @media print {
@@ -464,10 +466,11 @@
             <!-- Left side: Student details (class, father, session) -->
             <div class="info-tab">
                 <span><i class="fas fa-graduation-cap"></i> Class :</span> {{ student.CLASS | default('N/A') }} <br>
-                <span><i class="fas fa-user-friends"></i> Father :</span> {{ student.FATHERS_NAME | default('N/A') }} <br>
+                <span><i class="fas fa-user-friends"></i> Father :</span> {{ student.FATHERS_NAME | default('N/A') }}
+                <br>
                 <span><i class="far fa-calendar-alt"></i> Session :</span> {{ session_year | default('2025-2026') }}<br>
                 <span><i class="fas fa-trophy"></i> Rank :</span>
-                <strong class="highlight-value">#{{ student.rank | default('N/A') }}</strong>
+                <strong class="highlight-value">#{{ student.overall_rank | default('N/A') }}</strong>
                 with
                 <strong class="highlight-value">{{ student.percentage | default('0') }}%</strong>
             </div>
@@ -479,7 +482,7 @@
                     class="student-photo-img" onerror="this.onerror=null;this.src='{{ default_student_img }}';">
 
                 <div class="circle-container">
-                    <img src="{{ student.student_image | default(default_student_img) }}" class="circle-img"
+                    <img src="{{ student.IMAGE | default(default_student_img) }}" class="circle-img"
                         onerror="this.onerror=null;this.src='{{ default_student_img }}';">
                 </div>
             </div>

@@ -1,8 +1,12 @@
 # src/controller/students/student_routes.py
 # Clean routes for add and edit student operations
 
-from flask import render_template, session, Blueprint, jsonify
+from flask import session, Blueprint, jsonify
 from sqlalchemy.orm import aliased
+from datetime import date, datetime
+from sqlalchemy import inspect
+
+
 
 from src.model.StudentsDB import StudentsDB
 from src.model.ClassData import ClassData
@@ -31,7 +35,7 @@ def get_enum_options():
         'home_distance_options': list(StudentsDBEnums.HOME_DISTANCE.enums),
     }
 
-@update_student_bp.route('/update_student/<int:student_id>', methods=['GET'])
+@update_student_bp.route('/api/update_student/<int:student_id>', methods=['GET'])
 @login_required
 @permission_required('update_student')
 def edit_student(student_id):
@@ -46,14 +50,23 @@ def edit_student(student_id):
         .filter(ClassAccess.staff_id == user_id)
         .order_by(ClassData.id.asc())
     )
-    classes = classes_query.all()
-    classes_dict = {str(cls.id): cls.CLASS for cls in classes}
+
+    classes = [
+        {
+            "id": cls.id,
+            "class_name": cls.CLASS
+        }
+        for cls in classes_query.all()
+    ]
 
     # Build admission sessions
-    admission_sessions = {}
-    for year in session.get("all_sessions", []):
-        year = int(year)
-        admission_sessions[year] = f"{year}-{year+1}"
+    admission_sessions = [
+        {
+            "id": int(year),
+            "label": f"{int(year)}-{int(year)+1}"
+        }
+        for year in session.get("all_sessions", [])
+    ]
 
     # Query student with related data
     AdmissionClass = aliased(ClassData)
@@ -63,7 +76,7 @@ def edit_student(student_id):
         db.session.query(StudentsDB, StudentSessions, RTEInfo)
         .join(StudentSessions, StudentSessions.student_id == StudentsDB.id)
         .join(CurrentClass, StudentSessions.class_id == CurrentClass.id)
-        .outerjoin(AdmissionClass, StudentsDB.Admission_Class == AdmissionClass.id)
+        .outerjoin(AdmissionClass, StudentsDB.admission_class_id == AdmissionClass.id)
         .outerjoin(RTEInfo, RTEInfo.student_id == StudentsDB.id)
         .filter(
             StudentsDB.id == student_id,
@@ -106,29 +119,29 @@ def edit_student(student_id):
             student_data[col.name] = value
 
     # Add StudentsDB data
-    for col in student_db.__table__.columns:
-        value = getattr(student_db, col.name)
-        student_data[col.name] = value
+    for col in inspect(StudentsDB).mapper.column_attrs:
+        value = getattr(student_db, col.key)
+        student_data[col.key] = value
 
-    # Create a simple object-like structure for template access
-    class StudentData:
-        def __init__(self, data):
-            for key, value in data.items():
-                setattr(self, key, value)
 
-    student_obj = StudentData(student_data)
+    for key, value in student_data.items():
+        if isinstance(value, (date, datetime)):
+            student_data[key] = value.strftime("%d-%m-%Y")
 
-    print(f"Final Student Object: {student_obj.__dict__}")
 
-    return render_template(
-        'student_form.html',
-        mode='edit',
-        student=student_obj,
-        rte_info=rte_info,
-        classes=classes_dict,
-        admission_sessions=admission_sessions,
-        current_session=current_session,
-        has_other_sessions=has_other_session_records,
-        is_admitted_new = student_db.is_admitted_new,
+    return jsonify({
+        "student": student_data,
+        "rte_info": (
+            {
+                col.name: getattr(rte_info, col.name)
+                for col in rte_info.__table__.columns
+            }
+            if rte_info
+            else None
+        ),
+        "classes": classes,
+        "admission_sessions": admission_sessions,
+        "current_session": current_session,
+        "has_other_sessions": has_other_session_records,
         **get_enum_options()
-    )
+    })

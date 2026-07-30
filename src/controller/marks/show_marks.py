@@ -14,8 +14,6 @@ from src.controller.marks.utils.process_marks import process_marks
 from src.model.ClassData import ClassData
 from src.model.TeachersLogin import TeachersLogin
 
-
-
 show_marks_bp = Blueprint('show_marks_bp',   __name__)
 
 @show_marks_bp.route('/show_marks', methods=["GET"])
@@ -35,7 +33,7 @@ def show_marks():
     return render_template('marks_management/show_marks.html', Data=None, classes = classes)
 
 
-@show_marks_bp.route('/show_marks_api', methods=["POST"])
+@show_marks_bp.route('/api/show_marks', methods=["POST"])
 @login_required
 @permission_required('show_marks')  # Assuming same permission as single download
 def show_marks_api():
@@ -47,9 +45,6 @@ def show_marks_api():
         class_id = int(request.json.get("class_id"))
     except (TypeError, ValueError):
         return jsonify({"message": "Invalid class selected."}), 400
-
-    if not school_id or not current_session_id or not user_id:
-        return jsonify({"message": "Unable to get session data, Please try to logout and login again!"}), 403
 
     has_access = db.session.query(
         exists().where(ClassAccess.staff_id == user_id)
@@ -73,15 +68,15 @@ def show_marks_api():
 
 
     if not student_marks_data:
-        # no students found for this class – render UI with a special flag
         print("No student marks data found for the given class.")
-        html = render_template('marks_management/marks_table.html', student_marks=[], class_empty=True)
-        return jsonify({"html": str(html)})
+        # html = render_template('marks_management/marks_table.html', student_marks=[], class_empty=True)
+        return jsonify({'error': 'No student marks data found for the given class.'}), 403
     
-    student_marks = process_marks(student_marks_data, add_grades_flag=False, add_grand_total_flag=True)
-    
+    student_marks = process_marks(
+        student_marks_data,  add_grades_flag=False, add_grand_total_flag=True
+    )
 
-    html = render_template("marks_management/marks_table.html", student_marks=student_marks)
+    print(student_marks)
 
-    return jsonify({"html":str(html)})
+    return jsonify({"student_marks":student_marks})
     

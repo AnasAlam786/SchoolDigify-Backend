@@ -1,6 +1,6 @@
 from sqlalchemy import (
     Column, Date, Integer, BigInteger, Text, DateTime, Numeric, Enum,
-    ForeignKey, UniqueConstraint
+    ForeignKey, UniqueConstraint, func
 )
 from src import db
 
@@ -24,7 +24,8 @@ class StudentSessions(db.Model):
     Weight = Column(Integer, nullable=True)
     session_id = Column(BigInteger, ForeignKey('Sessions.id', onupdate="CASCADE"), nullable=False)
     Attendance = Column(Text, nullable=True)  # JSON format for bulk attendance or integer for daily count
-    created_at = Column(DateTime)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    promoted_on = Column(Date)
     Section = Column(Text, nullable=True)
 
     tc_number = Column(Numeric, nullable=True)

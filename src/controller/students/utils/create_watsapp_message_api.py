@@ -14,7 +14,7 @@ from src.controller.permissions.permission_required import permission_required
 create_watsapp_message_api_bp = Blueprint( 'create_watsapp_message_api_bp',   __name__)
 
 
-@create_watsapp_message_api_bp.route('/create_watsapp_message_api', methods=["GET"])
+@create_watsapp_message_api_bp.route('/api/create_watsapp_message_api', methods=["GET"])
 @login_required
 @permission_required('admission')
 def create_watsapp_message_api():

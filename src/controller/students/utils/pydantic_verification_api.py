@@ -54,16 +54,15 @@ def verify_admission():
             raise ValueError("JSON is not an object")
     except Exception:
         print("Error processing data")
-        return jsonify({"message": "Invalid JSON payload.", "errors": []}), 400
-
+        return jsonify({"errors": []}), 400
+    
     try:
         model = AdmissionFormModel(**data)
-        verified_data = model.to_verified_data()
-        
+        verified_data = model.model_dump(mode="json")
+
     except ValidationError as e:
         errors = format_pydantic_errors(e)
         print(errors)
-        return jsonify({"message": "Please fix the validation errors below.", "errors": errors}), 400
-
+        return jsonify({"errors": errors}), 400
     
     return jsonify({"message": "All validations passed.", "verifiedData": verified_data}), 200

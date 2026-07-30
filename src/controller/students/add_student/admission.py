@@ -1,6 +1,6 @@
 # src/controller/admission.py
 
-from flask import render_template, session, Blueprint
+from flask import jsonify, session, Blueprint
 from sqlalchemy import func
 
 from src.model.Sessions import Sessions
@@ -19,10 +19,7 @@ from datetime import datetime
 
 admission_bp = Blueprint( 'admission_bp',   __name__)
 
-
-
 def get_enum_options():
-    """Get all enum options for select fields."""
     return {
         'gender_options': list(StudentsDBEnums.GENDER.enums),
         'caste_type_options': list(StudentsDBEnums.CASTE_TYPE.enums),
@@ -36,10 +33,10 @@ def get_enum_options():
 
 
 
-@admission_bp.route('/admission', methods=["GET", "POST"])
+@admission_bp.route('/api/admission', methods=["GET", "POST"])
 @login_required
 @permission_required('admission')
-def admission():
+def admission_data():
 
     """Render the add student form."""
     user_id = session["user_id"]
@@ -47,20 +44,34 @@ def admission():
     current_session = session["session_id"]
 
     # Get classes accessible to user
-    classes_query = (
-        db.session.query(ClassData)
-        .join(ClassAccess, ClassAccess.class_id == ClassData.id)
-        .filter(ClassAccess.staff_id == user_id)
-        .order_by(ClassData.id.asc())
-    )
-    classes = classes_query.all()
-    classes_dict = {str(cls.id): cls.CLASS for cls in classes}
+
+    try:
+        classes_query = (
+            db.session.query(ClassData)
+            .join(ClassAccess, ClassAccess.class_id == ClassData.id)
+            .filter(ClassAccess.staff_id == user_id)
+            .order_by(ClassData.id.asc())
+        )
+        classes = classes_query.all()
+        classes_dict = [ 
+            {
+                "id": cls.id,
+                "class_name": cls.CLASS
+            }
+            for cls in classes
+        ]
+
+    except Exception as e:
+        return jsonify({'error': 'Error fetching classes!'}), 404
 
     # Build admission sessions
-    admission_sessions = {}
-    for year in session.get("all_sessions", []):
-        year = int(year)
-        admission_sessions[year] = f"{year}-{year+1}"
+    admission_sessions = [
+        {
+            "id": int(year),
+            "label": f"{int(year)}-{int(year)+1}"
+        }
+        for year in session.get("all_sessions", [])
+    ]
 
     # Calculate next SR and Admission No
     current_session_year = str(current_session)[-2:] if current_session else str(datetime.now().year)[-2:]
@@ -74,30 +85,28 @@ def admission():
         .first()
     )
 
-
-    max_sr = max_sr if max_sr is not None else 0
+    max_sr = max_sr or 0
     if max_adm is None or str(max_adm)[:2] != current_session_year:
         max_adm = int(current_session_year + "000")
     else:
         max_adm = int(max_adm)
 
-    new_adm = max_adm + 1
-    new_sr = max_sr + 1
     current_date = datetime.now().strftime("%d-%m-%Y")
 
-    return render_template(
-        'student_form.html',
-        mode='add',
-        student=None,
-        rte_info=None,
-        classes=classes_dict,
-        admission_sessions=admission_sessions,
-        current_session=current_session,
-        default_admission_no=new_adm,
-        default_sr=new_sr,
-        default_admission_date=current_date,
-        is_admitted_new=True,  # New students are admitted as new by default
+    response = {
+        "mode": "add",
+        "student": None,
+        "rte_info": None,
+        "classes": classes_dict,
+        "admission_sessions": admission_sessions,
+        "current_session": str(current_session),
+        "default_admission_no": max_adm + 1,
+        "default_sr": max_sr + 1,
+        "default_admission_date": current_date,
+        "is_admitted_new": True,
         **get_enum_options()
-    )
+    }
+
+    return jsonify(response)
 
     

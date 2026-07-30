@@ -21,6 +21,8 @@ class TCRecords(db.Model):
     tc_no = Column(Numeric, nullable=True)
     tc_date = Column(Date, nullable=True)
     tc_reason = Column(Text, nullable=True)
+    general_conduct = Column(Text, nullable=True)
+    remarks = Column(Text, nullable=True)
     status = Column(TCStatusEnum, nullable=False)
 
     created_at = Column(
