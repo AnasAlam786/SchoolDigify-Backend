@@ -66,5 +66,5 @@ class StaffVerification(BaseModel):
     @field_validator("national_id")
     def validate_udise_id(cls, v):
         if v and not re.match(r"^[A-Z]{2}\d{12,13}$", v):
-            raise ValueError("Invalid UDISE Teacher ID format")
+            raise ValueError("Invalid UDISE Staff ID format")
         return v

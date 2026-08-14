@@ -2,6 +2,7 @@
 
 from datetime import datetime, timezone
 from flask import jsonify, session, Blueprint, request
+import json
 from pydantic import ValidationError
 from sqlalchemy import func
 from psycopg2.errors import UniqueViolation
@@ -23,26 +24,40 @@ from src.controller.permissions.permission_required import permission_required
 
 add_staff_api_bp = Blueprint( 'add_staff_api_bp',   __name__)
 
+def make_str_to_list(raw_value):
+    """Safely converts stringified JSON array from FormData into a Python list."""
+    if not raw_value:
+        return []
+    try:
+        parsed = json.loads(raw_value)
+        return parsed if isinstance(parsed, list) else []
+    except (json.JSONDecodeError, TypeError):
+        return []
+
 @add_staff_api_bp.route('/api/add_staff', methods=['POST'])
 @login_required
 @permission_required('add_staff')
 def add_staff():
 
-    data = request.get_json(silent=True) or (request.form.to_dict() if request.form else {})
+    data = request.form
     school_id = session.get('school_id')
+    errors = {}
+
     # Normalize gender to match Pydantic Literal and DB Enum
-    gender = data.get('gender')
-    if isinstance(gender, str):
-        gender_norm = gender.strip().title()  # male -> Male
-        if gender_norm not in {"Male", "Female", "Other"}:
-            gender_norm = None
+    gender_row = data.get('gender')
+    if isinstance(gender_row, str):
+        gender = gender_row.strip().title()  # male -> Male
+        if gender not in {"Male", "Female", "Other"}:
+            gender = None
     else:
-        gender_norm = None
+        gender = None
+
 
 
     # Resolve role_id: accept numeric id or map from role_name/value label
     role_id_raw = data.get('role_id')
     role_id = None
+
     if isinstance(role_id_raw, (int,)):
         role_id = role_id_raw
     elif isinstance(role_id_raw, str) and role_id_raw.isdigit():
@@ -55,10 +70,9 @@ def add_staff():
             if role:
                 role_id = int(role.id)
             else:
-                return jsonify({'message': 'Invalid role'}), 400
+                return jsonify({'error': {"role_id": 'Invalid role'}}), 400
         else:
-            return jsonify({'message': 'Role name is required'}), 400
-
+            return jsonify({'error': {"role_id":'Role name is required'}}), 400
 
     try:
         model = StaffVerification(**{
@@ -66,7 +80,7 @@ def add_staff():
             'email': data.get('email'),
             'phone': data.get('phone') or None,
             'dob': data.get('dob') or None,
-            'gender': gender_norm,
+            'gender': gender,
             'address': data.get('address') or None,
             'username': data.get('username'),
             'password': data.get('password'),
@@ -79,33 +93,37 @@ def add_staff():
             'national_id': data.get('national_id') or None,
         })
     except ValidationError as e:
-        errors = []
+        errors = {}
         for err in e.errors():
-            field = err["loc"][0]
-            msg = err["msg"]
-            # Make error messages user-friendly
-            errors.append(f"{field.capitalize()}: {msg}")
-        return jsonify({'success': False, 'errors': errors}), 400
+            # Get the exact field name (handles tuple indexing safely)
+            field = str(err["loc"][-1]) if err["loc"] else "general"
+            
+            # Clean up Pydantic's default "Value error, " prefix if present
+            clean_msg = err["msg"].replace("Value error, ", "")
+            errors[field] = clean_msg
+        return jsonify({'errors': errors}), 400
+
+    
     
     # Email unique check
     if model.email and TeachersLogin.query.filter_by(email=str(model.email)).first():
-        return jsonify({'message': f'Email ({model.email}) already exists'}), 400
+        return jsonify({'error': {"email": f'Email ({model.email}) already exists'}}), 400
 
     # Build DB entity
     try:
         # Class and Permissions Validation
-        assigned_classes = data.get("assigned_classes") or []
-        permission_ids = data.get('permissions') or []
+        assigned_classes = make_str_to_list(data.get("assigned_classes_id"))
+        permission_ids = make_str_to_list(data.get('assigned_permissions_id'))
 
         class_validation_message, is_valid = validate_class(assigned_classes, school_id)
         if not is_valid:
             db.session.rollback()
-            return jsonify({'message': class_validation_message}), 400
+            return jsonify({'error': {'assigned_classes_id':class_validation_message}}), 400
         
         permission_validation_message, is_valid = validate_permissions(permission_ids)
         if not is_valid:
             db.session.rollback()
-            return jsonify({'message': permission_validation_message}), 400
+            return jsonify({'error': {'assigned_permissions_id': permission_validation_message}}), 400
         
         staff_specific_permissions = staff_specific_permission(permission_ids, role_id)
         
@@ -147,8 +165,8 @@ def add_staff():
         db.session.rollback()
         print(e)
         if isinstance(e.orig, UniqueViolation):
-            return jsonify({'message': 'Cannot add staff: duplicate record detected. Please check the data and try again. Please change User id or email'}), 400
+            return jsonify({'error': 'Cannot add staff: duplicate record detected. Please check the data and try again. Please change User id or email'}), 400
         else:
-            return jsonify({'message': 'An unexpected database error occurred while adding staff.'}), 500
+            return jsonify({'error': 'An unexpected database error occurred while adding staff.'}), 500
 
     return jsonify({'message': 'Staff added successfully', 'id': teacher.id}), 200

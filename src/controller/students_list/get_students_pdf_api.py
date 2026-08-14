@@ -56,7 +56,7 @@ def get_students_pdf_api():
             (StudentSessions.student_id == min_session_subq.c.student_id) &
             (StudentSessions.session_id == min_session_subq.c.min_session_id)
         )
-        .join(ClassData, ClassData.id == StudentsDB.Admission_Class)
+        .join(ClassData, ClassData.id == StudentsDB.admission_class_id)
         .filter(StudentsDB.school_id == school_id)
         .order_by(
             "admission_year",

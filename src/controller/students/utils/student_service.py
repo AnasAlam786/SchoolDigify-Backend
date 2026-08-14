@@ -1,19 +1,17 @@
 # src/controller/students/utils/student_service.py
 
 import re
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 from datetime import datetime, date
 from sqlalchemy import or_
 from sqlalchemy.exc import IntegrityError
 from openpyxl import Workbook, load_workbook
-from flask import session
 from pydantic import ValidationError
 
 from src import db
 from src.model import StudentsDB, StudentSessions, ClassData, RTEInfo, Schools
 from src.controller.students.utils.upload_image import upload_image, delete_image, move_image
-from src.controller.utils.get_gapped_rolls import get_gapped_rolls
-import time
+from src.controller.utils.get_available_rolls import get_available_rolls
 
 
 class StudentService:
@@ -149,35 +147,8 @@ class StudentService:
                 duplicate_fields.append(field)
                 
         return duplicate_fields, duplicate_student
+
     
-
-    @staticmethod
-    def check_roll_availability(class_id: int, session_id: int, roll: int, exclude_student_id: Optional[int] = None) -> Optional[str]:
-        """Check if roll is available in the class for the session."""
-        available = get_gapped_rolls(class_id, session_id)
-        gapped = available.get("gapped_rolls", [])
-        next_r = available.get("next_roll")
-
-        available_rolls = set(gapped)
-        if next_r is not None:
-            available_rolls.add(next_r)
-
-        if exclude_student_id:
-            # Allow keeping existing roll
-            existing_roll = db.session.query(StudentSessions.ROLL).filter(
-                StudentSessions.student_id == exclude_student_id,
-                StudentSessions.session_id == session_id
-            ).scalar()
-            if existing_roll is not None:
-                available_rolls.add(existing_roll)
-                if existing_roll == roll:
-                    return None
-
-        if roll not in available_rolls:
-            return f"Roll {roll} is not available. Available: {sorted(available_rolls)}"
-
-        return None
-
     @staticmethod
     def create_student(verified_data: List[Dict], image_b64: Optional[str], school_id: int, session_id: int) -> Tuple[Optional[int], Optional[str]]:
         """Create a new student with all related data."""
@@ -234,28 +205,26 @@ class StudentService:
             return None, f"Failed to create student: {str(e)}"
 
     @staticmethod
-    def update_student(student_id: int, verified_data: List[Dict], image_b64: Optional[str], image_status: str, school_id: int, session_id: int) -> Optional[str]:
+    def update_student(student_id: int, verified_data: Dict[str, Any], image_b64: Optional[str], image_status: str, school_id: int, session_id: int) -> Optional[str]:
         """Update an existing student."""
         student = StudentsDB.query.filter_by(id=student_id).first()
         if not student:
             return "Student not found."
 
-        data = {item["field"]: item["value"] for item in verified_data}
 
         # Handle admitted_as_new to set admission_session_id appropriately
-        admitted_as_new = data.get('admitted_as_new')
+        admitted_as_new = verified_data.get('admitted_as_new')
         if admitted_as_new:
             # New student - set admission_session_id to current session
-            data['admission_session_id'] = session_id
+            verified_data['admission_session_id'] = session_id
         elif not admitted_as_new:
             # Old student - keep existing admission_session_id (don't override)
-            if 'admission_session_id' in data:
-                del data['admission_session_id']
+            if 'admission_session_id' in verified_data:
+                del verified_data["admission_session_id"]
 
-        studentsdb_updates = {k: v for k, v in data.items() if k in StudentsDB.__table__.columns}
-
-        sessions_updates = {k: v for k, v in data.items() if k in StudentSessions.__table__.columns}
-        rte_updates = {k: v for k, v in data.items() if k in RTEInfo.__table__.columns}
+        studentsdb_updates = {k: v for k, v in verified_data.items() if k in StudentsDB.__table__.columns}
+        sessions_updates = {k: v for k, v in verified_data.items() if k in StudentSessions.__table__.columns}
+        rte_updates = {k: v for k, v in verified_data.items() if k in RTEInfo.__table__.columns}
 
         # Convert dates
         for field in ["DOB", "ADMISSION_DATE"]:
@@ -266,12 +235,12 @@ class StudentService:
                     return f"Invalid date format for {field}."
 
         # Special mappings
-        if "CLASS" in data:
-            sessions_updates["class_id"] = data["CLASS"]
-        if "Section" in data:
-            sessions_updates["Section"] = data["Section"]
-        if "ROLL" in data:
-            sessions_updates["ROLL"] = data["ROLL"]
+        if "class_id" in verified_data:
+            sessions_updates["class_id"] = verified_data.get("class_id")
+        if "Section" in verified_data:
+            sessions_updates["Section"] = verified_data.get("Section")
+        if "ROLL" in verified_data:
+            sessions_updates["ROLL"] =verified_data.get("ROLL")
 
         try:
             # Update StudentsDB
@@ -310,15 +279,14 @@ class StudentService:
                 old_id = student.IMAGE
                 student.IMAGE = None
                 move_image(old_id, deleted_folder, rename=str(student_id))
-            start = time.perf_counter()
             db.session.commit()
-            end = time.perf_counter()
-            print(f"Update student time: {end - start:.6f} seconds")
             return None
         except IntegrityError:
+            print('Update failed due to data conflicts.')
             db.session.rollback()
             return "Update failed due to data conflicts."
         except Exception as e:
+            print(f"Update failed: {str(e)}")
             db.session.rollback()
             return f"Update failed: {str(e)}"
 

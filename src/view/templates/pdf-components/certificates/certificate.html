@@ -333,13 +333,17 @@
 
 
 
-    {% set default_student_img = url_for('static', filename='images/default_student.png') %}
+    {% set default_student_img = url_for('static', filename='images/default_student.png', _external=True) %}
 
     {% for student in students %}
 
     <div class="certificate-card">
 
-        <img class="decorative-icon" src="{{ url_for('static', filename='marksheet_icons/Book_Icon.png') }}" style="
+        
+
+        <img class="decorative-icon" 
+        src="{{ url_for('static', filename='marksheet_icons/Book_Icon.png', _external=True) }}" 
+        style="
         position: absolute;
                 top: 870px;
         right: 350px;
@@ -348,7 +352,7 @@
         z-index: 0;
         opacity: 0.7;">
 
-        <img class="decorative-icon" src="{{ url_for('static', filename='marksheet_icons/Computer_Icon.png') }}" style="
+        <img class="decorative-icon" src="{{ url_for('static', filename='marksheet_icons/Computer_Icon.png' , _external=True) }}" style="
         position: absolute;
         top: 230px;
         right: 120px;
@@ -359,7 +363,7 @@
         transform: rotate(15deg);">
 
 
-        <img class="decorative-icon" src="{{ url_for('static', filename='marksheet_icons/Color_Plate_Icon.png') }}"
+        <img class="decorative-icon" src="{{ url_for('static', filename='marksheet_icons/Color_Plate_Icon.png', _external=True) }}"
             style="
         position: absolute;
         top: 1000px;
@@ -371,7 +375,7 @@
         transform: rotate(45deg);">
 
 
-        <img class="decorative-icon" src="{{ url_for('static', filename='marksheet_icons/DNA_icon.png') }}" style="
+        <img class="decorative-icon" src="{{ url_for('static', filename='marksheet_icons/DNA_icon.png', _external=True) }}" style="
         position: absolute;
         top: 800px;
         right: 100px;
@@ -381,7 +385,7 @@
         opacity: 0.7;
         transform: rotate(45deg);">
 
-        <img class="decorative-icon" src="{{ url_for('static', filename='marksheet_icons/Eqn_Icon.png') }}" style="
+        <img class="decorative-icon" src="{{ url_for('static', filename='marksheet_icons/Eqn_Icon.png', _external=True) }}" style="
         position: absolute;
         top: 80px;
         right: 550px;
@@ -392,7 +396,7 @@
         transform: rotate(20deg);">
 
 
-        <img class="decorative-icon" src="{{ url_for('static', filename='marksheet_icons/Globe_Icon.png') }}" style="
+        <img class="decorative-icon" src="{{ url_for('static', filename='marksheet_icons/Globe_Icon.png', _external=True) }}" style="
         position: absolute;
         top: 656px;
         right: 350px;
@@ -401,7 +405,7 @@
         z-index: 0;
         opacity: 0.7;">
 
-        <img class="decorative-icon" src="{{ url_for('static', filename='marksheet_icons/Microscope_Icon.png') }}"
+        <img class="decorative-icon" src="{{ url_for('static', filename='marksheet_icons/Microscope_Icon.png', _external=True) }}"
             style="
         position: absolute;
         top: 450px;
@@ -413,7 +417,7 @@
         transform: rotate(24deg);">
 
 
-        <img class="decorative-icon" src="{{ url_for('static', filename='marksheet_icons/Geometry_Icon.png') }}" style="
+        <img class="decorative-icon" src="{{ url_for('static', filename='marksheet_icons/Geometry_Icon.png', _external=True) }}" style="
         position: absolute;
         top:800px;
         right: 650px;
@@ -423,7 +427,7 @@
         opacity: 0.7;
         transform: rotate(-10deg);">
 
-        <img class="decorative-icon" src="{{ url_for('static', filename='marksheet_icons/Telescope.png') }}" style="
+        <img class="decorative-icon" src="{{ url_for('static', filename='marksheet_icons/Telescope.png', _external=True) }}" style="
         position: absolute;
         top: 460px;
         right: 80px;
@@ -434,7 +438,7 @@
         opacity: 0.7;
         transform: rotate(-10deg);">
 
-        <img class="decorative-icon" src="{{ url_for('static', filename='marksheet_icons/Flask_Icon.png') }}" style="
+        <img class="decorative-icon" src="{{ url_for('static', filename='marksheet_icons/Flask_Icon.png', _external=True) }}" style="
         position: absolute;
         top: 260px;
         right: 550px;
@@ -478,7 +482,7 @@
 
             <!-- Right side: Student image holder (your required avatar image) -->
             <div>
-                <img src="{{ url_for('static', filename='marksheet_icons/image_holder.png') }}" alt="Student Portrait"
+                <img src="{{ url_for('static', filename='marksheet_icons/image_holder.png', _external=True) }}" alt="Student Portrait"
                     class="student-photo-img" onerror="this.onerror=null;this.src='{{ default_student_img }}';">
 
                 <div class="circle-container">

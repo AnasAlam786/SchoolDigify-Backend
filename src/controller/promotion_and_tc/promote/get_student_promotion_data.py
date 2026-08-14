@@ -11,7 +11,7 @@ import datetime
 
 from src.controller.permissions.permission_required import permission_required
 from src.controller.auth.login_required import login_required
-from src.controller.utils.get_gapped_rolls import get_gapped_rolls
+from src.controller.utils.get_available_rolls import get_available_rolls
 
 
 get_student_promotion_data_api_bp = Blueprint('get_student_promotion_data_api_bp', __name__)
@@ -109,11 +109,10 @@ def get_promotion_student_data():
         available_rolls = []
         next_roll_no = None
     else:
-        rolls_data = get_gapped_rolls(next_class_id, current_session_id)
+        rolls_data = get_available_rolls(next_class_id, current_session_id)
 
-        available_rolls = rolls_data['gapped_rolls'] + [rolls_data['next_roll']]
-        next_roll_no = rolls_data['next_roll']
-
+        available_rolls = rolls_data['available_rolls']
+        next_roll_no = available_rolls[-1]
 
     # ----------------------------------------------------------------------
     # 5. Fetch student base data (much simpler query)

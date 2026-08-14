@@ -13,7 +13,6 @@ from src.model.TeachersLogin import TeachersLogin
 
 show_staff_bp = Blueprint("show_staff_bp", __name__)
 
-
 @show_staff_bp.route("/api/get_all_staff", methods=["GET"])
 @login_required
 @permission_required("show_staff")
@@ -72,7 +71,7 @@ def get_staff():
                 "gender": teacher.gender,
                 "qualification": teacher.qualification,
                 "status": teacher.status,
-                "role": role_name,
+                "role_name": role_name,
                 "image": image,
                 "accessible_classes": accessible_classes or [],
                 "total_accessible_classes": total_accessible_classes,

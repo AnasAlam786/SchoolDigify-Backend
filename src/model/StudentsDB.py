@@ -1,12 +1,13 @@
 from sqlalchemy import (
     Column, Integer, BigInteger, Text, Date, Numeric, JSON, Boolean,
     ForeignKey, TypeDecorator, UniqueConstraint)
-from sqlalchemy.orm import synonym
+from sqlalchemy.orm import synonym, validates
 
 from src import db
 from .enums import StudentsDBEnums
 
 import os
+from datetime import datetime, date
 from cryptography.fernet import Fernet
 
 

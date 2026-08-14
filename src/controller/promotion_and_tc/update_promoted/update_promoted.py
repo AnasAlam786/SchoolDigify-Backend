@@ -3,8 +3,7 @@
 from flask import session, request, jsonify, Blueprint
 
 from src import db
-from src.controller.utils.get_gapped_rolls import get_gapped_rolls
-from src.model import StudentsDB
+from src.controller.utils.get_available_rolls import get_available_rolls
 from src.model import StudentSessions
 from src.model import ClassData
 
@@ -75,8 +74,8 @@ def update_promotion():
 
         if roll_changed or class_changed:
             # Get available rolls for the target class
-            available_result = get_gapped_rolls(promoted_class_id, current_session)
-            available_rolls = available_result['gapped_rolls'] + [available_result['next_roll']]
+            available_result = get_available_rolls(promoted_class_id, current_session)
+            available_rolls = available_result['available_rolls']
 
             if promoted_roll not in available_rolls:
                 allowed_rolls = ", ".join(map(str, available_rolls))

@@ -116,7 +116,7 @@ def get_students_by_class(class_id):
             'student_id': student.student_id,
             'student_name': student.STUDENTS_NAME,
             'dob': student.dob,
-            'student_father': student.FATHERS_NAME,
+            'father_name': student.FATHERS_NAME,
             'image': student.IMAGE,
             'phone': student.PHONE,
             'address': student.ADDRESS,
@@ -124,19 +124,20 @@ def get_students_by_class(class_id):
             'class': student.CLASS,
             'section': student.Section,
             'teacher_sign': student.teachers_sign,
-            'class_roll': f"{student.CLASS} - {student.ROLL}"
+            'class_roll': f"{student.CLASS} - {student.ROLL}",
+            'session_year': session_year
         })
 
     return jsonify({
-        'students': students_data,
-        'school': {
+        'students_data': students_data,
+        'school_data': {
             'name': school.School_Name if school else '',
             'address': school.Address if school else '',
             'phone': school.Phone if school else '',
             'logo': school.Logo if school else '',
-            'udise': school.UDISE if school else ''
+            'udise': school.UDISE if school else '',
+            'principal_sign': principal_sign if principal_sign else ''
         },
-        'session_year': session_year,
-        'principal_sign': principal_sign
+        
     })
 

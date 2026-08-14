@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+import json
 from flask import Blueprint, jsonify, request, session
 from pydantic_core import ValidationError
 from sqlalchemy import func
@@ -18,22 +19,33 @@ from src import r
 
 update_staff_api_bp = Blueprint( 'update_staff_api_bp',   __name__)
 
+def make_str_to_list(raw_value):
+    """Safely converts stringified JSON array from FormData into a Python list."""
+    if not raw_value:
+        return []
+    try:
+        parsed = json.loads(raw_value)
+        return parsed if isinstance(parsed, list) else []
+    except (json.JSONDecodeError, TypeError):
+        return []
+
+
 @update_staff_api_bp.route('/api/update_staff_api', methods=['POST'])
 @login_required
 @permission_required('update_staff')
 def update_staff_api():
-    data = request.get_json(silent=True) or (request.form.to_dict() if request.form else {})
+    data = request.form
     school_id = session.get('school_id')
-    # Determine staff_id: try JSON/form payload keys, then query params, then session (for self-update)
+
     staff_id = data.get('staff_id')
 
     if not staff_id:
-        return jsonify({'message': 'Staff ID is required'}), 400
+        return jsonify({'error': 'Staff ID is required'}), 400
 
     try:
         staff_id = int(staff_id)
     except (ValueError, TypeError):
-        return jsonify({'message': 'Invalid Staff ID'}), 400
+        return jsonify({'error': 'Invalid Staff ID'}), 400
 
     # Get existing staff
     staff = TeachersLogin.query.filter_by(id=staff_id, school_id=school_id).first()
@@ -64,9 +76,9 @@ def update_staff_api():
             if role:
                 role_id = int(role.id)
             else:
-                return jsonify({'message': 'Invalid role'}), 400
+                return jsonify({'error': {"role_id": 'Invalid role'}}), 400
         else:
-            return jsonify({'message': 'Role name is required'}), 400
+            return jsonify({'error': {"role_id": 'Role name is required'}}), 400
 
     try:
         model = StaffVerification(**{
@@ -87,38 +99,37 @@ def update_staff_api():
             'national_id': data.get('national_id') or None,
         })
     except ValidationError as e:
-        errors = []
+        errors = {}
         for err in e.errors():
-            field = err["loc"][0]
-            msg = err["msg"]
-            # Make error messages user-friendly
-            errors.append(f"{field.capitalize()}: {msg}")
+            field = str(err["loc"][-1]) if err["loc"] else "general"
+                        
+            # Clean up Pydantic's default "Value error, " prefix if present
+            clean_msg = err["msg"].replace("Value error, ", "")
+            errors[field] = clean_msg
         return jsonify({'success': False, 'errors': errors}), 400
 
     # Email unique check (exclude current staff)
     if model.email and model.email != staff.email:
         existing_staff = TeachersLogin.query.filter_by(email=str(model.email)).first()
         if existing_staff and existing_staff.id != staff_id:
-            return jsonify({'message': f'Email ({model.email}) already exists'}), 400
+            return jsonify({'error': {'email': f'Email ({model.email}) already exists'}}), 400
 
     # Update staff data
     try:
-        
-        
         # Class and Permissions Validation
-        assigned_classes = data.get("assigned_classes") or []
-        permission_ids = data.get('permissions') or []
+        assigned_classes = make_str_to_list(data.get("assigned_classes_id"))
+        permission_ids = make_str_to_list(data.get('assigned_permissions_id'))
+        
         
         class_validation_message, is_valid = validate_class(assigned_classes, school_id)
         if not is_valid:
             db.session.rollback()
-            return jsonify({'message': class_validation_message}), 400
+            return jsonify({'error': {'assigned_classes_id':class_validation_message}}), 400
         
         permission_validation_message, is_valid = validate_permissions(permission_ids)
         if not is_valid:
             db.session.rollback()
-            return jsonify({'message': permission_validation_message}), 400
-        
+            return jsonify({'error': {'assigned_permissions_id': permission_validation_message}}), 400
         
 
         staff.Name = model.name
@@ -170,6 +181,6 @@ def update_staff_api():
     except Exception as e:
         db.session.rollback()
         print(e)
-        return jsonify({'message': 'Error occurred while updating staff! Please contact support.', 'error': str(e)}), 500
+        return jsonify({'error': 'Error occurred while updating staff! Please contact support.', 'error': str(e)}), 500
 
     return jsonify({'message': 'Staff updated successfully'}), 200

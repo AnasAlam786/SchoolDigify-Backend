@@ -16,13 +16,14 @@ from .utils.process_marks import process_marks
 from src.controller.permissions.permission_required import permission_required
 from src.controller.auth.login_required import login_required
 
-bulk_download_results_bp = Blueprint('bulk_download_results_bp', __name__)
+bulk_markheet_certificate_bp = Blueprint('bulk_markheet_certificate_bp', __name__)
 
 
-@bulk_download_results_bp.route('/bulk_download_results', methods=["POST"])
+@bulk_markheet_certificate_bp.route('/api/bulk_download_results', methods=["POST"])
 @login_required
 @permission_required('get_result')  # Assuming same permission as single download
 def bulk_download_results():
+
     current_session_id = session["session_id"]
     user_id = session["user_id"]
     school_id = session["school_id"]
@@ -117,3 +118,30 @@ def bulk_download_results():
                             sesion_year=session_year)
 
     return jsonify({"html": html})
+
+
+# bulk route kept for backward support; same as single route expects student list
+@bulk_markheet_certificate_bp.route('/api/bulk_print_certificate', methods=["POST"])
+@login_required
+@permission_required('get_result')
+def bulk_print_certificate_api():
+    payload = request.json or {}
+    students_data = payload.get('students_data')
+    school_name = session.get('school_name')
+
+
+    if not students_data:
+        return jsonify({'message': 'students data is required!.'}), 400
+
+
+    school_logo = session.get('logo') or ''
+    session_year = 'N/A'
+    current_session_id = session.get('session_id')
+    if isinstance(current_session_id, int):
+        session_year = f"{current_session_id}-{str(current_session_id + 1)[-2:]}"
+
+    html = render_template('pdf-components/certificates/certificate.html',
+                           students=students_data,
+                           session_year=session_year,
+                           school_logo=school_logo, school_name=school_name)
+    return jsonify({'html': str(html)})

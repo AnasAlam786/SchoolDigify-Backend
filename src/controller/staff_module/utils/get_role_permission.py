@@ -9,12 +9,13 @@ from src.model.Roles import Roles
 
 
 get_role_permissions_bp = Blueprint( 'get_role_permissions_bp',   __name__)
-@get_role_permissions_bp.route('/api/get_role_permissions', methods=['GET'])
+@get_role_permissions_bp.route('/api/get_role_permissions/<int:role_id>', methods=['GET'])
 @permission_required('add_staff')
 @login_required
-def get_role_permissions():
+def get_role_permissions(role_id):
     # Match the front-end parameter name
-    role_id = request.args.get('role_id')
+
+    print(role_id)
 
     if not role_id:
         return jsonify({'error': 'Missing role_id parameter'}), 400
@@ -28,6 +29,8 @@ def get_role_permissions():
         .filter(RolePermissions.role_id == role_id, Permissions.assignable.is_(True))
         .all()
     )
+
+    print([p.id for p in permissions])
 
 
     return jsonify({

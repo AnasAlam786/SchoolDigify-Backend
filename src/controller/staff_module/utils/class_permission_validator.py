@@ -5,13 +5,17 @@ from src import db
 from src.model.RolePermissions import RolePermissions
 
 def validate_class(class_ids, school_id):
+
     if not class_ids:
-        return "No classes provided", True
+        return "No classes provided", True 
     if not isinstance(class_ids, list):
-        return "Invalid input type. Expected a list.", False
+        return "Invalid input type. Expected a list in assigned classes.", False
     
     # validate each class_id
-    assignable_classes = ClassData.query.with_entities(ClassData.id).filter_by(school_id=school_id).all()
+    assignable_classes =( 
+        ClassData.query.with_entities(ClassData.id)
+        .filter_by(school_id=school_id).all()
+    )
     valid_class_ids = { c.id for c in assignable_classes }
 
     for class_id in class_ids:
@@ -28,12 +32,14 @@ def validate_class(class_ids, school_id):
 
 def validate_permissions(permission_ids):
     if not isinstance(permission_ids, list):
-        return "Invalid input type. Expected a list.", False
+        return "Invalid input type. Expected a list in permissions.", False
     if not permission_ids:
         return "No permissions provided", True
 
     assignable_permissions = Permissions.query.with_entities(Permissions.id).filter_by(assignable=True).all()
     valid_permission_ids = { c.id for c in assignable_permissions }
+
+
     for permission_id in permission_ids:
         try:
             permission_id_int = int(permission_id)
@@ -63,6 +69,12 @@ def staff_specific_permission(permission_ids, role_id):
         ❌ If role has something but staff doesn’t → mark it as isgranted=False.
     """
 
+    try:
+        permission_ids = [int(permission_id) for permission_id in permission_ids]
+    except ValueError:
+        return f'Invalid permission id. Please reload and try again.', False
+
+
     permissions = (
         db.session.query(Permissions.id)
         .join(RolePermissions, RolePermissions.permission_id == Permissions.id)
@@ -73,12 +85,14 @@ def staff_specific_permission(permission_ids, role_id):
         .all()
     )
 
+
     role_permission_ids = [p.id for p in permissions]
     staff_specific_ids = []
 
     # 4️⃣ Check for permissions that the staff has but the role does not
     # → These are **extra permissions** given to the staff individually
     for permission_id in permission_ids:
+
         if permission_id not in role_permission_ids:
             staff_specific_ids.append({
                 "permission_id": permission_id,

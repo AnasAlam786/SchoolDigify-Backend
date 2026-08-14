@@ -3,7 +3,7 @@
 from flask import session
 from src.controller.students.utils.student_service import StudentService
 from src.model import StudentsDB, StudentSessions
-
+from src.controller.utils.get_available_rolls import get_available_rolls
 
 def parse_int(value):
     """
@@ -42,17 +42,16 @@ def verify_conflicts(verified_data, mode='add', student_id=None):
     # Parse Common Fields
     # --------------------------------------------------
 
-    admission_class = parse_int(verified_data.get("admission_class_id"))
-    
-    current_class = parse_int(verified_data.get("class_id"))
+    admission_class_id = parse_int(verified_data.get("admission_class_id"))
+    current_class_id = parse_int(verified_data.get("class_id"))
     roll = parse_int(verified_data.get("ROLL"))
-
     admitted_as_new = verified_data.get("admitted_as_new")
+
 
     # --------------------------------------------------
     # Required Current Class
     # --------------------------------------------------
-    if current_class is None:
+    if current_class_id is None:
         return {
             "class_id": "Current Class is required.",
         }
@@ -60,20 +59,21 @@ def verify_conflicts(verified_data, mode='add', student_id=None):
     # --------------------------------------------------
     # Admission Class Validation (OPTIONAL FIELD)
     # --------------------------------------------------
-    # Only validate if Admission_Class exists.
+    # Only validate if admission_class_id exists.
     # This supports:
     # - legacy imports
     # - incomplete historical records
     # - migrated data
     # --------------------------------------------------
-    if admission_class is not None:
+    
+    if admission_class_id is not None:
 
         # ----------------------------------------------
         # NEW STUDENTS
         # ----------------------------------------------
         if admitted_as_new:
 
-            if admission_class != current_class:
+            if admission_class_id != current_class_id:
                 return {
                     "admission_class_id": "For new students, Admission Class "
                                "must be same as Current Class.",
@@ -85,29 +85,28 @@ def verify_conflicts(verified_data, mode='add', student_id=None):
         elif not admitted_as_new:
 
             class_error = StudentService.validate_class_order(
-                admission_class,
-                current_class
+                admission_class_id,
+                current_class_id
             )
 
-            if class_error:
-                return { 'admission_class_id': class_error, 'class_id': class_error },
-                
 
-    
+            print(class_error)
+
+            if class_error:
+                return {'admission_class_id': class_error}
+                
     # --------------------------------------------------
     # UPDATE MODE VALIDATIONS
     # --------------------------------------------------
+    
     if mode == 'update':
-
-        if not student_id:
-            return { "student_id": "Student ID required for update mode." }
 
         student = StudentsDB.query.filter_by(
             id=student_id
         ).first()
 
         if not student:
-            return { "student_id": "Student not found.", }
+            return { "STUDENTS_NAME": "Student not found.", }
 
         # ----------------------------------------------
         # Academic History Check
@@ -147,11 +146,11 @@ def verify_conflicts(verified_data, mode='add', student_id=None):
             )
 
             if (
-                verified_data.get("CLASS") is not None
-                and str(original_class) != str(current_class)
+                verified_data.get("class_id") is not None
+                and str(original_class) != str(current_class_id)
             ):
                 return {
-                    "CLASS": "Cannot modify Current Class directly. "
+                    "class_id": "Cannot modify Current Class directly. "
                                "Use Promotion Feature.",
                 }
 
@@ -170,7 +169,7 @@ def verify_conflicts(verified_data, mode='add', student_id=None):
                                "for students with academic history.",
                 }
 
-
+    
     # --------------------------------------------------
     # UNIQUE FIELD CONFLICTS
     # --------------------------------------------------
@@ -198,15 +197,20 @@ def verify_conflicts(verified_data, mode='add', student_id=None):
     if roll is None:
         return {'ROLL': "Roll Number is required."}
 
-    roll_error  = StudentService.check_roll_availability(
-        current_class, session_id, roll, exclude_student_id=exclude_id
-    )
-    if roll_error:
-        final_error = {'ROLL': roll_error}
-        return final_error
+    available_rolls = get_available_rolls(
+        current_class_id, session_id, excluded_student_id=exclude_id
+    )["available_rolls"]
+
+    if roll not in available_rolls:
+        return {
+            "ROLL": (
+                f"Roll number {roll} is not available. "
+                f"Available roll numbers: {', '.join(map(str, available_rolls))}."
+            )
+        }
     
     # --------------------------------------------------
     # SUCCESS
     # --------------------------------------------------
-
+    
     return None

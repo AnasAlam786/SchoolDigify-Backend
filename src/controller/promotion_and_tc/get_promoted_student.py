@@ -12,7 +12,6 @@ from src.model import ClassData
 
 from src.controller.permissions.permission_required import permission_required
 from src.controller.auth.login_required import login_required
-from src.controller.utils.get_gapped_rolls import get_gapped_rolls
 
 
 get_promoted_student_data_api_bp = Blueprint('get_promoted_student_data_api_bp', __name__)

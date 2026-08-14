@@ -8,7 +8,7 @@ from src.model import StudentSessions
 from src.model import ClassData
 
 import datetime
-from src.controller.utils.get_gapped_rolls import get_gapped_rolls
+from src.controller.utils.get_available_rolls import get_available_rolls
 from src.controller.permissions.permission_required import permission_required
 from src.controller.auth.login_required import login_required
 
@@ -63,8 +63,8 @@ def promote_student():
         return jsonify({"error": "Please enter promotion date."}), 400
     
 
-    available_roll = get_gapped_rolls(promoted_class_id, current_session)
-    final_rolls = available_roll['gapped_rolls'] + [available_roll['next_roll']]
+    available_roll = get_available_rolls(promoted_class_id, current_session)
+    final_rolls = available_roll['available_rolls']
 
     if promoted_roll not in final_rolls:
         allowed_rolls = ", ".join(map(str, final_rolls))
