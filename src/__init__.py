@@ -29,17 +29,16 @@ def create_app():
     print("=== FLASK CREATED ===", flush=True)
 
     CORS(
-        app,
-        supports_credentials=True,
-        origins=[
-            "http://localhost:5173",  # Vite
-            "http://localhost:3000",  # CRA
-            "https://schooldigify.com",
-            "https://schooldigify.vercel.app/",
-            "https://schooldigify-git-main-schooldigify.vercel.app/login",
-            
-        ]
-    )
+    app,
+    supports_credentials=True,
+    origins=[
+        "http://localhost:5173",
+        "http://localhost:3000",
+        "https://schooldigify.com",
+        "https://schooldigify.vercel.app",
+        "https://schooldigify-git-main-schooldigify.vercel.app",
+    ]
+)
 
     # ——— Make getattr available in Jinja2 templates ———
     app.jinja_env.globals['getattr'] = getattr
