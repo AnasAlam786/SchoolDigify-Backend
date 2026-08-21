@@ -1,4 +1,4 @@
-# src/controller/get_fee.py
+# src/controller/fees/get_fee_api.py
 
 from flask import session, request, jsonify, Blueprint
 
@@ -14,11 +14,13 @@ from src.controller.auth.login_required import login_required
 get_fee_api_bp = Blueprint( 'get_fee_api_bp',   __name__)
 
 
-@get_fee_api_bp.route('/api/get_fee', methods=["GET"])
+@get_fee_api_bp.route('/api/get_student_fee_data', methods=["GET"])
 @login_required
 @permission_required('view_fee_data')
 def get_fee_api():
     # data = request.json
+
+    print("Request args:", request.args)  # Debugging line
 
     phone = request.args.get("phone")
     student_session_id = request.args.get("student_session_id")
@@ -40,6 +42,6 @@ def get_fee_api():
         students_data = fetch_fee_data(session_id=current_session, school_id=school_id, phone=phone)
     except Exception as e:
         print(e)
-        jsonify({"message": e}), 400
-    
-    return jsonify(students_data)
+        return jsonify({"message": e}), 400
+
+    return jsonify({"students_fee_data": students_data})

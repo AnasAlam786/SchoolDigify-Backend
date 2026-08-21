@@ -4,7 +4,7 @@ from enum import Enum as PyEnum
 from sqlalchemy import Enum as SQLEnum
 
 
-class FeePaymentStatus(PyEnum):
+class FeePaymentStatus(str, PyEnum):
     PAID = "PAID"
     UNPAID = "UNPAID"
     PARTIAL = "PARTIAL"

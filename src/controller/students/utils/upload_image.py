@@ -49,23 +49,32 @@ def get_credentials():
 #         print(f"Compression failed: {e}")
 #         return image_data
 
-def upload_image(image_base64, image_name, drive_folder_id):
+def upload_image(file_blob, image_name, drive_folder_id):
     
     creds = get_credentials()
     drive_service = build('drive', 'v3', credentials=creds)
     
-    image_data = base64.b64decode(image_base64)
-    
-    byte_stream = io.BytesIO(image_data)
+    image_bytes = file_blob.read() if hasattr(file_blob, 'read') else file_blob    
+    byte_stream = io.BytesIO(image_bytes)
 
-    media = MediaIoBaseUpload(byte_stream, mimetype='image/jpeg')
+    media = MediaIoBaseUpload(
+        byte_stream, 
+        mimetype=getattr(file_blob, 'mimetype', 'image/jpeg'),
+        resumable=False
+    )
     
     file_metadata = {
         'name': str(image_name),
         'parents': [drive_folder_id]
     }
     start = time.perf_counter()
-    file = drive_service.files().create(body=file_metadata, media_body=media, fields='id').execute()
+
+    file = drive_service.files().create(
+        body=file_metadata, 
+        media_body=media, 
+        fields='id'
+    ).execute()
+
     end = time.perf_counter()
     print(f"Upload image time: {end - start:.6f} seconds")
     file_id = file.get('id')

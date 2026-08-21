@@ -1,5 +1,7 @@
 # src/controller/students/update/final_student_update_api.py
 
+import json
+
 from flask import session, Blueprint, request, jsonify
 
 from src.controller.students.utils.conflict_verification import verify_conflicts
@@ -17,15 +19,20 @@ final_update_student_api_bp = Blueprint('final_update_student_api_bp', __name__)
 @permission_required('update_student')
 def student_update_api():
     """Update an existing student after all validations."""
-    payload = request.get_json() or {}
+    data = request.form
     
-    student_id = payload.get("student_id")
-    student_data = payload.get("student_data")
-    image_b64 = payload.get("image")
-    image_status = payload.get("image_status", "unchanged")
+    student_id = data.get("student_id")
+    image_status = data.get("image_status", "unchanged")
+    
+    # Parse stringified JSON sent from React
+    student_data_raw = data.get("student_data", "{}")
+    student_data = json.loads(student_data_raw)
 
     school_id = session.get("school_id")
     session_id = session.get("session_id")
+
+    # Access binary file from request.files
+    file_blob = request.files.get("image_file")  # Werkzeug FileStorage object    
 
     if not student_data:
         return jsonify({"message": "Payload is empty, Please refresh and try again!"}), 400
@@ -51,7 +58,7 @@ def student_update_api():
     
     try:
         error = StudentService.update_student(
-            student_id, verified_data, image_b64, 
+            student_id, verified_data, file_blob, 
             image_status, school_id, session_id
         )
         if error:

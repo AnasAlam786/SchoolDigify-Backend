@@ -122,7 +122,6 @@ def pay_fee_api():
     except SQLAlchemyError:
         phone_number = None
 
-    print(phone_number)
 
     return jsonify({
         "message": "Paid Successfully",

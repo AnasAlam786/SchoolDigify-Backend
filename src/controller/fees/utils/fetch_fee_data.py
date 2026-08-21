@@ -75,7 +75,7 @@ def fetch_fee_data(session_id, school_id, phone = None, class_id =None, student_
         db.session.query(
             FeeData.fee_session_id,
             FeeData.student_session_id,
-            FeeData.payment_status,
+            FeeData.fee_payment_status,
             FeeTransaction.paid_amount, 
             FeeTransaction.transaction_no,
             FeeTransaction.payment_date
@@ -114,8 +114,12 @@ def build_fee_data(students, fee_structure, fee_payments, current_session):
 
         payment_map = {}
         for fee in fee_payments:
+            
+            raw_status = fee.fee_payment_status
+            status_value = raw_status.value if hasattr(raw_status, "value") else str(raw_status) if raw_status is not None else None
+
             payment_map[(fee.student_session_id, fee.fee_session_id)] = {
-                "status": fee.payment_status,
+                "status": status_value,
                 "payment_date": fee.payment_date,
                 "transaction_no": fee.transaction_no,
             }

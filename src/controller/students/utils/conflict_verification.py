@@ -89,9 +89,6 @@ def verify_conflicts(verified_data, mode='add', student_id=None):
                 current_class_id
             )
 
-
-            print(class_error)
-
             if class_error:
                 return {'admission_class_id': class_error}
                 

@@ -1,5 +1,7 @@
 # src/controller/students/add_student/final_admission_api.py
 
+import json
+
 from flask import Blueprint, jsonify, request, session
 import time
 
@@ -17,12 +19,12 @@ final_admission_api_bp = Blueprint("final_admission_api_bp", __name__)
 def final_admission_api():
     """Create a new student after final validation."""
 
-    start = time.perf_counter()
+    data = request.form
 
-    data = request.get_json(silent=True) or {}
-
-    verified_data = data.get("verifiedData", {})
-    image_b64 = data.get("IMAGE")
+    verified_data = json.loads(
+        data.get("verifiedData", "{}")
+    )
+    image_blob = request.files.get("image_blob")
 
     school_id = session.get("school_id")
     session_id = session.get("session_id")
@@ -43,7 +45,7 @@ def final_admission_api():
 
     # Create student
     student_id, error = StudentService.create_student(
-        verified_data, image_b64,
+        verified_data, image_blob,
         school_id, session_id,
     )
 

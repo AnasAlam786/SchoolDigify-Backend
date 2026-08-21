@@ -150,7 +150,7 @@ class StudentService:
 
     
     @staticmethod
-    def create_student(verified_data: List[Dict], image_b64: Optional[str], school_id: int, session_id: int) -> Tuple[Optional[int], Optional[str]]:
+    def create_student(verified_data: List[Dict], image_blob: Optional[str], school_id: int, session_id: int) -> Tuple[Optional[int], Optional[str]]:
         """Create a new student with all related data."""
 
         # Prepare data
@@ -186,11 +186,10 @@ class StudentService:
             db.session.add(rte_row)
 
             # Handle image
-            if image_b64:
+            if image_blob:
                 school = Schools.query.filter_by(id=school_id).first()
                 if school:
-                    encoded = image_b64.split(",")[1]
-                    image_id = upload_image(encoded, verified_data.get("ADMISSION_NO"), school.students_image_folder_id)
+                    image_id = upload_image(image_blob, verified_data.get("ADMISSION_NO"), school.students_image_folder_id)
                     new_student.IMAGE = image_id
             db.session.commit()
 
@@ -205,7 +204,7 @@ class StudentService:
             return None, f"Failed to create student: {str(e)}"
 
     @staticmethod
-    def update_student(student_id: int, verified_data: Dict[str, Any], image_b64: Optional[str], image_status: str, school_id: int, session_id: int) -> Optional[str]:
+    def update_student(student_id: int, verified_data: Dict[str, Any], file_blob: Optional[str], image_status: str, school_id: int, session_id: int) -> Optional[str]:
         """Update an existing student."""
         student = StudentsDB.query.filter_by(id=student_id).first()
         if not student:
@@ -269,9 +268,8 @@ class StudentService:
             if not school:
                 return "School not found."
 
-            if image_status == "updated" and image_b64:
-                encoded = image_b64.split(",")[1]
-                image_id = upload_image(encoded, student.ADMISSION_NO, school.students_image_folder_id)
+            if image_status == "changed" and file_blob:
+                image_id = upload_image(file_blob, student.ADMISSION_NO, school.students_image_folder_id)
                 if student.IMAGE:
                     move_image(student.IMAGE, deleted_folder, rename=str(student_id))
                 student.IMAGE = image_id
