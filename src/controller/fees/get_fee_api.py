@@ -18,9 +18,6 @@ get_fee_api_bp = Blueprint( 'get_fee_api_bp',   __name__)
 @login_required
 @permission_required('view_fee_data')
 def get_fee_api():
-    # data = request.json
-
-    print("Request args:", request.args)  # Debugging line
 
     phone = request.args.get("phone")
     student_session_id = request.args.get("student_session_id")

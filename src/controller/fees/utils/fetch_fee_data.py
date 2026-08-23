@@ -143,7 +143,7 @@ def build_fee_data(students, fee_structure, fee_payments, current_session):
                 paid_date = payment["payment_date"]
                 transaction_no = payment["transaction_no"]
             else:
-                status = "due" if today > due_date else "upcoming"
+                status = "DUE" if today > due_date else "UPCOMMING"
                 paid_date = None
                 transaction_no = None
 
