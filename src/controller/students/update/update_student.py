@@ -123,6 +123,13 @@ def edit_student(student_id):
         value = getattr(student_db, col.key)
         student_data[col.key] = value
 
+    # Add RTEInfo data directly into student_data
+    if rte_info:
+        for col in rte_info.__table__.columns:
+            # Don't overwrite student_id if you already have it
+            if col.name != "student_id":
+                student_data[col.name] = getattr(rte_info, col.name)
+
 
     for key, value in student_data.items():
         if isinstance(value, (date, datetime)):
@@ -131,14 +138,6 @@ def edit_student(student_id):
 
     return jsonify({
         "student": student_data,
-        "rte_info": (
-            {
-                col.name: getattr(rte_info, col.name)
-                for col in rte_info.__table__.columns
-            }
-            if rte_info
-            else None
-        ),
         "classes": classes,
         "admission_sessions": admission_sessions,
         "current_session": current_session,
