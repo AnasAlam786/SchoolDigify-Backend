@@ -88,7 +88,7 @@ def restore_fee_transaction():
     data = request.get_json()
     
     if not data or not data.get("transaction_id"):
-        return jsonify({"message": "transaction_id is required"}), 400
+        return jsonify({"error": "transaction_id is required"}), 400
     
     try:
         school_id = session["school_id"]
@@ -103,12 +103,12 @@ def restore_fee_transaction():
         ).first()
         
         if not transaction:
-            return jsonify({"message": "Transaction not found"}), 404
+            return jsonify({"error": "Transaction not found"}), 404
         
         # Check if not deleted
         if transaction.is_deleted is not True:
             return jsonify({
-                "message": "Transaction is not deleted",
+                "error": "Transaction is not deleted",
                 "transaction_id": transaction_id
             }), 400
         
@@ -127,4 +127,4 @@ def restore_fee_transaction():
         import traceback
         traceback.print_exc()
         db.session.rollback()
-        return jsonify({"message": f"Error restoring transaction: {str(e)}"}), 500
+        return jsonify({"error": f"Error restoring transaction: {str(e)}"}), 500

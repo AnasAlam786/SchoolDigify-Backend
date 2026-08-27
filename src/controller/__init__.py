@@ -23,8 +23,6 @@ from .fees.pay_fee_api import pay_fee_api_bp
 from .fees.get_fee_api import get_fee_api_bp
 from .fees.get_transactions_api import get_transactions_api_bp
 from .fees.transaction_action_api import transaction_action_api_bp
-from .fees.demand_fee_message_api import demand_fee_message_bp
-from .fees.transaction_watsapp_message_api import transaction_whatsapp_message_bp
 
 from .marks.fill_marks.fill_marks import fill_marks_bp
 from .marks.show_marks.show_marks import show_marks_bp
@@ -107,8 +105,6 @@ def register_blueprints(app):
     app.register_blueprint(get_fee_api_bp)
     app.register_blueprint(get_transactions_api_bp)
     app.register_blueprint(transaction_action_api_bp)
-    app.register_blueprint(demand_fee_message_bp)
-    app.register_blueprint(transaction_whatsapp_message_bp)
 
     app.register_blueprint(admission_bp)
     app.register_blueprint(pydantic_verification_api_bp)

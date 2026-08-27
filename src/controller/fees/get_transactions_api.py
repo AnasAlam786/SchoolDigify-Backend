@@ -32,16 +32,48 @@ def _num(v):
 @login_required
 @permission_required('view_fee_data')
 def get_fee_transactions():
-    student_session_ids = request.args.getlist("student_session_ids")
+
+    
+    student_session_id = request.args.get("student_session_id")
+    phone = request.args.get("phone")
+
+    current_session = session["session_id"]
+    school_id = session["school_id"]
+
+    if not phone and not student_session_id:
+        return jsonify({
+            "error": "Please provide either student_session_id or phone number!"
+        }), 400
+
+    if not phone:
+        phone = (
+            db.session.query(StudentsDB.PHONE)
+                .join(StudentSessions, StudentSessions.student_id == StudentsDB.id)
+                .filter(StudentSessions.id == student_session_id)
+                .scalar()
+        )
+
+    student_session_ids = (
+        db.session.query(StudentSessions.id)
+        .join(StudentsDB, StudentSessions.student_id == StudentsDB.id)
+        .filter(
+            StudentsDB.PHONE == phone,
+            StudentsDB.school_id == school_id,
+            StudentSessions.session_id == current_session,
+        )
+        .all()
+    )
+
+    student_session_ids = [row[0] for row in student_session_ids]
 
     if not student_session_ids:
-        return jsonify({"message": "student_session_ids are required"}), 400
+        return jsonify({"error": "student_session_ids are required"}), 400
 
     # cast to ints and validate
     try:
         student_session_ids = [int(x) for x in student_session_ids]
     except ValueError:
-        return jsonify({"message": "student_session_ids must be integers"}), 400
+        return jsonify({"error": "student_session_ids must be integers"}), 400
 
     try:
         school_id = session["school_id"]
@@ -82,7 +114,7 @@ def get_fee_transactions():
         )
 
         if not fee_rows:
-            return jsonify({"message": "No transactions found", "transactions": []}), 200
+            return jsonify({"error": "No transactions found", "transactions": []}), 200
 
         # ---------------------------------------------------------------------
         # Aggregate into desired JSON structure
@@ -185,4 +217,4 @@ def get_fee_transactions():
         # keep logs for debugging
         import traceback
         traceback.print_exc()
-        return jsonify({"message": f"Error fetching transactions: {str(e)}"}), 500
+        return jsonify({"error": f"Error fetching transactions: {str(e)}"}), 500

@@ -19,8 +19,6 @@ RTE_students_bp = Blueprint( 'RTE_students_bp',   __name__)
 @RTE_students_bp.route('/RTE_students')
 @login_required
 def RTE_students():
-    if "email" not in session:
-        return redirect(url_for('login_bp.login')) 
 
     school_id = session['school_id']
     current_session_id = session['session_id']
@@ -47,7 +45,7 @@ def RTE_students():
     ).join(
         ClassData, StudentSessions.class_id == ClassData.id
     ).join(
-        AdmissionClass, StudentsDB.Admission_Class == AdmissionClass.id
+        AdmissionClass, StudentsDB.admission_class_id == AdmissionClass.id
     ).filter(
         StudentSessions.session_id == current_session_id,
         StudentsDB.school_id == school_id,
