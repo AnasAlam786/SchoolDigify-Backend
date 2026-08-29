@@ -19,10 +19,9 @@ from .attendance.overall_attendance.get_overall_attendance_data_api import get_o
 from .attendance.overall_attendance.update_overall_attendance_api import update_overall_attendance_api_bp
 
 from .fees.students_cards.get_students_fees import get_students_fee_api_bp
-from .fees.pay_fee_api import pay_fee_api_bp
-from .fees.get_fee_api import get_fee_api_bp
+from .fees.fee_actions import transaction_action_api_bp
+from .fees.get_fee import get_fee_api_bp
 from .fees.get_transactions_api import get_transactions_api_bp
-from .fees.transaction_action_api import transaction_action_api_bp
 
 from .marks.fill_marks.fill_marks import fill_marks_bp
 from .marks.show_marks.show_marks import show_marks_bp
@@ -102,7 +101,6 @@ def register_blueprints(app):
     app.register_blueprint(update_overall_attendance_api_bp)
     
     app.register_blueprint(get_students_fee_api_bp)
-    app.register_blueprint(pay_fee_api_bp)
     app.register_blueprint(get_fee_api_bp)
     app.register_blueprint(get_transactions_api_bp)
     app.register_blueprint(transaction_action_api_bp)

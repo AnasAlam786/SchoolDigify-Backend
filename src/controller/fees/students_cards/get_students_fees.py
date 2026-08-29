@@ -50,6 +50,7 @@ def get_students_fees_api():
                 StudentSessions.class_id,
 
                 ClassData.CLASS,
+                ClassData.display_order,
             )
             .join(
                 StudentSessions,
@@ -64,8 +65,8 @@ def get_students_fees_api():
                 StudentSessions.session_id == current_session_id,
             )
             .order_by(
-                ClassData.display_order,
-                StudentSessions.ROLL
+                ClassData.display_order.asc(),
+                StudentSessions.ROLL.asc()
             )
             .all()
         )
@@ -421,6 +422,7 @@ def get_students_fees_api():
                 "SR": student.SR,
 
                 "CLASS": student.CLASS,
+                "class_display_order": student.display_order,
                 "ROLL": student.ROLL,
 
                 "PHONE": student.PHONE,

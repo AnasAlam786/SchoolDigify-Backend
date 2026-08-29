@@ -206,6 +206,10 @@ def pay_fee_api():
 
         actual_paid = selected_fee_total - discount
 
+        print(selected_fee_total)
+        print(actual_paid)
+        print(discount)
+
     except (TypeError, KeyError, ValueError):
         return jsonify({"message": "Invalid students/fees format"}), 400
 
