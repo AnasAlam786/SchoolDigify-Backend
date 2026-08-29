@@ -18,7 +18,7 @@ from .attendance.utils.messages_api import get_message_api_bp
 from .attendance.overall_attendance.get_overall_attendance_data_api import get_overall_attendance_data_api_bp
 from .attendance.overall_attendance.update_overall_attendance_api import update_overall_attendance_api_bp
 
-
+from .fees.students_cards.get_students_fees import get_students_fee_api_bp
 from .fees.pay_fee_api import pay_fee_api_bp
 from .fees.get_fee_api import get_fee_api_bp
 from .fees.get_transactions_api import get_transactions_api_bp
@@ -101,6 +101,7 @@ def register_blueprints(app):
     app.register_blueprint(get_overall_attendance_data_api_bp)
     app.register_blueprint(update_overall_attendance_api_bp)
     
+    app.register_blueprint(get_students_fee_api_bp)
     app.register_blueprint(pay_fee_api_bp)
     app.register_blueprint(get_fee_api_bp)
     app.register_blueprint(get_transactions_api_bp)

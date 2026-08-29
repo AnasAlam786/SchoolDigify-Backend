@@ -1,7 +1,8 @@
-from sqlalchemy import TIMESTAMP, Column, BigInteger, ForeignKey, text
+from sqlalchemy import TIMESTAMP, Column, BigInteger, ForeignKey, text, Numeric
 from src import db
 from enum import Enum as PyEnum
 from sqlalchemy import Enum as SQLEnum
+
 
 
 class FeePaymentStatus(str, PyEnum):
@@ -15,6 +16,8 @@ class FeeData(db.Model):
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"))
+    paid_amount = Column(Numeric, nullable=True)
+    late_fee = Column(Numeric, nullable=True)
     
     fee_payment_status = Column(
         SQLEnum(FeePaymentStatus, name="fee_payment_status"),
