@@ -8,12 +8,10 @@ def permission_required(permission_name):
         def wrapped(*args, **kwargs):
 
             if not has_permission(permission_name):
-
-                if request.blueprint and 'api' in request.blueprint.lower():
-                    return jsonify({"message": "You do not have permission"}), 403
-                else:
-                    return render_template("permission_denied.html"), 403
-
+                return jsonify(
+                    {"error": "You do not have permission to access this resource."}
+                ), 403
+                
             return f(*args, **kwargs)
         return wrapped
     return decorator

@@ -74,6 +74,14 @@ def get_students_fees_api():
             .all()
         )
 
+        if not students:
+            return jsonify({
+                "ERROR_CODE":"NO_STUDENTS",
+                "error": "No students have been added for this session yet. Add students to get started."
+            }), 404
+
+
+
         # ---------------------------------------------------------
         # 3. Get fee structure for current session
         # ---------------------------------------------------------
@@ -106,6 +114,11 @@ def get_students_fees_api():
             )
             .all()
         )
+        if not fee_sessions:
+            return jsonify({
+                "ERROR_CODE":"NO_SESSION_FEE_SETUP",
+                "error": "Fee Session is not setup. Please set up the fee session data before start paying fees."
+            }), 404
 
         # ---------------------------------------------------------
         # 4. Group fee structure by class
@@ -514,7 +527,7 @@ def get_students_fees_api():
             "total_discount_given_by_school": float(
                 total_discount
             ),
-            "students_fee_data": [data],
+            "students_fee_data": data,
         }), 200
 
     # -------------------------------------------------------------

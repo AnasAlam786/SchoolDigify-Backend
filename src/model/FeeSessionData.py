@@ -1,8 +1,15 @@
-from sqlalchemy import Column, BigInteger, Numeric, Date, ForeignKey
+from sqlalchemy import Column, BigInteger, Numeric, Date, ForeignKey, UniqueConstraint
 from src import db
 
 class FeeSessionData(db.Model):
     __tablename__ = "FeeSessionData"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "session_id", "class_id", "structure_id",
+            name="fee_session_data_unique"
+        ),
+    )
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
     amount = Column(Numeric, nullable=False)

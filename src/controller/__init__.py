@@ -21,7 +21,10 @@ from .attendance.overall_attendance.update_overall_attendance_api import update_
 from .fees.students_cards.get_students_fees import get_students_fee_api_bp
 from .fees.fee_actions import transaction_action_api_bp
 from .fees.get_fee import get_fee_api_bp
-from .fees.get_transactions_api import get_transactions_api_bp
+from .fees.get_transactions import get_transactions_api_bp
+from .fees.setup_fee_session_data.get_fee_session_setup_data import get_fee_session_setup_data_api_bp
+from .fees.setup_fee_session_data.save_fee_session_setup import save_fee_session_setup_api_bp
+
 
 from .marks.fill_marks.fill_marks import fill_marks_bp
 from .marks.show_marks.show_marks import show_marks_bp
@@ -104,6 +107,10 @@ def register_blueprints(app):
     app.register_blueprint(get_fee_api_bp)
     app.register_blueprint(get_transactions_api_bp)
     app.register_blueprint(transaction_action_api_bp)
+    app.register_blueprint(get_fee_session_setup_data_api_bp)
+    app.register_blueprint(save_fee_session_setup_api_bp)
+    
+    
 
     app.register_blueprint(admission_bp)
     app.register_blueprint(pydantic_verification_api_bp)
