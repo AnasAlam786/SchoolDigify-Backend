@@ -47,9 +47,15 @@ def save_fee_session_setup():
 
         already_exists = (
             db.session.query(FeeSessionData.id)
+            .join(
+                ClassData,
+                FeeSessionData.class_id == ClassData.id
+            )
             .filter(
-                FeeSessionData.session_id == session_id
-            ).first()
+                FeeSessionData.session_id == session_id,
+                ClassData.school_id == school_id
+            )
+            .first()
         )
 
         if already_exists:
