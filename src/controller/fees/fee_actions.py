@@ -44,8 +44,6 @@ def parse_date(value):
 
     raise ValueError(f"Invalid date format: {value}")
 
-
-
 @transaction_action_api_bp.route('/api/delete_fee_transaction', methods=["POST"])
 @login_required
 @permission_required('pay_fees')

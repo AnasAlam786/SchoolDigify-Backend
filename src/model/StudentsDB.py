@@ -96,7 +96,7 @@ class StudentsDB(db.Model):
     APAAR = Column(Text, unique=True, nullable=True)
     EMAIL = Column(Text, nullable=True)
 
-    admission_class_id = Column("Admission_Class", Numeric, nullable=True)
+    admission_class_id = Column(Numeric, nullable=True)
 
     GENDER = Column(StudentsDBEnums.GENDER, nullable=False)
     Caste_Type = Column(StudentsDBEnums.CASTE_TYPE, nullable=True)

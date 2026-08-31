@@ -136,6 +136,7 @@ def build_fee_data(students, fee_structure, fee_payments, current_session):
             "id": idx,
             "student_session_id": s.student_session_id,
             "name": s.STUDENTS_NAME,
+            "fatherName": s.FATHERS_NAME,
             "class": s.CLASS,
             "class_id": s.class_id,
             "rollNo": s.ROLL,
