@@ -30,7 +30,7 @@ def _num(v):
 
 @get_transactions_api_bp.route('/api/get_fee_transactions', methods=["GET"])
 @login_required
-@permission_required('view_fee_data')
+@permission_required('pay_fees')
 def get_fee_transactions():
 
     

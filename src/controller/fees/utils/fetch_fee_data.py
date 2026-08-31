@@ -3,6 +3,7 @@ from datetime import date, datetime
 from operator import or_
 
 from sqlalchemy import case
+from src.model import RTEInfo
 from src.model.FeeSessionData import FeeSessionData
 from src.model.StudentSessions import StudentSessions
 from src.model.ClassData import ClassData
@@ -26,14 +27,29 @@ def fetch_fee_data(
     q = (
         db.session.query(
             StudentsDB.id.label("student_id"),
-            StudentsDB.STUDENTS_NAME, StudentsDB.FATHERS_NAME,
-            StudentsDB.PHONE, StudentsDB.IMAGE,
+            StudentsDB.STUDENTS_NAME,
+            StudentsDB.FATHERS_NAME,
+            StudentsDB.PHONE,
+            StudentsDB.IMAGE,
             StudentSessions.id.label("student_session_id"),
-            StudentSessions.class_id, StudentSessions.session_id, 
-            StudentSessions.ROLL, ClassData.CLASS
+            StudentSessions.class_id,
+            StudentSessions.session_id,
+            StudentSessions.ROLL,
+            ClassData.CLASS,
+            RTEInfo.is_RTE
         )
-        .join(StudentSessions, StudentsDB.id == StudentSessions.student_id)
-        .join(ClassData, ClassData.id == StudentSessions.class_id)
+        .join(
+            StudentSessions,
+            StudentsDB.id == StudentSessions.student_id
+        )
+        .join(
+            ClassData,
+            ClassData.id == StudentSessions.class_id
+        )
+        .outerjoin(
+            RTEInfo,
+            RTEInfo.student_id == StudentsDB.id
+        )
     )
 
     if phone:
@@ -137,6 +153,8 @@ def build_fee_data(students, fee_structure, fee_payments, current_session):
             "student_session_id": s.student_session_id,
             "name": s.STUDENTS_NAME,
             "fatherName": s.FATHERS_NAME,
+            "isRTE": s.is_RTE,
+
             "class": s.CLASS,
             "class_id": s.class_id,
             "rollNo": s.ROLL,

@@ -4,7 +4,7 @@ from flask import session, jsonify, Blueprint
 
 from sqlalchemy import select, func, case, and_
 from src.controller.permissions.permission_required import permission_required
-from src.model import (ClassData, FeeData, FeeHeads, FeeSessionData, FeeStructure, FeeTransaction, StudentsDB, StudentSessions)
+from src.model import (ClassData, FeeData, FeeHeads, FeeSessionData, FeeStructure, FeeTransaction, RTEInfo, StudentsDB, StudentSessions)
 from src import db
 
 from src.controller.permissions.permission_required import permission_required
@@ -48,16 +48,18 @@ def get_students_fees_api():
                 StudentsDB.id,
                 StudentsDB.STUDENTS_NAME,
                 StudentsDB.FATHERS_NAME,
-                StudentsDB.SR,
-                StudentsDB.PHONE,
-                StudentsDB.GENDER,
-                StudentsDB.IMAGE,
+                StudentsDB.SR, StudentsDB.PHONE,
+                StudentsDB.GENDER, StudentsDB.IMAGE,
 
                 StudentSessions.id.label("student_session_id"),
-                StudentSessions.ROLL,
-                StudentSessions.class_id,
+                StudentSessions.ROLL, StudentSessions.class_id,
 
                 ClassData.CLASS,
+
+                func.coalesce(
+                    RTEInfo.is_RTE,
+                    False
+                ).label("is_RTE"),
             )
             .join(
                 StudentSessions,
@@ -66,6 +68,10 @@ def get_students_fees_api():
             .join(
                 ClassData,
                 ClassData.id == StudentSessions.class_id,
+            )
+            .outerjoin(
+                RTEInfo,
+                RTEInfo.student_id == StudentsDB.id,
             )
             .filter(
                 StudentsDB.school_id == school_id,
@@ -455,6 +461,7 @@ def get_students_fees_api():
 
                 "STUDENTS_NAME": student.STUDENTS_NAME,
                 "FATHERS_NAME": student.FATHERS_NAME,
+                "isRTE": student.is_RTE,
                 "SR": student.SR,
 
                 "CLASS": student.CLASS,
