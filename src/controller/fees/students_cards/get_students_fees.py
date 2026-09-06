@@ -454,6 +454,8 @@ def get_students_fees_api():
             # -----------------------------------------------------
             # Final student object
             # -----------------------------------------------------
+            if student.is_RTE:
+                print(f"Student: {student.STUDENTS_NAME}, is RTE: {student.is_RTE}")
 
             data.append({
                 "id": student.id,
