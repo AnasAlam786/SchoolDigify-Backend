@@ -80,6 +80,10 @@ from .question_paper.question_papers_dashboard import question_papers_dashboard_
 from .question_paper.question_papers_editor import question_papers_editor_bp
 from .tools.exam_seat_chits import get_seat_chits_bp
 
+from .setup.school_actions import school_data_api_bp
+from .setup.exam_setup import exam_setup_api_bp
+from .setup.subject_setup import subject_setup_api_bp
+
 def register_blueprints(app):
     app.register_blueprint(login_bp)
     app.register_blueprint(logout_bp)
@@ -161,3 +165,7 @@ def register_blueprints(app):
     app.register_blueprint(get_available_rolls_api_bp)
 
     app.register_blueprint(RTE_students_bp)
+
+    app.register_blueprint(school_data_api_bp)
+    app.register_blueprint(exam_setup_api_bp)
+    app.register_blueprint(subject_setup_api_bp)

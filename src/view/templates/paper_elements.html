@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Question Paper</title>
+    <style>
+        @page {
+            margin: 7mm;
+            size: A4;
+        }
+
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: "Garamond", "Times New Roman", serif;
+        }
+
+        .paperHeader {
+            font-size: 20px;
+            line-height: 1;
+        }
+
+        .question-block {
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+
+        .content {
+            line-height: 1.2;
+        }
+
+        @media print {
+            body {
+                page-break-after: always;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="a4PDF" style="font-size: {{ fontSize if fontSize is not none else 20 }}px;">
+        <div style="text-align: center; border-bottom: 1px solid #464646; margin-bottom: 3px;" class="paperHeader">
+            <p style="font-size: 1.6em; font-weight: bold; margin: 0;">{{ school }}</p>
+            <p style="font-size: 1.2em; font-weight: bold; margin: 0;">{{ event }}</p>
+
+
+            <div style=" display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                {% if hrs %}
+                <div style="display: flex; gap: 6px;">
+                    <span style="font-weight: 600;">Time:</span>
+                    <span>{{ hrs }}</span>
+                </div>
+                {% endif %}
+
+                {% if subject %}
+                <div style="display: flex; gap: 6px;">
+                    <span style="font-weight: 600;">Subject:</span>
+                    <span>{{ subject }}</span>
+                </div>
+                {% endif %}
+
+                {% if std %}
+                <div style="display: flex; gap: 6px;">
+                    <span style="font-weight: 600;">Class:</span>
+                    <span>{{ std }}</span>
+                </div>
+                {% endif %}
+
+                {% if MM %}
+                <div style="display: flex; gap: 6px;">
+                    <span style="font-weight: 600;">Max Marks:</span>
+                    <span>{{ MM }}</span>
+                </div>
+                {% endif %}
+
+            </div>
+        </div>
+
+
+        <div class="content" style="width: 100%;">
+            {% if questions %}
+            {% for question in questions %}
+            <div class="question-block">
+                {% if question.type == "match" and question.subQuestion|default([])|length != 0 %}
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0; width: 100%;">
+                    <p style="margin: 0; line-height: 1.4; padding-left: 35px; text-indent: -35px;"><strong>Q{{
+                            loop.index }}. {{ question.qText }}</strong></p>
+                    <span style="font-weight: bold;">{{ question.marks }}</span>
+                </div>
+
+                <div style="display: flex; justify-content: flex-start; padding-left: 20px; margin-bottom: 5;">
+                    <ul style="list-style-type: none; padding-right: 100px; margin: 0;">
+                        {% for subQuestion in question.subQuestion %}
+                        <li>
+                            {{ "abcdefghijklmnopqrstuvwxyz"[loop.index-1] }}.) {{ subQuestion }}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    <ul style="list-style-type: none; margin: 0;">
+                        {% for option in question.options %}
+                        <li>
+                            {{ option }}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+
+                <!-- QnA, FillUp, TF Type Questions -->
+                {% if question.type in ["QnA", "fillUp", "TF"] and question.subQuestion|length != 0 %}
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0; width: 100%;">
+                    <p style="margin: 0; line-height: 1.4; padding-left: 35px; text-indent: -35px;"><strong>Q{{
+                            loop.index }}. {{ question.qText }}</strong></p>
+                    <span style="font-weight: bold;">{{ question.marks }}</span>
+                </div>
+
+                <div style="margin-bottom: 5px; padding-left: 15px;">
+
+                    {% for subQuestion in question.subQuestion %}
+                    {% if subQuestion %}
+                    <p style="margin: 0 0 3px 0; line-height: 1.4; padding-left: 20px; text-indent: -20px;">
+                        {{ "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[loop.index-1] }}: {{ subQuestion }}
+                    </p>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <!-- SingleWord Type Questions -->
+                {% if question.type == "singleWord" and question.subQuestion|length != 0 %}
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0; width: 100%;">
+                    <p style="margin: 0; line-height: 1.4; padding-left: 35px; text-indent: -35px;"><strong>Q{{
+                            loop.index }}. {{ question.qText }}</strong></p>
+                    <span style="font-weight: bold;">{{ question.marks }}</span>
+                </div>
+
+                <div style="display: flex; flex-wrap: wrap; justify-content: center; margin-bottom: 5px; ">
+
+                    {% for subQuestion in question.subQuestion %}
+                    {% if subQuestion %}
+                    <p style="margin: 0 0 3px 0; margin-right: 20px;">{{ "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[loop.index-1] }}:
+                        {{
+                        subQuestion }}</p>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <!-- MCQ Type Questions -->
+                {% if question.type == "mcq" and question.subQuestion|length != 0 %}
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0; width: 100%;">
+                    <p style="margin: 0; line-height: 1.4; padding-left: 35px; text-indent: -35px;"><strong>Q{{
+                            loop.index }}. {{ question.qText }}</strong></p>
+                    <span style="font-weight: bold;">{{ question.marks }}</span>
+                </div>
+
+                <div style="padding-left: 15px; margin-bottom: 5px;">
+                    {% for subQuestion in question.subQuestion %}
+                    <p style="margin: 0; line-height: 1.4; padding-left: 20px; text-indent: -20px;">{{
+                        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[loop.index-1] }}: {{ subQuestion.text }}</p>
+
+                    <div style="padding-left: 30px; line-height: 1; display: flex; flex-wrap: wrap">
+                        {% for option in subQuestion.options %}
+                        <div style="width: calc(50% - 10px);">
+                            <p style="margin: 2px 0;">{{ "abcdefghijklmnopqrstuvwxyz"[loop.index-1] }}. {{ option }}</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        window.onload = function () {
+            setTimeout(() => window.print(), 300);
+        };
+    </script>
+
+</body>
+
+</html>

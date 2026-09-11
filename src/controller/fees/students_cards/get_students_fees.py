@@ -15,6 +15,28 @@ from collections import defaultdict
 from decimal import Decimal
 
 
+def build_basic_student_record(student):
+    """Return the basic student payload that is safe to expose for RTE students.
+
+    Fee-related keys are intentionally omitted here so the client receives
+    only the identifying/classification fields for an RTE child.
+    """
+    return {
+        "id": student.id,
+        "student_session_id": student.student_session_id,
+        "STUDENTS_NAME": student.STUDENTS_NAME,
+        "FATHERS_NAME": student.FATHERS_NAME,
+        "isRTE": bool(student.is_RTE),
+        "SR": student.SR,
+        "CLASS": student.CLASS,
+        "class_id": student.class_id,
+        "ROLL": student.ROLL,
+        "PHONE": student.PHONE,
+        "GENDER": student.GENDER,
+        "IMAGE": student.IMAGE or "",
+    }
+
+
 get_students_fee_api_bp = Blueprint( 'get_students_fee_api_bp',   __name__)
 
 
@@ -88,96 +110,106 @@ def get_students_fees_api():
 
 
 
-        # ---------------------------------------------------------
-        # 3. Get fee structure for current session
-        # ---------------------------------------------------------
-
-        fee_sessions = (
-            db.session.query(
-                FeeSessionData.id,
-                FeeSessionData.class_id,
-                FeeSessionData.amount,
-
-                FeeStructure.due_day,
-                FeeStructure.due_month,
-                FeeStructure.year_increment,
-
-                FeeSessionData.custom_due_date,
-
-                FeeHeads.fee_type.label("fee_type"),
-            )
-            .join(
-                FeeStructure,
-                FeeStructure.id == FeeSessionData.structure_id,
-            )
-            .outerjoin(
-                FeeHeads,
-                FeeHeads.id == FeeStructure.fee_type_id,
-            )
-            .filter(
-                FeeSessionData.session_id == current_session_id,
-                FeeStructure.school_id == school_id,
-            )
-            .all()
-        )
-        if not fee_sessions:
-            return jsonify({
-                "ERROR_CODE":"NO_SESSION_FEE_SETUP",
-                "error": "Fee Session is not setup. Please set up the fee session data before start paying fees."
-            }), 404
-
-        # ---------------------------------------------------------
-        # 4. Group fee structure by class
-        # ---------------------------------------------------------
-
-        fees_by_class = defaultdict(list)
-
-        for fee in fee_sessions:
-            fees_by_class[fee.class_id].append(fee)
-
-        # ---------------------------------------------------------
-        # 5. Get payment records
-        # ---------------------------------------------------------
-
-        student_session_ids = [
-            student.student_session_id
-            for student in students
+        # Determine whether any fee calculations are actually needed.
+        # RTE students should be represented through their basic student
+        # payload only and must not trigger the fee-setup or fee-payment
+        # dependency checks in this route.
+        non_rte_students = [
+            student for student in students
+            if not bool(student.is_RTE)
         ]
 
+        fee_sessions = []
+        fees_by_class = defaultdict(list)
         paid_fees_by_student = defaultdict(list)
 
-        if student_session_ids:
+        if non_rte_students:
+            # ---------------------------------------------------------
+            # 3. Get fee structure for current session
+            # ---------------------------------------------------------
 
-            fee_records = (
+            fee_sessions = (
                 db.session.query(
-                    FeeData.student_session_id,
-                    FeeData.fee_session_id,
-                    FeeData.transaction_id,
-                    FeeData.paid_amount,
-                    FeeData.fee_payment_status,
+                    FeeSessionData.id,
+                    FeeSessionData.class_id,
+                    FeeSessionData.amount,
 
-                    FeeTransaction.payment_date,
+                    FeeStructure.due_day,
+                    FeeStructure.due_month,
+                    FeeStructure.year_increment,
+
+                    FeeSessionData.custom_due_date,
+
+                    FeeHeads.fee_type.label("fee_type"),
+                )
+                .join(
+                    FeeStructure,
+                    FeeStructure.id == FeeSessionData.structure_id,
                 )
                 .outerjoin(
-                    FeeTransaction,
-                    FeeTransaction.id == FeeData.transaction_id,
+                    FeeHeads,
+                    FeeHeads.id == FeeStructure.fee_type_id,
                 )
                 .filter(
-                    FeeData.student_session_id.in_(student_session_ids),
-
-                    # NULL means "not deleted"
-                    func.coalesce(
-                        FeeTransaction.is_deleted,
-                        False,
-                    ) == False,
+                    FeeSessionData.session_id == current_session_id,
+                    FeeStructure.school_id == school_id,
                 )
                 .all()
             )
+            if not fee_sessions:
+                return jsonify({
+                    "ERROR_CODE":"NO_SESSION_FEE_SETUP",
+                    "error": "Fee Session is not setup. Please set up the fee session data before start paying fees."
+                }), 404
 
-            for fee in fee_records:
-                paid_fees_by_student[
-                    fee.student_session_id
-                ].append(fee)
+            # ---------------------------------------------------------
+            # 4. Group fee structure by class
+            # ---------------------------------------------------------
+
+            for fee in fee_sessions:
+                fees_by_class[fee.class_id].append(fee)
+
+            # ---------------------------------------------------------
+            # 5. Get payment records
+            # ---------------------------------------------------------
+
+            student_session_ids = [
+                student.student_session_id
+                for student in non_rte_students
+            ]
+
+            if student_session_ids:
+
+                fee_records = (
+                    db.session.query(
+                        FeeData.student_session_id,
+                        FeeData.fee_session_id,
+                        FeeData.transaction_id,
+                        FeeData.paid_amount,
+                        FeeData.fee_payment_status,
+
+                        FeeTransaction.payment_date,
+                    )
+                    .outerjoin(
+                        FeeTransaction,
+                        FeeTransaction.id == FeeData.transaction_id,
+                    )
+                    .filter(
+                        FeeData.student_session_id.in_(student_session_ids),
+
+                        # NULL means "not deleted"
+                        func.coalesce(
+                            FeeTransaction.is_deleted,
+                            False,
+                        ) == False,
+                    )
+                    .all()
+                )
+
+                for fee in fee_records:
+                    paid_fees_by_student[
+                        fee.student_session_id
+                    ].append(fee)
 
         # ---------------------------------------------------------
         # 6. Build student response
@@ -186,6 +218,13 @@ def get_students_fees_api():
         data = []
 
         for student in students:
+
+            # RTE students must only return the base profile payload and
+            # omit all fee-derived fields such as payable, paid, due, and
+            # status. This keeps the response consistent with the request.
+            if bool(student.is_RTE):
+                data.append(build_basic_student_record(student))
+                continue
 
             # -----------------------------------------------------
             # Fee structure for this student's class
@@ -221,14 +260,12 @@ def get_students_fees_api():
             # -----------------------------------------------------
 
             tuition_fees = [
-                fee
-                for fee in class_fees
+                fee for fee in class_fees
                 if fee.fee_type == "Tuition Fee"
             ]
 
             one_time_fees = [
-                fee
-                for fee in class_fees
+                fee for fee in class_fees
                 if fee.fee_type != "Tuition Fee"
             ]
 
@@ -454,25 +491,9 @@ def get_students_fees_api():
             # -----------------------------------------------------
             # Final student object
             # -----------------------------------------------------
-            if student.is_RTE:
-                print(f"Student: {student.STUDENTS_NAME}, is RTE: {student.is_RTE}")
 
             data.append({
-                "id": student.id,
-                "student_session_id": student.student_session_id,
-
-                "STUDENTS_NAME": student.STUDENTS_NAME,
-                "FATHERS_NAME": student.FATHERS_NAME,
-                "isRTE": student.is_RTE,
-                "SR": student.SR,
-
-                "CLASS": student.CLASS,
-                "class_id": student.class_id,
-                "ROLL": student.ROLL,
-
-                "PHONE": student.PHONE,
-                "GENDER": student.GENDER,
-                "IMAGE": student.IMAGE or "",
+                **build_basic_student_record(student),
 
                 # Overall
                 "totalPayable": float(total_payable),
@@ -522,8 +543,7 @@ def get_students_fees_api():
                 # NULL = not deleted
                 func.coalesce(
                     FeeTransaction.is_deleted,
-                    False,
-                ) == False,
+                    False, ) == False,
             )
             .scalar()
         ) or ZERO
