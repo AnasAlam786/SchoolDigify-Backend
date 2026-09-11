@@ -16,12 +16,9 @@ from src import db
 
 
 def fetch_fee_data(    
-    session_id,
-    school_id,
-    phone=None,
-    class_id=None,
-    student_session_ids=None,
-    student_id=None,
+    session_id, school_id,
+    phone=None, class_id=None,
+    student_session_ids=None, student_id=None,
     selected_student_session_id=None
 ):
     q = (
@@ -29,8 +26,7 @@ def fetch_fee_data(
             StudentsDB.id.label("student_id"),
             StudentsDB.STUDENTS_NAME,
             StudentsDB.FATHERS_NAME,
-            StudentsDB.PHONE,
-            StudentsDB.IMAGE,
+            StudentsDB.PHONE, StudentsDB.IMAGE,
             StudentSessions.id.label("student_session_id"),
             StudentSessions.class_id,
             StudentSessions.session_id,
@@ -86,7 +82,8 @@ def fetch_fee_data(
             FeeHeads.fee_type,
             FeeStructure.id.label("structure_id"),
             FeeStructure.period_name, FeeStructure.year_increment,
-            FeeStructure.start_day, FeeStructure.start_month,
+            FeeStructure.due_day, FeeStructure.due_month,
+            FeeSessionData.custom_due_date,
             FeeSessionData.amount, FeeSessionData.class_id,
             FeeSessionData.id.label("fee_session_id"), 
         )
@@ -173,8 +170,19 @@ def build_fee_data(students, fee_structure, fee_payments, current_session):
                 continue
             
             i += 1
-            due_year = int(current_session) + (f.year_increment or 0)
-            due_date = date(due_year, f.start_month, f.start_day)
+
+            # Determine due date: use custom_due_date if present, else build dynamically
+            if f.custom_due_date:
+                # Ensure custom_due_date is formatted as a date object if it comes as a string/datetime
+                if isinstance(f.custom_due_date, datetime):
+                    due_date = f.custom_due_date.date()
+                elif isinstance(f.custom_due_date, str):
+                    due_date = datetime.strptime(f.custom_due_date, "%Y-%m-%d").date()
+                else:
+                    due_date = f.custom_due_date
+            else:
+                due_year = int(current_session) + int(f.year_increment or 0)
+                due_date = date(due_year, int(f.due_month), int(f.due_day))
 
             key = (student["student_session_id"], f.fee_session_id)
             payment = payment_map.get(key)
@@ -190,7 +198,7 @@ def build_fee_data(students, fee_structure, fee_payments, current_session):
 
             amount = float(f.amount or 0)
 
-            # Fixed: Check against upper case "DUE"
+            # Check against upper case "DUE"
             if status == "DUE":
                 student["total_due_amount"] += amount
                 if f.fee_type and f.fee_type.lower() == "tuition fee":
@@ -202,7 +210,7 @@ def build_fee_data(students, fee_structure, fee_payments, current_session):
                 "fee_type": f.fee_type,
                 "period_name": f.period_name,
                 "amount": amount,
-                "dueDate": f"{f.start_day}-{f.start_month}-{due_year}",
+                "dueDate": due_date.strftime("%d-%m-%Y"),
                 "status": status,
                 "paid_date": paid_date.strftime("%d-%m-%Y") if paid_date else None,
                 "transaction_no": transaction_no,
@@ -216,5 +224,3 @@ def build_fee_data(students, fee_structure, fee_payments, current_session):
         result.append(student)
 
     return result
-
-

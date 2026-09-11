@@ -174,20 +174,19 @@ def get_subjects():
 # CREATE SUBJECT
 # ================================================================
 
-@subject_setup_api_bp.route(
-    "/api/create_subject",
-    methods=["POST"]
-)
+@subject_setup_api_bp.route("/api/create_subject", methods=["POST"])
 @login_required
 def create_subject():
-
     try:
         # ---------------------------------------------------------
-        # 1. Get current school
+        # Current school and academic session
         # ---------------------------------------------------------
-
         school_id = session["school_id"]
+        session_id = session["session_id"]
 
+        # ---------------------------------------------------------
+        # Get request data
+        # ---------------------------------------------------------
         data = request.get_json(silent=True)
 
         if not data:
@@ -195,15 +194,9 @@ def create_subject():
                 "error": "Request body is required."
             }), 400
 
-        # ---------------------------------------------------------
-        # 2. Get data
-        # ---------------------------------------------------------
-
         class_id = data.get("class_id")
-
         subject_code = data.get("subject_code")
         subject_name = data.get("subject")
-
         max_marks = data.get("max_marks")
         pass_marks = data.get("pass_marks")
         display_order = data.get("display_order")
@@ -214,9 +207,8 @@ def create_subject():
         is_active = data.get("is_active", True)
 
         # ---------------------------------------------------------
-        # 3. Validate required fields
+        # Required field validation
         # ---------------------------------------------------------
-
         if not class_id:
             return jsonify({
                 "error": "Class ID is required."
@@ -233,9 +225,8 @@ def create_subject():
             }), 400
 
         # ---------------------------------------------------------
-        # 4. Check class belongs to current school
+        # Check that class belongs to current school
         # ---------------------------------------------------------
-
         class_exists = (
             db.session.query(ClassData.id)
             .filter(
@@ -246,51 +237,72 @@ def create_subject():
         )
 
         if not class_exists:
-
             return jsonify({
                 "error": "Class not found."
             }), 404
 
         # ---------------------------------------------------------
-        # 5. Check duplicate subject name or subject code
-        #
-        # Same subject can exist in different classes.
-        # Therefore check within the same school + class.
+        # Find subjects with same name OR same subject code
         # ---------------------------------------------------------
-
         duplicate_filters = [
             Subjects.subject == subject_name
         ]
 
-        # Only check subject_code if it was provided
         if subject_code:
             duplicate_filters.append(
                 Subjects.subject_code == subject_code
             )
 
+        # ---------------------------------------------------------
+        # Check session overlap
+        #
+        # Existing subject overlaps the new subject if:
+        #
+        # existing.start_session <= current session
+        #
+        # AND
+        #
+        # existing.end_session is NULL
+        # OR
+        # existing.end_session >= current session
+        #
+        # NULL end_session means the subject is still active/open.
+        # ---------------------------------------------------------
         existing_subject = (
             db.session.query(Subjects.id)
             .filter(
                 Subjects.school_id == school_id,
                 Subjects.class_id == class_id,
-                or_(*duplicate_filters)
+
+                # Same subject name OR same subject code
+                or_(*duplicate_filters),
+
+                # Existing subject has already started
+                Subjects.start_session <= session_id,
+
+                # Existing subject has not ended before current session
+                or_(
+                    Subjects.end_session.is_(None),
+                    Subjects.end_session >= session_id
+                )
             )
             .first()
         )
 
         if existing_subject:
-
             return jsonify({
                 "error": (
-                    "A subject with this name or code "
-                    "already exists for this class."
+                    "This subject already exists for this class "
+                    "in the selected academic session."
                 )
             }), 409
 
         # ---------------------------------------------------------
-        # 6. Create subject
+        # Create new subject
+        #
+        # start_session = current session
+        # end_session   = NULL
         # ---------------------------------------------------------
-
         subject = Subjects(
             school_id=school_id,
             class_id=class_id,
@@ -303,24 +315,23 @@ def create_subject():
             abbreviation=abbreviation,
             staff_id=staff_id,
             subject_type=subject_type,
-            is_active=is_active
+            is_active=is_active,
+            start_session=session_id,
+            end_session=None
         )
 
         db.session.add(subject)
-
-        # ---------------------------------------------------------
-        # 7. Commit
-        # ---------------------------------------------------------
-
         db.session.commit()
 
+        # ---------------------------------------------------------
+        # Success response
+        # ---------------------------------------------------------
         return jsonify({
             "message": "Subject created successfully.",
             "subject_id": subject.id
         }), 201
 
     except Exception as e:
-
         db.session.rollback()
 
         print("Error while creating subject:", e)
@@ -329,7 +340,7 @@ def create_subject():
             "error": "Unable to create subject. Please try again later."
         }), 500
 
-
+    
 # ================================================================
 # UPDATE SUBJECT
 # ================================================================
