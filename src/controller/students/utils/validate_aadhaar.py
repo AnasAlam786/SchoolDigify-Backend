@@ -49,23 +49,50 @@ def is_valid_aadhaar(aadhaar_number: str) -> bool:
 
     return checksum == 0
 
-
 def make_aadhaar_clean(aadhaar: str):
     if not aadhaar:
         return None
-    aadhaar = aadhaar.replace('-', '').replace(' ', '')
-    return aadhaar
 
-def verify_aadhaar(aadhaar):
+    return aadhaar.replace('-', '').replace(' ', '').strip()
+
+
+def is_masked_aadhaar(aadhaar: str) -> bool:
+    """
+    Checks whether the cleaned Aadhaar is masked and contains
+    exactly 4 visible digits.
+    
+    Examples:
+        XXXX-XXXX-1234 -> False after cleaning
+        ********1234   -> True
+        **** **** 1234 -> True
+    """
+    if not aadhaar:
+        return False
+
+    digits = ''.join(filter(str.isdigit, aadhaar))
+
+    return '*' in aadhaar and len(digits) == 4
+
+
+def verify_aadhaar(aadhaar: str):
+    if not aadhaar:
+        raise ValueError('There should be 12 digits in aadhaar number')
+
+    # Clean formatting first
     clean_aadhaar = make_aadhaar_clean(aadhaar)
-    if not clean_aadhaar:
-        raise ValueError('There shoulf be 12 digits in aadhaar number')
-        
-    result = is_valid_aadhaar(clean_aadhaar)
-    
-    if result:
-        return clean_aadhaar
-    
-    raise ValueError('Invalid Aadhaar Number')
 
-    
+    if not clean_aadhaar:
+        raise ValueError('There should be 12 digits in aadhaar number')
+
+    # Check masked Aadhaar AFTER cleaning
+    if is_masked_aadhaar(clean_aadhaar):
+        return clean_aadhaar
+
+    # Normal Aadhaar must contain exactly 12 digits
+    if len(clean_aadhaar) != 12 or not clean_aadhaar.isdigit():
+        raise ValueError('There should be 12 digits in aadhaar number')
+
+    if is_valid_aadhaar(clean_aadhaar):
+        return clean_aadhaar
+
+    raise ValueError('Invalid Aadhaar Number')

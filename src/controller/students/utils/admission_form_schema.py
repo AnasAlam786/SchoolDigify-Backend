@@ -48,8 +48,8 @@ class AdmissionFormModel(BaseModel):
 
     RELIGION: ReligionEnum = Field(...)
 
-    Height: Optional[conint(gt=0, lt=300)] = Field(None) # type: ignore
-    Weight: Optional[conint(gt=0, lt=300)] = Field(None) # type: ignore
+    Height: Optional[int] = Field(None, gt=0, lt=300)
+    Weight: Optional[int] = Field(None, gt=0, lt=300)
 
     BLOOD_GROUP: Optional[BloodGroupEnum] = Field(None)
         
@@ -87,8 +87,8 @@ class AdmissionFormModel(BaseModel):
     EMAIL: Optional[EmailStr] = Field(None)
 
 
-    Previous_School_Marks: Optional[constr(max_length=3)] = Field(None) # type: ignore
-    Previous_School_Attendance: Optional[constr(max_length=3)] = Field(None) # type: ignore
+    Previous_School_Marks: Optional[int] = Field(None, ge=0, le=100)
+    Previous_School_Attendance: Optional[int] = Field(None, ge=0, le=366)
     Previous_School_Name: Optional[constr(min_length=2)] = Field(None) # type: ignore
 
     # --- RTE fields ---
@@ -139,3 +139,30 @@ class AdmissionFormModel(BaseModel):
         
         validated_clean_aaadhar = verify_aadhaar(v)
         return validated_clean_aaadhar
+    
+@field_validator(
+    "Height", "Weight",
+    "Previous_School_Marks",
+    "Previous_School_Attendance",
+    mode="before"
+)
+
+@classmethod
+def numeric_fields_to_int(cls, v):
+    if v is None:
+        return None
+
+    if isinstance(v, int):
+        return v
+
+    if isinstance(v, str):
+        v = v.strip()
+        if v == "":
+            return None
+
+        try:
+            return int(v)
+        except ValueError:
+            raise ValueError("Must be a valid integer")
+
+    raise ValueError("Must be an integer or a numeric string")
