@@ -21,7 +21,7 @@ class ClassData(db.Model):
     
     
     # Relationships
-    subjects = db.relationship("Subjects", back_populates="class_data")
+    class_subjects = db.relationship("ClassSubject", back_populates="class_data")
     student_sessions =  db.relationship("StudentSessions", back_populates="class_data")
     class_access = db.relationship("ClassAccess", back_populates="class_data")
     class_exams = db.relationship("ClassExams", back_populates="class_data")

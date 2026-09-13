@@ -9,7 +9,8 @@ class StudentMarks(db.Model):
 
     id = db.Column(BigInteger, primary_key=True, autoincrement=True)
     student_id = Column(BigInteger, db.ForeignKey('StudentsDB.id', onupdate='CASCADE'), nullable=False)
-    subject_id = Column(BigInteger, db.ForeignKey('Subjects.id', onupdate='CASCADE'), nullable=False)
+    sub_id = Column(BigInteger, ForeignKey('ClassSubject.id', onupdate='CASCADE'), nullable=True
+)
     school_id = Column(Text, ForeignKey('Schools.id', onupdate="CASCADE"), nullable=True)
     session_id = Column(BigInteger, db.ForeignKey('Sessions.id', onupdate='CASCADE'), nullable=False)
     exam_id = Column(BigInteger, db.ForeignKey('Exams.id', onupdate='CASCADE'), nullable=False)
@@ -18,7 +19,7 @@ class StudentMarks(db.Model):
 
     # Optional: relationships for easier access (recommended)
     students = db.relationship('StudentsDB', back_populates='marks')
-    subjects = db.relationship('Subjects', back_populates='marks')
     school = db.relationship('Schools', back_populates='marks')
     session = db.relationship('Sessions', back_populates='marks')
     exams = db.relationship('Exams', back_populates='marks')
+    class_subject = db.relationship("ClassSubject",back_populates="marks")

@@ -82,7 +82,7 @@ def student_modal_data_api():
         Formats a 12-digit Aadhaar number into XXXX-XXXX-XXXX.
         Returns empty string if aadhaar is None or invalid length.
         """
-        if not aadhaar or len(aadhaar) != 12 or not aadhaar.isdigit():
+        if not aadhaar or len(aadhaar) != 12:
             return ""
         return f"{aadhaar[:4]}-{aadhaar[4:8]}-{aadhaar[8:12]}"
 

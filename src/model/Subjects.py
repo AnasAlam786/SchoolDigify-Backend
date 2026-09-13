@@ -4,7 +4,6 @@ from sqlalchemy import (
     Integer, Boolean, TIMESTAMP, func
 )
 
-
 class Subjects(db.Model):
     __tablename__ = "Subjects"
 
@@ -23,31 +22,6 @@ class Subjects(db.Model):
     subject_type = Column(Text, nullable=False, server_default="core")
     is_active = Column(Boolean, nullable=False, server_default="true")
 
-    start_session = Column(
-        BigInteger,
-        ForeignKey("Sessions.id", onupdate="CASCADE", ondelete="RESTRICT"),
-        nullable=True
-    )
-
-    end_session = Column(
-        BigInteger,
-        ForeignKey("Sessions.id", onupdate="CASCADE", ondelete="RESTRICT"),
-        nullable=True
-    )
-
     school = db.relationship("Schools", back_populates="subjects")
-    class_data = db.relationship("ClassData", back_populates="subjects")
     staff_data = db.relationship("TeachersLogin", back_populates="subjects")
-    marks = db.relationship("StudentMarks", back_populates="subjects")
-
-    start_session_rel = db.relationship(
-        "Sessions",
-        foreign_keys=[start_session],
-        back_populates="subjects_started"
-    )
-
-    end_session_rel = db.relationship(
-        "Sessions",
-        foreign_keys=[end_session],
-        back_populates="subjects_ended"
-    )
+    class_subjects = db.relationship("ClassSubject", back_populates="subject")

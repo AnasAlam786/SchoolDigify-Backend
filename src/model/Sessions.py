@@ -22,15 +22,3 @@ class Sessions(db.Model):
     fee_sessions = db.relationship("FeeSessionData", back_populates="session")
     fee_transactions = db.relationship("FeeTransaction", back_populates="session")
     school_sessions = db.relationship("SchoolSession", back_populates="session")
-
-    subjects_started = db.relationship(
-        "Subjects",
-        foreign_keys="Subjects.start_session",
-        back_populates="start_session_rel"
-    )
-
-    subjects_ended = db.relationship(
-        "Subjects",
-        foreign_keys="Subjects.end_session",
-        back_populates="end_session_rel"
-    )

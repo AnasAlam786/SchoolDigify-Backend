@@ -133,8 +133,6 @@ def get_attendance_data_api():
         "half_day": half_day,
         "not_marked": not_marked
     }
-    print(attendance_summary)
-    print(attendance_data)
     
     return jsonify({"attendance_data": attendance_data, "attendance_summary": attendance_summary}), 200
 
