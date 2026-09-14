@@ -9,9 +9,8 @@ class StudentMarks(db.Model):
 
     id = db.Column(BigInteger, primary_key=True, autoincrement=True)
     student_id = Column(BigInteger, db.ForeignKey('StudentsDB.id', onupdate='CASCADE'), nullable=False)
-    sub_id = Column(BigInteger, ForeignKey('ClassSubject.id', onupdate='CASCADE'), nullable=True
-)
-    school_id = Column(Text, ForeignKey('Schools.id', onupdate="CASCADE"), nullable=True)
+    subject_id = Column(BigInteger, ForeignKey('ClassSubject.id', onupdate='CASCADE'), nullable=False)
+    school_id = Column(Text, ForeignKey('Schools.id', onupdate="CASCADE"), nullable=False)
     session_id = Column(BigInteger, db.ForeignKey('Sessions.id', onupdate='CASCADE'), nullable=False)
     exam_id = Column(BigInteger, db.ForeignKey('Exams.id', onupdate='CASCADE'), nullable=False)
     score = Column(Text, nullable=True)

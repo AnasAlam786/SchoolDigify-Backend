@@ -5,7 +5,7 @@ Compatibility wrapper `result_data()` is provided for existing controllers.
 
 IMPORTANT:
     StudentMarks.subject_id is intentionally ignored.
-    StudentMarks.sub_id is the authoritative relationship.
+    StudentMarks.subject_id is the authoritative relationship.
 """
 
 from src import db
@@ -32,7 +32,7 @@ def result_data(school_id, session_id, class_id, student_ids=None, extra_fields=
 
         ClassSubject.id
               ↓
-        StudentMarks.sub_id
+        StudentMarks.subject_id
 
     Subjects table contains the subject definition.
     ClassSubject contains the class-specific subject assignment.
@@ -104,12 +104,12 @@ def result_data(school_id, session_id, class_id, student_ids=None, extra_fields=
     #
     # IMPORTANT:
     # ClassSubject.id is the subject identifier used
-    # by StudentMarks.sub_id.
+    # by StudentMarks.subject_id.
     # --------------------------------------------------
 
     subjects_subq = (
         db.session.query(
-            ClassSubject.id.label("sub_id"),
+            ClassSubject.id.label("cls_sub_id"),
 
             Subjects.id.label("subject_id"),
 
@@ -163,7 +163,7 @@ def result_data(school_id, session_id, class_id, student_ids=None, extra_fields=
             exams_subq.c.exam_term,
             exams_subq.c.exam_display_order,
 
-            subjects_subq.c.sub_id,
+            subjects_subq.c.cls_sub_id,
             subjects_subq.c.subject_id,
             subjects_subq.c.subject_name,
             subjects_subq.c.evaluation_type,
@@ -190,7 +190,7 @@ def result_data(school_id, session_id, class_id, student_ids=None, extra_fields=
     # IMPORTANT:
     # NEVER use StudentMarks.subject_id here.
     #
-    # StudentMarks.sub_id -> ClassSubject.id
+    # StudentMarks.subject_id -> ClassSubject.id
     # --------------------------------------------------
 
     marks_with_subjects = (
@@ -203,7 +203,7 @@ def result_data(school_id, session_id, class_id, student_ids=None, extra_fields=
             ses.c.exam_term,
             ses.c.exam_display_order,
 
-            ses.c.sub_id,
+            ses.c.cls_sub_id,
             ses.c.subject_id,
             ses.c.subject_name,
             ses.c.evaluation_type,
@@ -216,7 +216,7 @@ def result_data(school_id, session_id, class_id, student_ids=None, extra_fields=
             (
                 (StudentMarks.student_id == ses.c.student_id) &
                 (StudentMarks.exam_id == ses.c.exam_id) &
-                (StudentMarks.sub_id == ses.c.sub_id) &
+                (StudentMarks.subject_id == ses.c.cls_sub_id) &
                 (StudentMarks.session_id == session_id) &
                 (StudentMarks.school_id == school_id)
             )

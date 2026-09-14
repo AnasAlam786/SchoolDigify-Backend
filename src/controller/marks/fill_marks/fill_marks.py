@@ -157,7 +157,7 @@ def get_subjects_by_class(class_id):
 
         subjects = (
             db.session.query(
-                ClassSubject.id.label("sub_id"), Subjects.subject.label("subject_name")
+                ClassSubject.id.label("cls_sub_id"), Subjects.subject.label("subject_name")
             ).join(
                 Subjects,
                 Subjects.id == ClassSubject.subject_id
@@ -187,7 +187,7 @@ def get_subjects_by_class(class_id):
 
         return jsonify([
             {
-                "id": row.sub_id,
+                "id": row.cls_sub_id,
                 "subjectName": row.subject_name
             }
             for row in subjects
@@ -219,14 +219,14 @@ def get_marks():
     current_session_id = session["session_id"]
     user_id = session["user_id"]
     class_id = request.args.get( "class_id", type=int )
-    sub_id = request.args.get( "subject_id", type=int )
+    subject_id = request.args.get( "subject_id", type=int )
     exam_id = request.args.get( "exam_id", type=int )
 
     # --------------------------------------------------------
     # Required parameters
     # --------------------------------------------------------
 
-    if class_id is None or sub_id is None or exam_id is None:
+    if class_id is None or subject_id is None or exam_id is None:
         return jsonify({
             "success": False,
             "error": "Class, Subject and Exam are required."
@@ -241,13 +241,11 @@ def get_marks():
             .join(
                 ClassAccess,
                 ClassAccess.class_id == ClassData.id
-            )
-            .filter(
+            ).filter(
                 ClassData.id == class_id,
                 ClassData.school_id == school_id,
                 ClassAccess.staff_id == user_id
-            )
-            .first()
+            ).first()
         )
 
         if not class_allowed:
@@ -262,13 +260,13 @@ def get_marks():
 
         class_subject = (
             db.session.query(
-                ClassSubject.id.label("sub_id"),
+                ClassSubject.id.label("cls_sub_id"),
                 Subjects.subject,
                 Subjects.evaluation_type
-            ) .join(
+            ).join(
                 Subjects, Subjects.id == ClassSubject.subject_id
-            ) .filter(
-                ClassSubject.id == sub_id,
+            ).filter(
+                ClassSubject.id == subject_id,
                 ClassSubject.class_id == class_id,
                 Subjects.school_id == school_id,
                 Subjects.is_active.is_(True),
@@ -285,8 +283,7 @@ def get_marks():
 
         if not class_subject:
             return jsonify({
-                "success": False,
-                "error": "Subject not found."
+                "success": False, "error": "Subject not found."
             }), 404
 
         # ----------------------------------------------------
@@ -349,27 +346,29 @@ def get_marks():
         marks_data = (
             db.session.query(
                 StudentsDB.id.label("student_id"),
-                StudentsDB.STUDENTS_NAME, StudentsDB.GENDER,
-                StudentSessions.ROLL, StudentMarks.id.label("mark_id"),
-                StudentMarks.score
-            ).join(
-                StudentSessions, StudentSessions.student_id == StudentsDB.id
-            ).outerjoin(
+                StudentsDB.STUDENTS_NAME,
+                StudentsDB.GENDER, StudentSessions.ROLL,
+                ClassData.CLASS.label("class_name"),
+                StudentMarks.id.label("mark_id"),
+                StudentMarks.score,
+            )
+            .join(StudentSessions, StudentSessions.student_id == StudentsDB.id)
+            .join(ClassData, StudentSessions.class_id == ClassData.id)
+            .outerjoin(
                 StudentMarks,
-                (
-                    (StudentMarks.student_id == StudentsDB.id)
-                    &(StudentMarks.exam_id == exam_id)
-                    &(StudentMarks.sub_id == class_subject.sub_id)
-                    &(StudentMarks.session_id == current_session_id)
-                    &(StudentMarks.school_id == school_id)
-                )
-            ).filter(
+                (StudentMarks.student_id == StudentsDB.id)
+                & (StudentMarks.exam_id == exam_id)
+                & (StudentMarks.subject_id == class_subject.cls_sub_id)
+                & (StudentMarks.session_id == current_session_id)
+                & (StudentMarks.school_id == school_id),
+            )
+            .filter(
                 StudentsDB.school_id == school_id,
                 StudentSessions.class_id == class_id,
-                StudentSessions.session_id == current_session_id
-            ).order_by(
-                StudentSessions.ROLL.asc()
-            ).all()
+                StudentSessions.session_id == current_session_id,
+            )
+            .order_by(StudentSessions.ROLL.asc())
+            .all()
         )
 
         students = [ dict(row._mapping) for row in marks_data ]
@@ -388,7 +387,7 @@ def get_marks():
             },
 
             "subject": {
-                "id": class_subject.sub_id,
+                "id": class_subject.cls_sub_id,
                 "name": class_subject.subject,
                 "evaluation_type":
                     class_subject.evaluation_type
@@ -421,14 +420,14 @@ def update_marks_api():
         score = data.get("score")
 
         student_id = data.get("student_id")
-        sub_id = data.get("subject_id")
+        subject_id = data.get("subject_id")
         exam_id = data.get("exam_id")
         school_id = session.get("school_id")
         current_session_id = session.get("session_id")
         user_id = session.get("user_id")
 
         
-        if not all([student_id, sub_id, exam_id, current_session_id, school_id]):
+        if not all([student_id, subject_id, exam_id, current_session_id, school_id]):
             return jsonify({"message": "Missing required fields"}), 400
 
 
@@ -441,10 +440,12 @@ def update_marks_api():
         else:
             try:
                 score = float(score)
+
+                if score.is_integer():
+                    score = int(score)
+
             except (ValueError, TypeError):
-                return jsonify({
-                    "success": False, "message": "Invalid score value."
-                }), 400
+                print("success")
 
         # ----------------------------------------------------
         # Verify student enrollment
@@ -495,7 +496,7 @@ def update_marks_api():
             ).join(
                 Subjects, Subjects.id == ClassSubject.subject_id
             ).filter(
-                ClassSubject.id == sub_id,
+                ClassSubject.id == subject_id,
                 ClassSubject.class_id == student_class_id,
                 Subjects.school_id == school_id,
                 Subjects.is_active.is_(True),
@@ -503,7 +504,6 @@ def update_marks_api():
                     (ClassSubject.start_session.is_(None)) |
                     (ClassSubject.start_session <= current_session_id)
                 ),
-
                 (
                     (ClassSubject.end_session.is_(None)) |
                     (ClassSubject.end_session >= current_session_id)
@@ -587,7 +587,7 @@ def update_marks_api():
                 .filter(
                     StudentMarks.id == marks_id,
                     StudentMarks.student_id == student_id,
-                    StudentMarks.sub_id == sub_id,
+                    StudentMarks.subject_id == subject_id,
                     StudentMarks.exam_id == exam_id,
                     StudentMarks.session_id == current_session_id,
                     StudentMarks.school_id == school_id
@@ -617,7 +617,7 @@ def update_marks_api():
             StudentMarks.query
             .filter(
                 StudentMarks.student_id == student_id,
-                StudentMarks.sub_id == sub_id,
+                StudentMarks.subject_id == subject_id,
                 StudentMarks.exam_id == exam_id,
                 StudentMarks.session_id == current_session_id,
                 StudentMarks.school_id == school_id
@@ -637,8 +637,7 @@ def update_marks_api():
 
         new_mark = StudentMarks(
             student_id=student_id,
-            subject_id=class_subject.subject_id,
-            sub_id=class_subject.id,
+            subject_id=class_subject.id,
             exam_id=exam_id,
             score=score,
             session_id=current_session_id,

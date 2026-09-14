@@ -1,5 +1,5 @@
 from flask import request, session, jsonify, Blueprint
-from sqlalchemy import exists, or_
+from sqlalchemy import exists, func, or_
 
 from src import db
 
@@ -10,6 +10,7 @@ from src.model import (
 )
 
 from src.controller.auth.login_required import login_required
+from src.model.ClassSubject import ClassSubject
 
 
 subject_setup_api_bp = Blueprint(
@@ -22,39 +23,26 @@ subject_setup_api_bp = Blueprint(
 # GET SUBJECTS DATA
 # ================================================================
 
-@subject_setup_api_bp.route(
-    "/api/get_subjects_data",
-    methods=["GET"]
-)
+@subject_setup_api_bp.route("/api/get_subjects_data", methods=["GET"])
 @login_required
 def get_subjects():
-
     try:
-        # ---------------------------------------------------------
-        # 1. Get current school
-        # ---------------------------------------------------------
-
         school_id = session["school_id"]
 
-        # ---------------------------------------------------------
-        # 2. Check whether marks exist for each subject
-        #
-        # If at least one StudentMarks record exists for the
-        # subject, editable will be False.
-        # ---------------------------------------------------------
-
         has_marks = exists().where(
-            StudentMarks.subject_id == Subjects.id
+            (StudentMarks.subject_id == ClassSubject.id)
+            &
+            (ClassSubject.subject_id == Subjects.id)
         )
 
         # ---------------------------------------------------------
-        # 3. Get subjects with their classes
+        # Get subjects and the classes assigned to them
+        # through ClassSubject.
         # ---------------------------------------------------------
 
         rows = (
             db.session.query(
                 Subjects.id.label("subject_id"),
-                Subjects.subject_code,
                 Subjects.subject,
                 Subjects.max_marks,
                 Subjects.pass_marks,
@@ -71,8 +59,12 @@ def get_subjects():
                 has_marks.label("has_marks")
             )
             .join(
+                ClassSubject,
+                ClassSubject.subject_id == Subjects.id
+            )
+            .join(
                 ClassData,
-                ClassData.id == Subjects.class_id
+                ClassData.id == ClassSubject.class_id
             )
             .filter(
                 Subjects.school_id == school_id,
@@ -86,34 +78,20 @@ def get_subjects():
         )
 
         # ---------------------------------------------------------
-        # 4. Group subjects
+        # Group classes under each subject
         # ---------------------------------------------------------
 
         subjects = {}
 
         for row in rows:
 
-            # -----------------------------------------------------
-            # Use subject_code as the grouping key when available.
-            #
-            # If subject_code is NULL, use subject name.
-            # -----------------------------------------------------
-
-            subject_key = (
-                row.subject_code
-                if row.subject_code
-                else row.subject
-            )
-
-            # -----------------------------------------------------
-            # Create subject
-            # -----------------------------------------------------
+            # Subject ID is the safest grouping key.
+            subject_key = row.subject_id
 
             if subject_key not in subjects:
 
                 subjects[subject_key] = {
                     "id": row.subject_id,
-                    "subject_code": row.subject_code,
                     "subject": row.subject,
 
                     "max_marks": (
@@ -135,25 +113,15 @@ def get_subjects():
                     "subject_type": row.subject_type,
                     "is_active": row.is_active,
 
-                    # If marks exist for this subject row,
-                    # editing is disabled.
                     "editable": not bool(row.has_marks),
 
                     "classes": []
                 }
 
-            # -----------------------------------------------------
-            # Add class to subject
-            # -----------------------------------------------------
-
             subjects[subject_key]["classes"].append({
                 "class_id": row.class_id,
                 "class_name": row.class_name
             })
-
-        # ---------------------------------------------------------
-        # 5. Return response
-        # ---------------------------------------------------------
 
         return jsonify({
             "subjects": list(subjects.values())
@@ -168,183 +136,8 @@ def get_subjects():
         return jsonify({
             "error": "Unable to load school subjects. Please try again later."
         }), 500
-    
-
-# ================================================================
-# CREATE SUBJECT
-# ================================================================
-
-@subject_setup_api_bp.route("/api/create_subject", methods=["POST"])
-@login_required
-def create_subject():
-    try:
-        # ---------------------------------------------------------
-        # Current school and academic session
-        # ---------------------------------------------------------
-        school_id = session["school_id"]
-        session_id = session["session_id"]
-
-        # ---------------------------------------------------------
-        # Get request data
-        # ---------------------------------------------------------
-        data = request.get_json(silent=True)
-
-        if not data:
-            return jsonify({
-                "error": "Request body is required."
-            }), 400
-
-        class_id = data.get("class_id")
-        subject_code = data.get("subject_code")
-        subject_name = data.get("subject")
-        max_marks = data.get("max_marks")
-        pass_marks = data.get("pass_marks")
-        display_order = data.get("display_order")
-        evaluation_type = data.get("evaluation_type")
-        abbreviation = data.get("abbreviation")
-        staff_id = data.get("staff_id")
-        subject_type = data.get("subject_type", "core")
-        is_active = data.get("is_active", True)
-
-        # ---------------------------------------------------------
-        # Required field validation
-        # ---------------------------------------------------------
-        if not class_id:
-            return jsonify({
-                "error": "Class ID is required."
-            }), 400
-
-        if not subject_name:
-            return jsonify({
-                "error": "Subject name is required."
-            }), 400
-
-        if not abbreviation:
-            return jsonify({
-                "error": "Subject abbreviation is required."
-            }), 400
-
-        # ---------------------------------------------------------
-        # Check that class belongs to current school
-        # ---------------------------------------------------------
-        class_exists = (
-            db.session.query(ClassData.id)
-            .filter(
-                ClassData.id == class_id,
-                ClassData.school_id == school_id
-            )
-            .first()
-        )
-
-        if not class_exists:
-            return jsonify({
-                "error": "Class not found."
-            }), 404
-
-        # ---------------------------------------------------------
-        # Find subjects with same name OR same subject code
-        # ---------------------------------------------------------
-        duplicate_filters = [
-            Subjects.subject == subject_name
-        ]
-
-        if subject_code:
-            duplicate_filters.append(
-                Subjects.subject_code == subject_code
-            )
-
-        # ---------------------------------------------------------
-        # Check session overlap
-        #
-        # Existing subject overlaps the new subject if:
-        #
-        # existing.start_session <= current session
-        #
-        # AND
-        #
-        # existing.end_session is NULL
-        # OR
-        # existing.end_session >= current session
-        #
-        # NULL end_session means the subject is still active/open.
-        # ---------------------------------------------------------
-        existing_subject = (
-            db.session.query(Subjects.id)
-            .filter(
-                Subjects.school_id == school_id,
-                Subjects.class_id == class_id,
-
-                # Same subject name OR same subject code
-                or_(*duplicate_filters),
-
-                # Existing subject has already started
-                Subjects.start_session <= session_id,
-
-                # Existing subject has not ended before current session
-                or_(
-                    Subjects.end_session.is_(None),
-                    Subjects.end_session >= session_id
-                )
-            )
-            .first()
-        )
-
-        if existing_subject:
-            return jsonify({
-                "error": (
-                    "This subject already exists for this class "
-                    "in the selected academic session."
-                )
-            }), 409
-
-        # ---------------------------------------------------------
-        # Create new subject
-        #
-        # start_session = current session
-        # end_session   = NULL
-        # ---------------------------------------------------------
-        subject = Subjects(
-            school_id=school_id,
-            class_id=class_id,
-            subject_code=subject_code,
-            subject=subject_name,
-            max_marks=max_marks,
-            pass_marks=pass_marks,
-            display_order=display_order,
-            evaluation_type=evaluation_type,
-            abbreviation=abbreviation,
-            staff_id=staff_id,
-            subject_type=subject_type,
-            is_active=is_active,
-            start_session=session_id,
-            end_session=None
-        )
-
-        db.session.add(subject)
-        db.session.commit()
-
-        # ---------------------------------------------------------
-        # Success response
-        # ---------------------------------------------------------
-        return jsonify({
-            "message": "Subject created successfully.",
-            "subject_id": subject.id
-        }), 201
-
-    except Exception as e:
-        db.session.rollback()
-
-        print("Error while creating subject:", e)
-
-        return jsonify({
-            "error": "Unable to create subject. Please try again later."
-        }), 500
 
     
-# ================================================================
-# UPDATE SUBJECT
-# ================================================================
-
 @subject_setup_api_bp.route(
     "/api/update_subject/<int:subject_id>",
     methods=["PUT"]
@@ -353,11 +146,11 @@ def create_subject():
 def update_subject(subject_id):
 
     try:
-        # ---------------------------------------------------------
-        # 1. Get current school
-        # ---------------------------------------------------------
+        school_id = session.get("school_id")
 
-        school_id = session["school_id"]
+        # ========================================================
+        # Request
+        # ========================================================
 
         data = request.get_json(silent=True)
 
@@ -366,31 +159,28 @@ def update_subject(subject_id):
                 "error": "Request body is required."
             }), 400
 
-        # ---------------------------------------------------------
-        # 2. Get data
-        # ---------------------------------------------------------
-
-        class_id = data.get("class_id")
-
-        subject_code = data.get("subject_code")
-        subject_name = data.get("subject")
+        class_ids = data.get("class_ids")
+        subject_name = str(data.get("subject", "")).strip()
+        abbreviation = str(data.get("abbreviation", "")).strip()
 
         max_marks = data.get("max_marks")
         pass_marks = data.get("pass_marks")
-        display_order = data.get("display_order")
-        evaluation_type = data.get("evaluation_type")
-        abbreviation = data.get("abbreviation")
         staff_id = data.get("staff_id")
-        subject_type = data.get("subject_type")
-        is_active = data.get("is_active")
 
-        # ---------------------------------------------------------
-        # 3. Validate required fields
-        # ---------------------------------------------------------
+        # ========================================================
+        # Validation
+        # ========================================================
 
-        if not class_id:
+        if not isinstance(class_ids, list) or not class_ids:
             return jsonify({
-                "error": "Class ID is required."
+                "error": "At least one class is required."
+            }), 400
+
+        try:
+            class_ids = {int(x) for x in class_ids}
+        except (TypeError, ValueError):
+            return jsonify({
+                "error": "Invalid class ID."
             }), 400
 
         if not subject_name:
@@ -403,12 +193,9 @@ def update_subject(subject_id):
                 "error": "Subject abbreviation is required."
             }), 400
 
-        # ---------------------------------------------------------
-        # 4. Find subject
-        #
-        # school_id check prevents another school from
-        # modifying this subject.
-        # ---------------------------------------------------------
+        # ========================================================
+        # Find subject
+        # ========================================================
 
         subject = (
             db.session.query(Subjects)
@@ -420,116 +207,128 @@ def update_subject(subject_id):
         )
 
         if not subject:
-
             return jsonify({
                 "error": "Subject not found."
             }), 404
 
-        # ---------------------------------------------------------
-        # 5. Check whether marks already exist
-        #
-        # If marks exist, subject cannot be modified.
-        # ---------------------------------------------------------
-
         has_marks = (
-            db.session.query(
-                exists().where(
-                    StudentMarks.subject_id == subject.id
-                )
-            )
-            .scalar()
+            db.session.query(StudentMarks.id)
+            .join(
+                ClassSubject,
+                ClassSubject.id == StudentMarks.subject_id
+            ).filter(
+                ClassSubject.subject_id == subject.id
+            ).first()
         )
 
         if has_marks:
-
             return jsonify({
                 "error": (
-                    "This subject cannot be modified because "
+                    "This subject cannot be edited because "
                     "marks have already been entered."
                 ),
                 "editable": False
             }), 409
 
-        # ---------------------------------------------------------
-        # 6. Check class belongs to current school
-        # ---------------------------------------------------------
+        # ========================================================
+        # Validate classes
+        # ========================================================
 
-        class_exists = (
-            db.session.query(ClassData.id)
-            .filter(
-                ClassData.id == class_id,
-                ClassData.school_id == school_id
+        valid_class_ids = {
+            row.id
+            for row in (
+                db.session.query(ClassData.id.label("id"))
+                .filter(
+                    ClassData.id.in_(class_ids),
+                    ClassData.school_id == school_id
+                )
+                .all()
             )
-            .first()
-        )
+        }
 
-        if not class_exists:
-
+        if valid_class_ids != class_ids:
             return jsonify({
-                "error": "Class not found."
+                "error": "One or more selected classes are invalid."
             }), 404
 
-        # ---------------------------------------------------------
-        # 7. Check duplicate subject name or subject code
-        #
-        # Exclude the subject currently being updated.
-        # ---------------------------------------------------------
+        # ========================================================
+        # Check duplicate subject name
+        # ========================================================
 
-        duplicate_filters = [
-            Subjects.subject == subject_name
-        ]
-
-        # Only check subject_code if it was provided
-        if subject_code:
-            duplicate_filters.append(
-                Subjects.subject_code == subject_code
-            )
-
-        existing_subject = (
+        duplicate = (
             db.session.query(Subjects.id)
             .filter(
                 Subjects.school_id == school_id,
-                Subjects.class_id == class_id,
                 Subjects.id != subject.id,
-                or_(*duplicate_filters)
+                Subjects.class_id.in_(class_ids),
+                func.lower(Subjects.subject) == subject_name.lower()
             )
             .first()
         )
 
-        if existing_subject:
-
+        if duplicate:
             return jsonify({
                 "error": (
-                    "Another subject with this name or code "
-                    "already exists for this class."
+                    "Another subject with this name already "
+                    "exists for one of the selected classes."
                 )
             }), 409
 
-        # ---------------------------------------------------------
-        # 8. Update subject
-        # ---------------------------------------------------------
+        # ========================================================
+        # Update Subjects
+        # ========================================================
 
-        subject.class_id = class_id
-        subject.subject_code = subject_code
         subject.subject = subject_name
+        subject.abbreviation = abbreviation
         subject.max_marks = max_marks
         subject.pass_marks = pass_marks
-        subject.display_order = display_order
-        subject.evaluation_type = evaluation_type
-        subject.abbreviation = abbreviation
         subject.staff_id = staff_id
-        subject.subject_type = subject_type
-        subject.is_active = is_active
 
-        # ---------------------------------------------------------
-        # 9. Commit
-        # ---------------------------------------------------------
+        # ========================================================
+        # Synchronize ClassSubject
+        # ========================================================
+
+        existing = (
+            db.session.query(ClassSubject)
+            .filter(
+                ClassSubject.subject_id == subject.id
+            )
+            .all()
+        )
+
+        existing_by_class = {
+            cs.class_id: cs
+            for cs in existing
+        }
+
+        # Remove old class access
+        for class_id, class_subject in existing_by_class.items():
+
+            if class_id not in class_ids:
+                db.session.delete(class_subject)
+
+        # Add new class access
+        for class_id in class_ids:
+
+            if class_id not in existing_by_class:
+
+                db.session.add(
+                    ClassSubject(
+                        class_id=class_id,
+                        subject_id=subject.id
+                    )
+                )
+
+        # ========================================================
+        # Commit
+        # ========================================================
 
         db.session.commit()
 
         return jsonify({
             "message": "Subject updated successfully.",
-            "subject_id": subject.id
+            "subject_id": subject.id,
+            "class_ids": sorted(class_ids)
         }), 200
 
     except Exception as e:
@@ -541,5 +340,3 @@ def update_subject(subject_id):
         return jsonify({
             "error": "Unable to update subject. Please try again later."
         }), 500
-
-    
