@@ -10,7 +10,7 @@ class Subjects(db.Model):
     id = Column(BigInteger, primary_key=True, autoincrement=True)
     created_at = Column(TIMESTAMP(timezone=True), nullable=True, server_default=func.now())
     school_id = Column(Text, ForeignKey("Schools.id", onupdate="CASCADE"), nullable=False)
-    class_id = Column(BigInteger, ForeignKey("ClassData.id", onupdate="CASCADE"), nullable=False)
+    # class_id = Column(BigInteger, ForeignKey("ClassData.id", onupdate="CASCADE"), nullable=False)
     subject = Column(Text, nullable=False)
     max_marks = Column(Numeric, nullable=True)
     pass_marks = Column(Numeric, nullable=True)

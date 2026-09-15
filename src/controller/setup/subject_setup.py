@@ -257,10 +257,14 @@ def update_subject(subject_id):
 
         duplicate = (
             db.session.query(Subjects.id)
+            .join(
+                ClassSubject,
+                ClassSubject.subject_id == Subjects.id
+            )
             .filter(
                 Subjects.school_id == school_id,
                 Subjects.id != subject.id,
-                Subjects.class_id.in_(class_ids),
+                ClassSubject.class_id.in_(class_ids),
                 func.lower(Subjects.subject) == subject_name.lower()
             )
             .first()

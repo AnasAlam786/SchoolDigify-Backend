@@ -20,40 +20,27 @@ exam_setup_api_bp = Blueprint(
 
 
 # ================================================================
-# GET EXAM DATA GROUPED BY EXAM
+# GET EXAMS DATA
 # ================================================================
 
-@exam_setup_api_bp.route(
-    "/api/get_exam_data",
-    methods=["GET"]
-)
+@exam_setup_api_bp.route("/api/get_exam_data", methods=["GET"])
 @login_required
 def get_exams():
 
     try:
-        # ---------------------------------------------------------
-        # 1. Get current school
-        # ---------------------------------------------------------
-
-        school_id = session["school_id"]
-
-        # ---------------------------------------------------------
-        # 2. Check whether marks exist for each exam
-        #
-        # If even one mark exists for an exam:
-        #     editable = False
-        #
-        # Otherwise:
-        #     editable = True
-        # ---------------------------------------------------------
+        school_id = session.get("school_id")
+        # ========================================================
+        # Check whether marks already exist for each exam
+        # ========================================================
 
         has_marks = exists().where(
             StudentMarks.exam_id == Exams.id
         )
 
-        # ---------------------------------------------------------
-        # 3. Get exams + their assigned classes
-        # ---------------------------------------------------------
+        # ========================================================
+        # Get exams and their assigned classes
+        # through ClassExams
+        # ========================================================
 
         rows = (
             db.session.query(
@@ -63,12 +50,11 @@ def get_exams():
                 Exams.weightage,
                 Exams.display_order,
                 Exams.term,
-                Exams.is_enabled,
-
                 ClassData.id.label("class_id"),
                 ClassData.CLASS.label("class_name"),
-                ClassData.display_order.label("class_display_order"),
-
+                ClassData.display_order.label(
+                    "class_display_order"
+                ),
                 has_marks.label("has_marks")
             )
             .join(
@@ -89,28 +75,16 @@ def get_exams():
             )
             .all()
         )
-
-        # ---------------------------------------------------------
-        # 4. Group classes under each exam
-        # ---------------------------------------------------------
-
         exams = {}
-
         for row in rows:
+            exam_key = row.exam_id
 
-            # -----------------------------------------------------
-            # Create exam only once
-            # -----------------------------------------------------
+            if exam_key not in exams:
 
-            if row.exam_id not in exams:
-
-                exams[row.exam_id] = {
+                exams[exam_key] = {
                     "id": row.exam_id,
-
                     "exam_name": row.exam_name,
-
                     "exam_code": row.exam_code,
-
                     "weightage": (
                         float(row.weightage)
                         if row.weightage is not None
@@ -118,62 +92,57 @@ def get_exams():
                     ),
 
                     "display_order": row.display_order,
-
                     "term": row.term,
-
-                    "is_enabled": row.is_enabled,
-
-                    # If marks exist, exam cannot be edited
                     "editable": not bool(row.has_marks),
-
                     "classes": []
                 }
 
-            # -----------------------------------------------------
-            # Add class to this exam
-            # -----------------------------------------------------
+            # ----------------------------------------------------
+            # Add class
+            # ----------------------------------------------------
 
-            exams[row.exam_id]["classes"].append({
+            exams[exam_key]["classes"].append({
                 "class_id": row.class_id,
                 "class_name": row.class_name
             })
 
-        # ---------------------------------------------------------
-        # 5. Return response
-        # ---------------------------------------------------------
+        # ========================================================
+        # Response
+        # ========================================================
 
         return jsonify({
             "exams": list(exams.values())
         }), 200
 
     except Exception as e:
-
-        print("Error while getting school exams:", e)
-
         db.session.rollback()
-
+        print("Error while getting exams:", e)
         return jsonify({
-            "error": "Unable to load school exams. Please try again later."
+            "error": (
+                "Unable to load school exams. "
+                "Please try again later."
+            )
         }), 500
-
 
 
 # ================================================================
 # CREATE EXAM
 # ================================================================
 
-@exam_setup_api_bp.route(
-    "/api/create_exam",
-    methods=["POST"]
-)
+@exam_setup_api_bp.route("/api/create_exam", methods=["POST"])
 @login_required
 def create_exam():
     try:
-        # ---------------------------------------------------------
-        # 1. Get current school
-        # ---------------------------------------------------------
+        school_id = session.get("school_id")
+        if not school_id:
+            return jsonify({
+                "error": "School session not found."
+            }), 401
 
-        school_id = session["school_id"]
+        # ========================================================
+        # Request
+        # ========================================================
+
         data = request.get_json(silent=True)
 
         if not data:
@@ -181,22 +150,27 @@ def create_exam():
                 "error": "Request body is required."
             }), 400
 
-        # ---------------------------------------------------------
-        # 2. Get data
-        # ---------------------------------------------------------
+        # ========================================================
+        # Read data
+        # ========================================================
 
-        exam_name = data.get("exam_name")
-        exam_code = data.get("exam_code")
+        exam_name = str(
+            data.get("exam_name", "")
+        ).strip()
+
+        exam_code = str(
+            data.get("exam_code", "")
+        ).strip()
+
         weightage = data.get("weightage")
         display_order = data.get("display_order")
         term = data.get("term")
-        is_enabled = data.get("is_enabled", True)
 
-        class_ids = data.get("class_ids", [])
+        class_ids = data.get("class_ids")
 
-        # ---------------------------------------------------------
-        # 3. Validate required fields
-        # ---------------------------------------------------------
+        # ========================================================
+        # Validate required fields
+        # ========================================================
 
         if not exam_name:
             return jsonify({
@@ -208,68 +182,128 @@ def create_exam():
                 "error": "Exam code is required."
             }), 400
 
-        if not isinstance(class_ids, list):
+        if weightage is None:
             return jsonify({
-                "error": "class_ids must be a list."
+                "error": "Weightage is required."
             }), 400
 
-        # Remove duplicate class IDs
-        class_ids = list(set(class_ids))
+        if display_order is None:
+            return jsonify({
+                "error": "Display order is required."
+            }), 400
 
-        # ---------------------------------------------------------
-        # 4. Check duplicate exam code
-        # ---------------------------------------------------------
+        if term is None:
+            return jsonify({
+                "error": "Term is required."
+            }), 400
 
-        existing_exam = (
+        # ========================================================
+        # Validate class_ids
+        # ========================================================
+
+        if not isinstance(class_ids, list) or not class_ids:
+            return jsonify({
+                "error": "At least one class is required."
+            }), 400
+
+        try:
+
+            class_ids = {
+                int(class_id)
+                for class_id in class_ids
+            }
+
+        except (TypeError, ValueError):
+
+            return jsonify({
+                "error": "Invalid class ID."
+            }), 400
+
+        # ========================================================
+        # Validate numeric values
+        # ========================================================
+
+        try:
+            weightage = float(weightage)
+        except (TypeError, ValueError):
+            return jsonify({
+                "error": "Weightage must be numeric."
+            }), 400
+
+        try:
+            display_order = int(display_order)
+        except (TypeError, ValueError):
+
+            return jsonify({
+                "error": "Display order must be an integer."
+            }), 400
+
+        try:
+            term = int(term)
+        except (TypeError, ValueError):
+
+            return jsonify({
+                "error": "Term must be an integer."
+            }), 400
+
+        # ========================================================
+        # Find duplicate exam
+        #
+        # Same school:
+        #     exam name cannot duplicate
+        #     exam code cannot duplicate
+        # ========================================================
+
+        duplicate = (
             db.session.query(Exams.id)
             .filter(
                 Exams.school_id == school_id,
                 or_(
-                    Exams.exam_name == exam_name,
-                    Exams.exam_code == exam_code
+                    Exams.exam_name.ilike(exam_name),
+                    Exams.exam_code.ilike(exam_code)
                 )
             )
             .first()
         )
 
-        if existing_exam:
+        if duplicate:
             return jsonify({
-                "error": "An exam with this name or code already exists."
+                "error": (
+                    "An exam with this name or code "
+                    "already exists."
+                )
             }), 409
 
-        # ---------------------------------------------------------
-        # 5. Validate classes
-        # ---------------------------------------------------------
+        # ========================================================
+        # Validate classes
+        # ========================================================
 
-        if class_ids:
-            valid_class_ids = {
-                row.id
-                for row in (
-                    db.session.query(ClassData.id)
-                    .filter(
-                        ClassData.id.in_(class_ids),
-                        ClassData.school_id == school_id
-                    )
-                    .all()
+        valid_class_ids = {
+            row.id
+            for row in (
+                db.session.query(
+                    ClassData.id.label("id")
                 )
-            }
+                .filter(
+                    ClassData.id.in_(class_ids),
+                    ClassData.school_id == school_id
+                )
+                .all()
+            )
+        }
 
-            invalid_class_ids = [
-                class_id
-                for class_id in class_ids
-                if class_id not in valid_class_ids
-            ]
+        if valid_class_ids != class_ids:
 
-            if invalid_class_ids:
+            return jsonify({
+                "error": (
+                    "One or more selected classes "
+                    "are invalid."
+                )
+            }), 404
 
-                return jsonify({
-                    "error": "One or more classes do not belong to this school.",
-                    "invalid_class_ids": invalid_class_ids
-                }), 400
-
-        # ---------------------------------------------------------
-        # 6. Create exam
-        # ---------------------------------------------------------
+        # ========================================================
+        # Create exam
+        # ========================================================
 
         exam = Exams(
             school_id=school_id,
@@ -278,19 +312,18 @@ def create_exam():
             weightage=weightage,
             display_order=display_order,
             term=term,
-            is_enabled=is_enabled
         )
 
         db.session.add(exam)
 
-        # Get generated exam ID
+        # Get generated ID
         db.session.flush()
 
-        # ---------------------------------------------------------
-        # 7. Assign classes
-        # ---------------------------------------------------------
+        # ========================================================
+        # Create ClassExams relationships
+        # ========================================================
 
-        for class_id in class_ids:
+        for class_id in sorted(class_ids):
 
             db.session.add(
                 ClassExams(
@@ -299,15 +332,16 @@ def create_exam():
                 )
             )
 
-        # ---------------------------------------------------------
-        # 8. Commit
-        # ---------------------------------------------------------
+        # ========================================================
+        # Commit
+        # ========================================================
 
         db.session.commit()
 
         return jsonify({
             "message": "Exam created successfully.",
-            "exam_id": exam.id
+            "exam_id": exam.id,
+            "class_ids": sorted(class_ids)
         }), 201
 
     except Exception as e:
@@ -317,9 +351,11 @@ def create_exam():
         print("Error while creating exam:", e)
 
         return jsonify({
-            "error": "Unable to create exam. Please try again later."
+            "error": (
+                "Unable to create exam. "
+                "Please try again later."
+            )
         }), 500
-
 
 
 # ================================================================
@@ -333,12 +369,7 @@ def create_exam():
 @login_required
 def update_exam(exam_id):
     try:
-        # ---------------------------------------------------------
-        # 1. Get current school
-        # ---------------------------------------------------------
-
-        school_id = session["school_id"]
-
+        school_id = session.get("school_id")
         data = request.get_json(silent=True)
 
         if not data:
@@ -346,22 +377,27 @@ def update_exam(exam_id):
                 "error": "Request body is required."
             }), 400
 
-        # ---------------------------------------------------------
-        # 2. Get data
-        # ---------------------------------------------------------
+        # ========================================================
+        # Read data
+        # ========================================================
 
-        exam_name = data.get("exam_name")
-        exam_code = data.get("exam_code")
+        exam_name = str(
+            data.get("exam_name", "")
+        ).strip()
+
+        exam_code = str(
+            data.get("exam_code", "")
+        ).strip()
+
         weightage = data.get("weightage")
         display_order = data.get("display_order")
         term = data.get("term")
-        is_enabled = data.get("is_enabled")
 
-        class_ids = data.get("class_ids", [])
+        class_ids = data.get("class_ids")
 
-        # ---------------------------------------------------------
-        # 3. Validate required fields
-        # ---------------------------------------------------------
+        # ========================================================
+        # Validate required fields
+        # ========================================================
 
         if not exam_name:
             return jsonify({
@@ -373,19 +409,83 @@ def update_exam(exam_id):
                 "error": "Exam code is required."
             }), 400
 
-        if not isinstance(class_ids, list):
+        if weightage is None:
             return jsonify({
-                "error": "class_ids must be a list."
+                "error": "Weightage is required."
             }), 400
 
-        # Remove duplicate class IDs
-        class_ids = list(set(class_ids))
+        if display_order is None:
+            return jsonify({
+                "error": "Display order is required."
+            }), 400
 
-        # ---------------------------------------------------------
-        # 4. Find exam
+        if term is None:
+            return jsonify({
+                "error": "Term is required."
+            }), 400
+
+        # ========================================================
+        # Validate class_ids
+        # ========================================================
+
+        if not isinstance(class_ids, list) or not class_ids:
+
+            return jsonify({
+                "error": "At least one class is required."
+            }), 400
+
+        try:
+
+            class_ids = {
+                int(class_id)
+                for class_id in class_ids
+            }
+
+        except (TypeError, ValueError):
+
+            return jsonify({
+                "error": "Invalid class ID."
+            }), 400
+
+        # ========================================================
+        # Validate numeric values
+        # ========================================================
+
+        try:
+
+            weightage = float(weightage)
+
+        except (TypeError, ValueError):
+
+            return jsonify({
+                "error": "Weightage must be numeric."
+            }), 400
+
+        try:
+
+            display_order = int(display_order)
+
+        except (TypeError, ValueError):
+
+            return jsonify({
+                "error": "Display order must be an integer."
+            }), 400
+
+        try:
+
+            term = int(term)
+
+        except (TypeError, ValueError):
+
+            return jsonify({
+                "error": "Term must be an integer."
+            }), 400
+
+        # ========================================================
+        # Find exam
         #
-        # school_id check is important for security.
-        # ---------------------------------------------------------
+        # school_id check is essential for multi-school security.
+        # ========================================================
 
         exam = (
             db.session.query(Exams)
@@ -402,126 +502,156 @@ def update_exam(exam_id):
                 "error": "Exam not found."
             }), 404
 
-        # ---------------------------------------------------------
-        # 5. Check whether marks already exist
-        # ---------------------------------------------------------
+        # ========================================================
+        # Check whether marks exist
+        #
+        # If marks exist, the exam becomes immutable.
+        # ========================================================
 
         has_marks = (
-            db.session.query(
-                exists().where(
-                    StudentMarks.exam_id == exam.id
-                )
+            db.session.query(StudentMarks.id)
+            .filter(
+                StudentMarks.exam_id == exam.id
             )
-            .scalar()
+            .first()
         )
 
         if has_marks:
 
             return jsonify({
                 "error": (
-                    "This exam cannot be modified because "
+                    "This exam cannot be edited because "
                     "marks have already been entered."
                 ),
                 "editable": False
             }), 409
 
-        # ---------------------------------------------------------
-        # 6. Check duplicate exam code
-        # ---------------------------------------------------------
+        # ========================================================
+        # Check duplicate exam
+        # ========================================================
 
-        existing_exam = (
+        duplicate = (
             db.session.query(Exams.id)
             .filter(
                 Exams.school_id == school_id,
                 Exams.id != exam.id,
                 or_(
-                    Exams.exam_name == exam_name,
-                    Exams.exam_code == exam_code
+                    Exams.exam_name.ilike(exam_name),
+                    Exams.exam_code.ilike(exam_code)
                 )
             )
             .first()
         )
 
-        if existing_exam:
+        if duplicate:
 
             return jsonify({
-                "error": "Another exam with this name or code already exists."
+                "error": (
+                    "Another exam with this name or code "
+                    "already exists."
+                )
             }), 409
 
-        # ---------------------------------------------------------
-        # 7. Validate classes
-        # ---------------------------------------------------------
+        # ========================================================
+        # Validate classes
+        # ========================================================
 
-        if class_ids:
-
-            valid_class_ids = {
-                row.id
-                for row in (
-                    db.session.query(ClassData.id)
-                    .filter(
-                        ClassData.id.in_(class_ids),
-                        ClassData.school_id == school_id
-                    )
-                    .all()
+        valid_class_ids = {
+            row.id
+            for row in (
+                db.session.query(
+                    ClassData.id.label("id")
                 )
-            }
+                .filter(
+                    ClassData.id.in_(class_ids),
+                    ClassData.school_id == school_id
+                )
+                .all()
+            )
+        }
 
-            invalid_class_ids = [
-                class_id
-                for class_id in class_ids
-                if class_id not in valid_class_ids
-            ]
+        if valid_class_ids != class_ids:
 
-            if invalid_class_ids:
+            return jsonify({
+                "error": (
+                    "One or more selected classes "
+                    "are invalid."
+                )
+            }), 404
 
-                return jsonify({
-                    "error": "One or more classes do not belong to this school.",
-                    "invalid_class_ids": invalid_class_ids
-                }), 400
-
-        # ---------------------------------------------------------
-        # 8. Update exam
-        # ---------------------------------------------------------
+        # ========================================================
+        # Update Exams
+        # ========================================================
 
         exam.exam_name = exam_name
         exam.exam_code = exam_code
         exam.weightage = weightage
         exam.display_order = display_order
         exam.term = term
-        exam.is_enabled = is_enabled
 
-        # ---------------------------------------------------------
-        # 9. Replace class assignments
-        # ---------------------------------------------------------
+        # ========================================================
+        # Synchronize ClassExams
+        #
+        # Same pattern as your Subject Setup API:
+        #
+        # Existing:
+        #     Class 1
+        #     Class 2
+        #
+        # New:
+        #     Class 2
+        #     Class 3
+        #
+        # Result:
+        #     Class 1 -> removed
+        #     Class 2 -> retained
+        #     Class 3 -> added
+        # ========================================================
 
-        (
+        existing = (
             db.session.query(ClassExams)
             .filter(
                 ClassExams.exam_id == exam.id
             )
-            .delete(
-                synchronize_session=False
-            )
+            .all()
         )
 
+        existing_by_class = {
+            class_exam.class_id: class_exam
+            for class_exam in existing
+        }
+
+        # --------------------------------------------------------
+        # Remove old class assignments
+        # --------------------------------------------------------
+
+        for class_id, class_exam in existing_by_class.items():
+            if class_id not in class_ids:
+                db.session.delete(class_exam)
+
+        # --------------------------------------------------------
+        # Add new class assignments
+        # --------------------------------------------------------
+
         for class_id in class_ids:
-
-            db.session.add(
-                ClassExams(
-                    exam_id=exam.id,
-                    class_id=class_id
+            if class_id not in existing_by_class:
+                db.session.add(
+                    ClassExams(
+                        exam_id=exam.id,
+                        class_id=class_id
+                    )
                 )
-            )
 
-        # ---------------------------------------------------------
-        # 10. Commit
-        # ---------------------------------------------------------
+        # ========================================================
+        # Commit
+        # ========================================================
 
         db.session.commit()
 
         return jsonify({
             "message": "Exam updated successfully.",
-            "exam_id": exam.id
+            "exam_id": exam.id,
+            "class_ids": sorted(class_ids)
         }), 200
 
     except Exception as e:
@@ -531,9 +661,8 @@ def update_exam(exam_id):
         print("Error while updating exam:", e)
 
         return jsonify({
-            "error": "Unable to update exam. Please try again later."
-        }), 500 
-
-
-
-    
+            "error": (
+                "Unable to update exam. "
+                "Please try again later."
+            )
+        }), 500
