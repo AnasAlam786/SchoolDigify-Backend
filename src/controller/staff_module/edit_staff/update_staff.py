@@ -146,7 +146,7 @@ def update_staff():
 
     # 7. Construct Form-Ready Staff Payload for React
     staff_data = {
-        "id": staff.id,
+        "staff_id": staff.id,
         "name": getattr(staff, 'Name', '') or "",
         "email": getattr(staff, 'email', '') or "",
         "phone": getattr(staff, 'phone', '') or "",
@@ -163,7 +163,7 @@ def update_staff():
         "role_id": str(staff.role_id) if staff.role_id else "",
         "assigned_classes_id": assigned_classes_id,
         "assigned_permissions_id": assigned_permissions_id,
-        "imageFile": getattr(staff, 'image', '') or "",
+        "image": getattr(staff, 'image', '') or "",
     }
 
     # 8. Return JSON Response

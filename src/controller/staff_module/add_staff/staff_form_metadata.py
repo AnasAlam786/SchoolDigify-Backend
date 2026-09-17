@@ -14,9 +14,9 @@ from src.model.Roles import Roles
 
 from src.controller.staff_module.utils.icons import permission_icons, ROLE_ICONS
 
-add_staff_bp = Blueprint( 'add_staff_bp',   __name__)
+staff_form_metadata_api_bp = Blueprint( 'staff_form_metadata_api_bp',   __name__)
 
-@add_staff_bp.route('/api/add_staff', methods=['GET'])
+@staff_form_metadata_api_bp.route('/api/staff_form_metadata', methods=['GET'])
 @login_required
 @permission_required('add_staff')
 def add_staff():
@@ -107,3 +107,6 @@ def add_staff():
         return jsonify({
             "error": "Failed to load staff setup data due to a server error."
         }), 500
+
+
+    

@@ -1,4 +1,3 @@
-import base64
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
 from googleapiclient.http import MediaIoBaseUpload
@@ -8,9 +7,6 @@ import io
 import json
 import os
 import time
-
-
-
 
 load_dotenv()
 
@@ -27,27 +23,6 @@ def get_credentials():
     creds = service_account.Credentials.from_service_account_info(
         creds_dict, scopes=scope)
     return creds
-
-# def compress_image(image_data):
-#     """Compress image to reduce size while maintaining quality."""
-#     try:
-#         img = Image.open(io.BytesIO(image_data))
-#         # Convert to RGB if necessary
-#         if img.mode != 'RGB':
-#             img = img.convert('RGB')
-        
-#         # Resize if too large (max 800px width/height)
-#         max_size = 800
-#         if img.width > max_size or img.height > max_size:
-#             img.thumbnail((max_size, max_size), Image.Resampling.LANCZOS)
-        
-#         # Compress
-#         output = io.BytesIO()
-#         img.save(output, format='JPEG', quality=85, optimize=True)
-#         return output.getvalue()
-#     except Exception as e:
-#         print(f"Compression failed: {e}")
-#         return image_data
 
 def upload_image(file_blob, image_name, drive_folder_id):
     
@@ -125,7 +100,7 @@ def move_image(file_id, new_folder_id, rename=None, older_images_folder_id=None)
 
 
 
-upload_image.__module__ = "src.controller.add_student.utils.upload_image"
+upload_image.__module__ = "src.controller.utils.upload_image"
 upload_image.__name__ = "upload_image"
 upload_image.__qualname__ = "upload_image"
 upload_image.__doc__ = "Uploads an image to Google Drive and returns the file ID."
@@ -134,4 +109,3 @@ upload_image.__annotations__ = {
     "image_name": "str",
     "drive_folder_id": "str"
 }
-

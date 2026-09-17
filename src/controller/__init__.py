@@ -31,11 +31,12 @@ from .marks.show_marks.show_marks import show_marks_bp
 from .marks.bulk_markheet_certificate import bulk_markheet_certificate_bp
 
 from .staff_module.show_staff.show_staff import show_staff_bp
-from .staff_module.add_staff.add_staff import add_staff_bp
+from .staff_module.add_staff.staff_form_metadata import staff_form_metadata_api_bp
 from .staff_module.edit_staff.update_staff import update_staff_bp
 from .staff_module.edit_staff.update_staff_api import update_staff_api_bp
 from .staff_module.add_staff.add_staff_api import add_staff_api_bp
 from .staff_module.utils.get_role_permission import get_role_permissions_bp
+from .staff_module.change_status.change_status_api import change_status_api_bp
 
 from .idcard.idcard import idcard_bp
 
@@ -70,7 +71,6 @@ from .students.update.update_student import update_student_bp
 
 from .students.utils.create_watsapp_message_api import create_watsapp_message_api_bp
 from .students.utils.create_admission_form_api import create_admission_form_api_bp
-
 
 from .utils.get_classes import get_classes_bp
 from .utils.get_available_rolls import get_available_rolls_api_bp
@@ -130,10 +130,12 @@ def register_blueprints(app):
 
     app.register_blueprint(show_staff_bp)
     app.register_blueprint(add_staff_api_bp)
-    app.register_blueprint(add_staff_bp)
+    app.register_blueprint(staff_form_metadata_api_bp)
     app.register_blueprint(update_staff_api_bp)
     app.register_blueprint(update_staff_bp)
     app.register_blueprint(get_role_permissions_bp)
+    app.register_blueprint(change_status_api_bp)
+    
 
     app.register_blueprint(idcard_bp)
 

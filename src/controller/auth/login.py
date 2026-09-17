@@ -8,7 +8,9 @@ from src.model.Schools import Schools
 from .save_sessions import save_sessions
 from src.model.TeachersLogin import TeachersLogin
 from src.model.Roles import Roles
+from src import db
 import os
+
 
 login_bp = Blueprint('login_bp', __name__)
 FERNET_KEY = os.environ.get('FERNET_KEY')
@@ -25,8 +27,8 @@ def login():
     session.clear()
 
     try:
-        user = (
-            TeachersLogin.query
+        user_data = (
+            db.session.query(TeachersLogin, Roles)
             .join(Roles, Roles.id == TeachersLogin.role_id)
             .filter(TeachersLogin.email == email)
             .first()
@@ -38,6 +40,8 @@ def login():
             "message": "Database tables not found",
             "debug": str(e)
         }), 500
+
+    user, role = user_data
 
     if not user:
         return jsonify({
@@ -58,10 +62,18 @@ def login():
             "message": "Wrong email or password"
         }), 401
 
-    if not save_sessions(user=user):
+    try:
+        is_success, message = save_sessions(user=user_data)
+    except Exception as e:
         return jsonify({
             "success": False,
-            "message": "Something didn't go well, try again!"
+            "message": e
+        }), 500
+
+    if not is_success:
+        return jsonify({
+            "success": False,
+            "message": message or "Something didn't go well, try again!"
         }), 500
 
     school = Schools.query.filter_by(id=user.school_id).first()
@@ -83,7 +95,12 @@ def login():
 @login_bp.route("/api/me", methods=["GET"])
 @login_required
 def me():
+    try:
+        dict_session = dict(session)
+    except Exception as e:
+        return jsonify({ "error": e }), 400
+
     return jsonify({
         "authenticated": True,
-        "sessionData": dict(session)
+        "sessionData": dict_session
     }), 200

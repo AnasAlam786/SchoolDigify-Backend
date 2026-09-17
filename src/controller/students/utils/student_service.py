@@ -10,7 +10,7 @@ from pydantic import ValidationError
 
 from src import db
 from src.model import StudentsDB, StudentSessions, ClassData, RTEInfo, Schools
-from src.controller.students.utils.upload_image import upload_image, delete_image, move_image
+from src.controller.utils.upload_image import upload_image, delete_image, move_image
 from src.controller.utils.get_available_rolls import get_available_rolls
 
 

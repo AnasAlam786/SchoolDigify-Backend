@@ -14,6 +14,7 @@ class TeachersLogin(db.Model):
     
     Sign = Column(Text, nullable=True)
     User = Column(Text, nullable=False)
+    status = Column(db.Enum('active', 'deleted', name='Status',), nullable=False, default='active')
     status = Column(Text, nullable=False)
     image = Column(Text, nullable=True)
     qualification = Column(Text, nullable=True)
