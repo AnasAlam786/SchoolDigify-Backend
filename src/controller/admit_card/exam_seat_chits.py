@@ -10,9 +10,9 @@ from src import db
 get_seat_chits_bp = Blueprint('get_seat_chits_bp', __name__)
 
 
-@get_seat_chits_bp.route('/seat_chits', methods=['GET'])
+@get_seat_chits_bp.route('/api/seat_chits', methods=['GET'])
 @login_required
-@permission_required('admission')
+@permission_required('admit_card')
 def get_seat_chits_api():
     """Fetch students for admit cards and render `admit.html`.
 
@@ -29,7 +29,7 @@ def get_seat_chits_api():
     current_session_id = session.get('session_id')
 
     if not school_id or not current_session_id:
-        return jsonify({"message": "Missing session context (school/session)."}), 400
+        return jsonify({"error": "Missing session context (school/session)."}), 400
 
     # Build base query for students in the current session and school
     #exclude students with class UKG/KG2/PP1, Nursery/KG/PP3, Nursery/KG/PP3
@@ -51,11 +51,9 @@ def get_seat_chits_api():
         ClassData.display_order,  # first order by class display order
         StudentSessions.ROLL      # then by roll number
     )
+
     students = query.all()
-
-    # Group students into sets of 30 using list slicing
-    # i goes from 0 to total students in steps of 15
-    # students[i:i+15] picks 15 students starting from index i
     grouped_students = [students[i:i+30] for i in range(0, len(students), 30)]
+    seat_chits_html = render_template('admit_card/exam_seat_chits.html', data=grouped_students)
 
-    return render_template('admit_card/exam_seat_chits.html', data=grouped_students)
+    return jsonify({"html": str(seat_chits_html)})

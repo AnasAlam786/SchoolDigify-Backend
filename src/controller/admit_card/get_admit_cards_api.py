@@ -28,8 +28,8 @@ def get_admit_cards_api():
     data = request.json or {}
 
 
-    exam = data.get('exam', '')
-    year = data.get('year', '')
+    admit_heading = data.get('admitHeading', '')
+    scheme_heading = data.get('schemeHeading', '')
     outputType = data.get('outputType', '')
     examScheme = data.get('examScheme', '')
 
@@ -102,7 +102,8 @@ def get_admit_cards_api():
     logo = school.Logo if school else ''
 
     html = render_template('admit_card/admit_pdf.html', data=pages, logo=logo, 
-                           school=school_name, exam=exam, year=year, outputType=outputType, 
+                           school=school_name, admit_heading=admit_heading, scheme_heading=scheme_heading, outputType=outputType, 
                            examScheme=examScheme)
 
     return jsonify({"html": str(html)})
+

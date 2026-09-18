@@ -268,7 +268,7 @@
                             <img src="{{ logo }}" alt="School Logo" class="logo" loading="lazy">
                             <div class="school-info">
                                 <h4>{{ school }}</h4>
-                                <p>Admit Card {{ exam }} {{ year }}</p>
+                                <p>Admit Card {{ admit_heading }}</p>
                             </div>
                         </div>
 
@@ -278,7 +278,7 @@
                                 <table>
                                     <tr><td style="font-weight:700">Name</td><td>{{ student.STUDENTS_NAME }}</td></tr>
                                     <tr><td style="font-weight:700">F/N</td><td>{{ student.FATHERS_NAME }}</td></tr>
-                                    <tr><td style="font-weight:700">M/N</td><td>{{ student.MOTHERS_NAME }}</td></tr>
+                                    <!-- <tr><td style="font-weight:700">M/N</td><td>{{ student.MOTHERS_NAME }}</td></tr> -->
                                     <tr><td style="font-weight:700">Class</td><td>{{ student.CLASS }} - {{ student.ROLL }}</td></tr>
                                     <tr><td style="font-weight:700">DOB</td><td>{{ student.DOB }}</td></tr>
                                 </table>
@@ -302,7 +302,7 @@
                             <img src="{{ logo }}" alt="School Logo" class="logo" loading="lazy">
                             <div class="school-info">
                                 <h4>{{ school }}</h4>
-                                <p>Exam Schedule {{ exam }} {{ year }}</p>
+                                <p>Exam Schedule {{ admit_heading }}</p>
                             </div>
                         </div>
                         
@@ -345,7 +345,7 @@
                             <img src="{{ logo }}" alt="School Logo" class="logo" loading="lazy">
                             <div class="school-info">
                                 <h4>{{ school }}</h4>
-                                <p>Admit Card {{ exam }} {{ year }}</p>
+                                <p>Admit Card {{ admit_heading }}</p>
                             </div>
                         </div>
 
@@ -367,7 +367,7 @@
                 <!-- Exam scheme - 50% width -->
                 <div class="both-container">
                     <div class="card" style="border: 2px solid #000;">     
-                        <h4 class="exam-scheme-title">Exam Timing: 8:30 am to 11:00 am</h4>                       
+                        <h4 class="exam-scheme-title">{{ scheme_heading }}</h4>                       
                         <div class="exam-scheme" style="--row-count: {{ examScheme|length }}">
                             
                             <table>

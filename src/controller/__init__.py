@@ -78,7 +78,7 @@ from .utils.get_available_rolls import get_available_rolls_api_bp
 from .question_paper.question_paper_PDF_api import question_paper_PDF_api_bp
 from .question_paper.question_papers_dashboard import question_papers_dashboard_bp
 from .question_paper.question_papers_editor import question_papers_editor_bp
-from .tools.exam_seat_chits import get_seat_chits_bp
+from .admit_card.exam_seat_chits import get_seat_chits_bp
 
 from .setup.school_actions import school_data_api_bp
 from .setup.exam_setup import exam_setup_api_bp
