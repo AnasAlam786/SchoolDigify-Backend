@@ -1,8 +1,5 @@
-from collections import OrderedDict
-
-from sqlalchemy import cast, Float
-
 from src import db
+
 from src.model.ClassExams import ClassExams
 from src.model.StudentsDB import StudentsDB
 from src.model.StudentSessions import StudentSessions
@@ -14,7 +11,9 @@ from src.model.StudentMarks import StudentMarks
 
 
 def result_data(
-    school_id, session_id, class_id,
+    school_id,
+    session_id,
+    class_id,
     student_session_ids=None,
     extra_fields=None,
 ):
@@ -55,14 +54,16 @@ def result_data(
 
 
     # =========================================================
-    # 2. GET EXAMS FOR THIS CLASS
+    # 2. GET EXAMS
+    #
+    # IMPORTANT:
+    # display_order controls the sequence.
     # =========================================================
 
     exam_rows = (
         db.session.query(
             ClassExams.id.label("class_exam_id"),
             Exams.id.label("exam_id"),
-            Exams.exam_code,
             Exams.exam_code,
             Exams.weightage,
             Exams.term,
@@ -84,7 +85,10 @@ def result_data(
             (ClassExams.end_session.is_(None))
             | (ClassExams.end_session >= session_id)
         )
-        .order_by(Exams.display_order)
+        .order_by(
+            Exams.display_order,
+            Exams.id,
+        )
         .all()
     )
 
@@ -93,7 +97,10 @@ def result_data(
 
 
     # =========================================================
-    # 3. GET SUBJECTS FOR THIS CLASS
+    # 3. GET SUBJECTS
+    #
+    # IMPORTANT:
+    # display_order controls the sequence.
     # =========================================================
 
     subject_rows = (
@@ -123,7 +130,10 @@ def result_data(
             (ClassSubject.end_session.is_(None))
             | (ClassSubject.end_session >= session_id)
         )
-        .order_by(Subjects.display_order)
+        .order_by(
+            Subjects.display_order,
+            Subjects.id,
+        )
         .all()
     )
 
@@ -132,7 +142,7 @@ def result_data(
 
 
     # =========================================================
-    # 4. GET ALL MARKS
+    # 4. IDs FOR MARKS QUERY
     # =========================================================
 
     student_ids = [
@@ -150,6 +160,7 @@ def result_data(
         for subject in subject_rows
     ]
 
+
     # =========================================================
     # 5. GET ALL MARKS
     # =========================================================
@@ -166,16 +177,17 @@ def result_data(
 
 
     # =========================================================
-    # 5. MAKE MARKS LOOKUP
+    # 6. MAKE MARKS LOOKUP
     #
-    # (student_session_id, exam_id, class_subject_id)
-    #                         ↓
-    #                       score
+    # (student_session_id, exam_id, subject_id)
+    #                     ↓
+    #                   score
     # =========================================================
 
     marks_lookup = {}
 
     for mark in mark_rows:
+
         key = (
             mark.student_session_id,
             mark.exm_id,
@@ -186,29 +198,80 @@ def result_data(
 
 
     # =========================================================
-    # 6. EXTRA FIELDS
+    # 7. BUILD EXAM DEFINITIONS ONCE
+    #
+    # This order is exactly the order returned by
+    # .order_by(Exams.display_order)
     # =========================================================
 
-    extra_fields = extra_fields or {}
+    exams = []
 
-    allowed_models = {
-        "StudentsDB": StudentsDB,
-        "StudentSessions": StudentSessions,
-        "ClassData": ClassData,
-    }
+    for exam in exam_rows:
+
+        exams.append({
+            "id": exam.class_exam_id,
+            "exam_id": exam.exam_id,
+            "name": exam.exam_code,
+            "weightage": float(exam.weightage or 0),
+            "term": exam.term,
+            "display_order": exam.display_order,
+        })
 
 
     # =========================================================
-    # 7. BUILD RESULT
+    # 8. BUILD RESULT
     # =========================================================
 
     results = []
 
     for student_session, student, class_data in student_rows:
 
-        for exam in exam_rows:
+        # -----------------------------------------------------
+        # Student's subjects
+        # -----------------------------------------------------
 
-            subject_marks = OrderedDict()
+        subjects = []
+
+        for subject in subject_rows:
+
+            marks = {}
+
+            for exam in exam_rows:
+
+                key = (
+                    student_session.id,
+                    exam.class_exam_id,
+                    subject.class_subject_id,
+                )
+
+                score = marks_lookup.get(key)
+
+                # Use string exam ID as JSON key
+                marks[str(exam.class_exam_id)] = (
+                    score if score is not None else ""
+                )
+
+            subjects.append({
+                "id": subject.class_subject_id,
+                "subject_id": subject.subject_id,
+                "name": subject.subject,
+                "type": subject.evaluation_type,
+                "max_marks": subject.max_marks,
+                "pass_marks": subject.pass_marks,
+                "display_order": subject.display_order,
+                "marks": marks,
+            })
+
+
+        # -----------------------------------------------------
+        # Calculate exam totals
+        # -----------------------------------------------------
+
+        exam_totals = {}
+
+        grand_total = 0
+
+        for exam in exam_rows:
 
             exam_total = 0
             max_total = 0
@@ -223,12 +286,10 @@ def result_data(
 
                 score = marks_lookup.get(key)
 
-                # Keep empty subjects in the result
-                subject_marks[subject.subject] = (
-                    score if score is not None else ""
-                )
+                # -----------------------------
+                # Score
+                # -----------------------------
 
-                # Calculate numeric total
                 if score not in (None, ""):
 
                     try:
@@ -236,50 +297,74 @@ def result_data(
                     except (ValueError, TypeError):
                         pass
 
+                # -----------------------------
                 # Maximum marks
+                # -----------------------------
+
                 if subject.max_marks is not None:
+
                     try:
-                        max_total += float(subject.max_marks)
+                        max_total += float(
+                            subject.max_marks
+                        )
                     except (ValueError, TypeError):
                         pass
 
 
-            # =================================================
-            # 8. PERCENTAGE
-            # =================================================
+            # -----------------------------
+            # Percentage
+            # -----------------------------
 
             if max_total:
-                percentage = (exam_total / max_total) * 100
+                percentage = (
+                    exam_total / max_total
+                ) * 100
             else:
                 percentage = 0.0
 
 
-            # =================================================
-            # 9. CREATE ROW
-            # =================================================
-
-            row = {
-                "student_session_id": student_session.id,
-                "student_id": student.id,
-
-                "exm_id": exam.class_exam_id,
-                "exam_name": exam.exam_code,
-                "exam_code": exam.exam_code,
-                "weightage": exam.weightage,
-                "exam_term": exam.term,
-
-                "subject_marks_dict": subject_marks,
-
-                "exam_total": exam_total,
-                "percentage": percentage,
-
-                "exam_display_order": exam.display_order,
+            exam_totals[str(exam.class_exam_id)] = {
+                "total": exam_total,
+                "max_total": max_total,
+                "percentage": round(
+                    percentage,
+                    2,
+                ),
             }
 
+            grand_total += exam_total
 
-            # =================================================
-            # 10. ADD EXTRA FIELDS
-            # =================================================
+
+        # -----------------------------------------------------
+        # Student object
+        # -----------------------------------------------------
+
+        student_data = {
+            "id": student.id,
+            "session_id": student_session.id,
+            "name": student.STUDENTS_NAME,
+            "roll": student_session.ROLL,
+            "class": class_data.CLASS,
+        }
+
+
+        # -----------------------------------------------------
+        # Extra fields
+        # -----------------------------------------------------
+
+        if extra_fields:
+
+            allowed_models = {
+                "StudentsDB": StudentsDB,
+                "StudentSessions": StudentSessions,
+                "ClassData": ClassData,
+            }
+
+            sources = {
+                "StudentsDB": student,
+                "StudentSessions": student_session,
+                "ClassData": class_data,
+            }
 
             for table_name, fields in extra_fields.items():
 
@@ -288,106 +373,117 @@ def result_data(
                 if model is None:
                     continue
 
-                if not isinstance(fields, (list, tuple, set)):
+                if not isinstance(
+                    fields,
+                    (list, tuple, set),
+                ):
                     continue
 
-                if table_name == "StudentsDB":
-                    source = student
+                source = sources.get(table_name)
 
-                elif table_name == "StudentSessions":
-                    source = student_session
-
-                elif table_name == "ClassData":
-                    source = class_data
-
-                else:
+                if source is None:
                     continue
 
                 for field in fields:
 
-                    # Avoid duplicate fields
-                    if field in row:
+                    if field in student_data:
                         continue
 
-                    value = getattr(source, field, None)
+                    value = getattr(
+                        source,
+                        field,
+                        None,
+                    )
 
-                    row[field] = value
+                    student_data[field] = value
 
 
-            results.append(row)
+        # -----------------------------------------------------
+        # Final student result
+        # -----------------------------------------------------
+
+        results.append({
+            "student": student_data,
+
+            # Already ordered
+            "exams": exams,
+
+            # Already ordered
+            "subjects": subjects,
+
+            "exam_totals": exam_totals,
+
+            "summary": {
+                "grand_total": grand_total,
+                "rank": None,
+            },
+        })
 
 
     # =========================================================
-    # 11. GRAND TOTAL
+    # 9. CALCULATE RANK
     # =========================================================
 
-    student_totals = {}
+    student_totals = []
 
-    for row in results:
+    for index, result in enumerate(results):
 
-        student_id = row["student_session_id"]
+        total = result["summary"]["grand_total"]
 
-        if student_id not in student_totals:
-            student_totals[student_id] = 0
+        student_totals.append({
+            "index": index,
+            "total": total,
+        })
 
-        student_totals[student_id] += row["exam_total"]
 
-
-    # =========================================================
-    # 12. RANK
-    # =========================================================
-
-    sorted_students = sorted(
-        student_totals.items(),
-        key=lambda x: x[1],
+    # Highest total first
+    sorted_totals = sorted(
+        student_totals,
+        key=lambda x: x["total"],
         reverse=True,
     )
+
+
+    # ---------------------------------------------------------
+    # Assign ranking
+    # ---------------------------------------------------------
 
     rank_lookup = {}
 
     previous_total = None
     current_rank = 0
 
-    for position, (student_id, total) in enumerate(
-        sorted_students,
+    for position, item in enumerate(
+        sorted_totals,
         start=1,
     ):
+
+        total = item["total"]
 
         if total != previous_total:
             current_rank = position
 
-        rank_lookup[student_id] = current_rank
+        rank_lookup[item["index"]] = current_rank
 
         previous_total = total
 
 
     # =========================================================
-    # 13. ADD GRAND TOTAL + RANK
+    # 10. PUT RANK INTO ORIGINAL RESULT
+    #
+    # IMPORTANT:
+    # We DO NOT sort results here.
+    #
+    # Therefore the student order from the database is preserved.
     # =========================================================
 
-    for row in results:
+    for index, result in enumerate(results):
 
-        student_id = row["student_session_id"]
-        row["grand_total"] = student_totals[student_id]
-        row["overall_rank"] = rank_lookup[student_id]
+        result["summary"]["rank"] = rank_lookup[index]
 
 
     # =========================================================
-    # 14. FINAL ORDER
+    # 11. RETURN
     # =========================================================
-
-    roll_lookup = {}
-
-    for student_session, student, class_data in student_rows:
-        roll_lookup[student_session.id] = student_session.ROLL
-
-
-    results.sort(
-        key=lambda row: (
-            row["overall_rank"],
-            row["exam_display_order"],
-            roll_lookup.get(row["student_session_id"], 0),
-        )
-    )
 
     return results

@@ -339,8 +339,8 @@
         <table
           style="width: 100%; height: 100%; border-collapse: collapse; text-align: center; border: 1px solid #c7c7c7;">
           {% set marks = student.marks %}
-          {% set exam_names = marks.keys() | list %}
-          {% set subjects = student.marks[exam_names[0]].subject_marks_dict.keys() | list %}
+          {% set exam_names = student.exam_order if student.exam_order else marks.keys() | list %}
+          {% set subjects = student.subject_order if student.subject_order else student.marks[exam_names[0]].subject_marks_dict.keys() | list %}
 
           <thead>
             <tr>

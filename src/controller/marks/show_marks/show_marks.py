@@ -76,5 +76,6 @@ def show_marks_api():
         student_marks_data,  add_grades_flag=False, add_grand_total_flag=True
     )
 
+
     return jsonify({"student_marks":student_marks})
     

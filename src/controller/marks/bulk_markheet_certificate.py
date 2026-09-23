@@ -29,16 +29,16 @@ def bulk_download_results():
     school_id = session["school_id"]
 
     try:
-        student_ids = request.json.get("student_ids", [])
+        student_session_ids = request.json.get("student_session_id", [])
         class_id = int(request.json.get("class_id"))
-        if not isinstance(student_ids, list) or not student_ids:
+        if not isinstance(student_session_ids, list) or not student_session_ids:
             return jsonify({"message": "Invalid student IDs."}), 400
-        student_ids = [int(sid) for sid in student_ids]
+        student_session_ids = [int(sid) for sid in student_session_ids]
     except (TypeError, ValueError):
         return jsonify({"message": "Invalid input."}), 400
 
     # Session checks
-    if not student_ids or not current_session_id or not user_id:
+    if not student_session_ids or not current_session_id or not user_id:
         return jsonify({"message": "Session data missing. Please logout and login again!"}), 403
 
     extra_fields = {
@@ -49,12 +49,21 @@ def bulk_download_results():
         "StudentSessions": ["ROLL", "class_id", "Attendance"],
     }
 
-    student_marks_data = result_data(school_id, current_session_id, 
-                                     class_id, student_ids=student_ids,
-                                     extra_fields=extra_fields)
+    print("Hello", student_session_ids)
+
+    try:
+        student_marks_data = result_data(
+            school_id, current_session_id, class_id, 
+            student_session_ids=student_session_ids,
+            extra_fields=extra_fields)
+    except Exception as e:
+        print(e)
+        return jsonify({"error": "Some error to fetch marks"}), 400
 
     if not student_marks_data:
         return jsonify({"message": "No Data Found"}), 400
+
+    
 
     student_marks = process_marks(student_marks_data, add_grades_flag=True, add_grand_total_flag=True)
 

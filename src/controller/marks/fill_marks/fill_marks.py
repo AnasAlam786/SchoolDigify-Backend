@@ -1,18 +1,15 @@
 # src/controller/marks/fill_marks.py
 
 from flask import session, request, jsonify, Blueprint
+from sqlalchemy import and_, or_
 from sqlalchemy.exc import IntegrityError
 
 from src import db
 
 from src.model import (
-    Exams,
-    StudentsDB,
-    StudentSessions,
-    ClassData,
-    StudentMarks,
-    Subjects,
-    ClassExams,
+    Exams, StudentSubjects, StudentsDB,
+    StudentSessions, ClassData,
+    StudentMarks, Subjects, ClassExams,
 )
 
 from src.model.ClassAccess import ClassAccess
@@ -28,102 +25,16 @@ fill_marks_bp = Blueprint(
     __name__
 )
 
-
-# ============================================================
-# 1. FETCH CLASSES AND EXAMS
-# ============================================================
-
-@fill_marks_bp.route(
-    "/api/fetchClassesAndExams",
-    methods=["GET"]
-)
-@login_required
-@permission_required("fill_marks")
-def fetchClassesAndExams():
-
-    school_id = session["school_id"]
-    user_id = session["user_id"]
-
-    try:
-        # ----------------------------------------------------
-        # Classes accessible to this teacher
-        # ----------------------------------------------------
-
-        classes = (
-            db.session.query(
-                ClassData.id, ClassData.CLASS
-            ).join(
-                ClassAccess,
-                ClassAccess.class_id == ClassData.id
-            ).filter(
-                ClassAccess.staff_id == user_id,
-                ClassData.school_id == school_id
-            ).order_by(
-                ClassData.id.asc()
-            ).all()
-        )
-
-        class_ids = [ row.id for row in classes]
-
-        # ----------------------------------------------------
-        # Exams assigned to those classes
-        # ----------------------------------------------------
-
-        exams = []
-        if class_ids:
-            exams = (
-                db.session.query(
-                    Exams.id, Exams.exam_name,
-                    Exams.is_enabled, Exams.display_order
-                ).join(
-                    ClassExams,
-                    ClassExams.exam_id == Exams.id
-                ).filter(
-                    ClassExams.class_id.in_(class_ids),
-                    Exams.school_id == school_id
-                ).distinct()
-                .order_by(
-                    Exams.display_order.asc()
-                ).all()
-            )
-
-        return jsonify({
-            "classes": [
-                {
-                    "id": row.id,
-                    "className": row.CLASS
-                } for row in classes
-            ],
-
-            "exams": [
-                {
-                    "id": row.id,
-                    "exam_name": row.exam_name,
-                    "is_enabled": row.is_enabled
-                } for row in exams
-            ]
-        })
-
-    except Exception as e:
-        db.session.rollback()
-        print(f"fetchClassesAndExams error: {e}")
-
-        return jsonify({
-            "success": False, "error": "Failed to fetch classes and exams."
-        }), 500
-
-
 # ============================================================
 # 2. GET SUBJECTS FOR CLASS
 # ============================================================
 
 @fill_marks_bp.route(
-    "/api/subjects/<int:class_id>",
-    methods=["GET"]
+    "/api/subjects_and_exams_by_class/<int:class_id>", methods=["GET"]
 )
 @login_required
 @permission_required("fill_marks")
-def get_subjects_by_class(class_id):
+def get_subjects_and_exams_by_class(class_id):
 
     school_id = session["school_id"]
     current_session_id = session["session_id"]
@@ -151,13 +62,10 @@ def get_subjects_by_class(class_id):
                 "error": "You do not have access to this class."
             }), 403
 
-        # ----------------------------------------------------
-        # ClassSubject is the authoritative relationship
-        # ----------------------------------------------------
-
         subjects = (
             db.session.query(
-                ClassSubject.id.label("cls_sub_id"), Subjects.subject.label("subject_name")
+                ClassSubject.id.label("class_subject_id"),
+                Subjects.subject.label("subject_name")
             ).join(
                 Subjects,
                 Subjects.id == ClassSubject.subject_id
@@ -167,50 +75,95 @@ def get_subjects_by_class(class_id):
                 Subjects.is_active.is_(True),
                 (
                     (ClassSubject.start_session.is_(None)) |
-                    (
-                        ClassSubject.start_session <= current_session_id
-                    )
+                    (ClassSubject.start_session <= current_session_id)
                 ),
                 (
                     (ClassSubject.end_session.is_(None)) |
-                    (
-                        ClassSubject.end_session >= current_session_id
-                    )
+                    (ClassSubject.end_session >= current_session_id)
                 )
             ).order_by(
                 Subjects.display_order.asc()
             ).all()
         )
 
-        # IMPORTANT:
-        # frontend "subject_id" receives ClassSubject.id
-
-        return jsonify([
-            {
-                "id": row.cls_sub_id,
-                "subjectName": row.subject_name
-            }
-            for row in subjects
-        ])
-
-    except Exception as e:
-
-        db.session.rollback()
-
-        print(
-            f"get_subjects_by_class error: {e}"
+        exams = (
+            db.session.query(
+                ClassExams.id.label("class_exam_id"),
+                Exams.exam_name,
+                Exams.is_enabled,
+                Exams.weightage,
+                Exams.term,
+                Exams.display_order,
+            )
+            .join(
+                Exams,
+                Exams.id == ClassExams.exam_id
+            )
+            .filter(
+                ClassExams.class_id == class_id,
+                Exams.school_id == school_id,
+                (
+                    (ClassExams.start_session.is_(None)) |
+                    (ClassExams.start_session <= current_session_id)
+                ),
+                (
+                    (ClassExams.end_session.is_(None)) |
+                    (ClassExams.end_session >= current_session_id)
+                )
+            )
+            .order_by(
+                Exams.display_order.asc(),
+                ClassExams.id.asc()
+            )
+            .all()
         )
 
+        if not subjects or not exams:
+            errors = []
+
+            if not subjects:
+                errors.append("No subjects found for this class.")
+
+            if not exams:
+                errors.append("No exams found for this class.")
+
+            return jsonify({
+                "success": False, "error": " ".join(errors)
+            }), 404
+
+        
+        # IMPORTANT:
+        # frontend "subject_id" receives ClassSubject.id
+        return jsonify({
+            "subjects": [
+                {
+                    "id": row.class_subject_id,
+                    "subjectName": row.subject_name,
+                }
+                for row in subjects
+            ],
+            "exams": [
+                {
+                    "id": row.class_exam_id,
+                    "exam_name": row.exam_name,
+                    "is_enabled": row.is_enabled,
+                    "weightage": row.weightage,
+                    "term": row.term,
+                    "display_order": row.display_order,
+                }
+                for row in exams
+            ],
+        })
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"get_subjects_by_class error: {e}")
         return jsonify({
             "success": False, "error": "Failed to fetch subjects."
         }), 500
 
 
-# ============================================================
-# 3. GET MARKS
-# ============================================================
-
-@fill_marks_bp.route("/api/get_marks",methods=["GET"])
+@fill_marks_bp.route("/api/get_marks", methods=["GET"])
 @login_required
 @permission_required("fill_marks")
 def get_marks():
@@ -218,9 +171,10 @@ def get_marks():
     school_id = session["school_id"]
     current_session_id = session["session_id"]
     user_id = session["user_id"]
-    class_id = request.args.get( "class_id", type=int )
-    subject_id = request.args.get( "subject_id", type=int )
-    exam_id = request.args.get( "exam_id", type=int )
+
+    class_id = request.args.get("class_id", type=int)
+    subject_id = request.args.get("subject_id", type=int)
+    exam_id = request.args.get("exam_id", type=int)
 
     # --------------------------------------------------------
     # Required parameters
@@ -232,20 +186,24 @@ def get_marks():
             "error": "Class, Subject and Exam are required."
         }), 400
 
-    try: 
+    try:
+
         # ----------------------------------------------------
         # Verify teacher access to class
         # ----------------------------------------------------
+
         class_allowed = (
             db.session.query(ClassData.id)
             .join(
                 ClassAccess,
                 ClassAccess.class_id == ClassData.id
-            ).filter(
+            )
+            .filter(
                 ClassData.id == class_id,
                 ClassData.school_id == school_id,
                 ClassAccess.staff_id == user_id
-            ).first()
+            )
+            .first()
         )
 
         if not class_allowed:
@@ -260,77 +218,80 @@ def get_marks():
 
         class_subject = (
             db.session.query(
-                ClassSubject.id.label("cls_sub_id"),
+                ClassSubject.id.label("class_subject_id"),
+                ClassSubject.is_optional,
+                Subjects.id.label("subject_db_id"),
                 Subjects.subject,
-                Subjects.evaluation_type
-            ).join(
-                Subjects, Subjects.id == ClassSubject.subject_id
-            ).filter(
+                Subjects.evaluation_type,
+                Subjects.max_marks,
+            )
+            .join(
+                Subjects,
+                Subjects.id == ClassSubject.subject_id
+            )
+            .filter(
                 ClassSubject.id == subject_id,
                 ClassSubject.class_id == class_id,
+
                 Subjects.school_id == school_id,
                 Subjects.is_active.is_(True),
+
                 (
-                    (ClassSubject.start_session.is_(None)) |
+                    (ClassSubject.start_session.is_(None))
+                    |
                     (ClassSubject.start_session <= current_session_id)
                 ),
+
                 (
-                    (ClassSubject.end_session.is_(None)) |
-                    (ClassSubject.end_session>= current_session_id)
+                    (ClassSubject.end_session.is_(None))
+                    |
+                    (ClassSubject.end_session >= current_session_id)
                 )
-            ).first()
+            )
+            .first()
         )
 
         if not class_subject:
             return jsonify({
-                "success": False, "error": "Subject not found."
-            }), 404
-
-        # ----------------------------------------------------
-        # Verify exam
-        # ----------------------------------------------------
-
-        exam = (
-            db.session.query(
-                Exams.id, Exams.exam_name,
-                Exams.weightage, Exams.is_enabled
-            ).filter(
-                Exams.id == exam_id, 
-                Exams.school_id == school_id
-            ).first()
-        )
-
-        if not exam:
-            return jsonify({
-                "success": False, "error": "Exam not found."
-            }), 404
-
-        # ----------------------------------------------------
-        # Exam lock
-        # ----------------------------------------------------
-
-        if (
-            not exam.is_enabled and not has_permission("override_marks_lock")
-        ):
-
-            return jsonify({
                 "success": False,
-                "error": (
-                    "This exam is locked. "
-                    "You do not have permission to fill marks."
-                )
-            }), 403
+                "error": "Subject not found."
+            }), 404
 
         # ----------------------------------------------------
-        # Verify exam is assigned to this class
+        # Verify exam as ClassExams record for this class
         # ----------------------------------------------------
 
         class_exam = (
-            db.session.query(ClassExams)
+            db.session.query(
+                ClassExams.id.label("class_exam_id"),
+                Exams.id.label("exam_db_id"),
+                Exams.exam_name,
+                Exams.weightage,
+                Exams.is_enabled,
+            )
+            .join(
+                Exams,
+                Exams.id == ClassExams.exam_id
+            )
             .filter(
+                ClassExams.id == exam_id,
                 ClassExams.class_id == class_id,
-                ClassExams.exam_id == exam_id
-            ) .first()
+
+                Exams.school_id == school_id,
+
+                (
+                    (ClassExams.start_session.is_(None))
+                    |
+                    (ClassExams.start_session <= current_session_id)
+                ),
+
+                (
+                    (ClassExams.end_session.is_(None))
+                    |
+                    (ClassExams.end_session >= current_session_id)
+                )
+            )
+            .first()
         )
 
         if not class_exam:
@@ -340,38 +301,118 @@ def get_marks():
             }), 404
 
         # ----------------------------------------------------
+        # Exam lock
+        # ----------------------------------------------------
+
+        if (
+            not class_exam.is_enabled
+            and not has_permission("override_marks_lock")
+        ):
+            return jsonify({
+                "success": False,
+                "error": (
+                    "This exam is locked. "
+                    "You do not have permission to fill marks."
+                )
+            }), 403
+
+        # ----------------------------------------------------
         # Students + marks
         # ----------------------------------------------------
 
-        marks_data = (
+        marks_query = (
             db.session.query(
-                StudentsDB.id.label("student_id"),
+                StudentSessions.id.label("student_session_id"),
                 StudentsDB.STUDENTS_NAME,
-                StudentsDB.GENDER, StudentSessions.ROLL,
+                StudentsDB.GENDER,
+                StudentSessions.ROLL,
                 ClassData.CLASS.label("class_name"),
                 StudentMarks.id.label("mark_id"),
                 StudentMarks.score,
             )
-            .join(StudentSessions, StudentSessions.student_id == StudentsDB.id)
-            .join(ClassData, StudentSessions.class_id == ClassData.id)
+            .join(
+                StudentSessions,
+                StudentSessions.student_id == StudentsDB.id
+            )
+            .join(
+                ClassData,
+                StudentSessions.class_id == ClassData.id
+            )
+
+            # IMPORTANT:
+            # LEFT JOIN because compulsory subjects do not
+            # need a StudentSubjects row.
+            .outerjoin(
+                StudentSubjects,
+                and_(
+                    StudentSubjects.student_session_id ==
+                    StudentSessions.id,
+
+                    StudentSubjects.class_subject_id ==
+                    class_subject.class_subject_id
+                )
+            )
+
             .outerjoin(
                 StudentMarks,
-                (StudentMarks.student_id == StudentsDB.id)
-                & (StudentMarks.exam_id == exam_id)
-                & (StudentMarks.subject_id == class_subject.cls_sub_id)
-                & (StudentMarks.session_id == current_session_id)
-                & (StudentMarks.school_id == school_id),
+                and_(
+                    StudentMarks.student_session_id ==
+                    StudentSessions.id,
+
+                    StudentMarks.exm_id ==
+                    class_exam.class_exam_id,
+
+                    StudentMarks.subject_id ==
+                    class_subject.class_subject_id
+                )
             )
             .filter(
                 StudentsDB.school_id == school_id,
+
                 StudentSessions.class_id == class_id,
+
                 StudentSessions.session_id == current_session_id,
             )
+        )
+
+        # ----------------------------------------------------
+        # Optional subject
+        # ----------------------------------------------------
+        #
+        # class_subject.is_optional is now a Python bool
+        # because class_subject came from .first().
+        #
+        # Therefore DO NOT do:
+        #
+        # class_subject.is_optional.is_(False)
+        #
+        # Instead, decide here in Python.
+        # ----------------------------------------------------
+
+        if class_subject.is_optional:
+
+            # Optional subject:
+            # only students who selected this subject
+            # should appear.
+
+            marks_query = marks_query.filter(
+                StudentSubjects.id.isnot(None)
+            )
+
+        # ----------------------------------------------------
+        # Get students
+        # ----------------------------------------------------
+
+        marks_data = (
+            marks_query
             .order_by(StudentSessions.ROLL.asc())
             .all()
         )
 
-        students = [ dict(row._mapping) for row in marks_data ]
+        students = [
+            dict(row._mapping)
+            for row in marks_data
+        ]
 
         # ----------------------------------------------------
         # Response
@@ -380,30 +421,32 @@ def get_marks():
         return jsonify({
             "success": True,
             "exam": {
-                "id": exam.id,
-                "name": exam.exam_name,
-                "weightage": exam.weightage,
-                "is_enabled": exam.is_enabled
+                "id": class_exam.class_exam_id,
+                "exam_id": class_exam.exam_db_id,
+                "name": class_exam.exam_name,
+                "weightage": class_exam.weightage,
+                "is_enabled": class_exam.is_enabled,
             },
-
             "subject": {
-                "id": class_subject.cls_sub_id,
+                "id": class_subject.class_subject_id,
+                "is_optional": class_subject.is_optional,
+                "subject_id": class_subject.subject_db_id,
                 "name": class_subject.subject,
-                "evaluation_type":
-                    class_subject.evaluation_type
+                "evaluation_type": class_subject.evaluation_type,
+                "max_marks": class_subject.max_marks,
             },
-
-            "students": students
+            "students": students,
         })
 
     except Exception as e:
         db.session.rollback()
+
         print(f"get_marks error: {e}")
+
         return jsonify({
             "success": False,
             "error": "Failed to fetch marks."
         }), 500
-
 
 # ============================================================
 # 4. UPDATE / INSERT MARKS
@@ -416,60 +459,58 @@ def update_marks_api():
     try:
         data = request.get_json() or {}
 
-        marks_id = data.get("marks_id")
+        marks_id = data.get("marks_id", data.get("mark_id"))
         score = data.get("score")
 
-        student_id = data.get("student_id")
-        subject_id = data.get("subject_id")
+        student_session_id = data.get("student_session_id")
+        class_subject_id = data.get("subject_id")
         exam_id = data.get("exam_id")
         school_id = session.get("school_id")
         current_session_id = session.get("session_id")
         user_id = session.get("user_id")
 
-        
-        if not all([student_id, subject_id, exam_id, current_session_id, school_id]):
+        if not all([class_subject_id, exam_id, student_session_id]):
             return jsonify({"message": "Missing required fields"}), 400
-
 
         # ----------------------------------------------------
         # Validate score
         # ----------------------------------------------------
-
         if score in [None, ""]:
             score = None
         else:
             try:
-                score = float(score)
-
-                if score.is_integer():
-                    score = int(score)
-
+                numeric_score = float(score)
+                if numeric_score.is_integer():
+                    score = int(numeric_score)
+                else:
+                    score = numeric_score
             except (ValueError, TypeError):
-                print("success")
+                score = str(score).strip() if str(score).strip() else None
 
         # ----------------------------------------------------
         # Verify student enrollment
         # ----------------------------------------------------
-
         student_session = (
             StudentSessions.query
             .filter(
-                StudentSessions.student_id == student_id,
-                StudentSessions.session_id == current_session_id
-            ).first()
+                StudentSessions.id == student_session_id,
+                StudentSessions.session_id == current_session_id,
+            )
+            .first()
         )
 
         if not student_session:
             return jsonify({
-                "success": False, "message": "Student session not found."
+                "success": False,
+                "message": "Student session not found."
             }), 404
+
 
         student_class_id = student_session.class_id
 
         # ----------------------------------------------------
         # Verify teacher access to student's class
         # ----------------------------------------------------
-
         class_allowed = (
             db.session.query(ClassData.id)
             .join(
@@ -483,20 +524,26 @@ def update_marks_api():
 
         if not class_allowed:
             return jsonify({
-                "success": False, "message": "You do not have access to this class."
+                "success": False,
+                "message": "You do not have access to this class."
             }), 403
 
         # ----------------------------------------------------
         # Verify ClassSubject
         # ----------------------------------------------------
-
         class_subject = (
             db.session.query(
-                ClassSubject.id, ClassSubject.subject_id
-            ).join(
+                ClassSubject.id,
+                ClassSubject.subject_id,
+                ClassSubject.is_optional,
+                Subjects.evaluation_type,
+                Subjects.max_marks,
+            )
+            .join(
                 Subjects, Subjects.id == ClassSubject.subject_id
-            ).filter(
-                ClassSubject.id == subject_id,
+            )
+            .filter(
+                ClassSubject.id == class_subject_id,
                 ClassSubject.class_id == student_class_id,
                 Subjects.school_id == school_id,
                 Subjects.is_active.is_(True),
@@ -508,90 +555,109 @@ def update_marks_api():
                     (ClassSubject.end_session.is_(None)) |
                     (ClassSubject.end_session >= current_session_id)
                 )
-            ).first()
+            )
+            .first()
         )
 
         if not class_subject:
             return jsonify({
-                "success": False, "message": "Subject not found."
+                "success": False,
+                "message": "Subject not found."
             }), 404
+
+        # ----------------------------------------------------
+        # Verify student is allowed to take this subject
+        # ----------------------------------------------------
+        if class_subject.is_optional:
+
+            selected = (
+                StudentSubjects.query
+                .filter(
+                    StudentSubjects.student_session_id == student_session_id,
+                    StudentSubjects.class_subject_id == class_subject.id,
+                )
+                .first()
+            )
+
+            if not selected:
+                return jsonify({
+                    "success": False,
+                    "message": "Student has not selected this optional subject."
+                }), 400
 
         # ----------------------------------------------------
         # Verify exam
         # ----------------------------------------------------
-
-        exam = Exams.query.filter(Exams.id == exam_id, Exams.school_id == school_id).first()
-        if not exam:
-            return jsonify({
-                "success": False, "message": "Exam not found."
-            }), 404
-
-        if (not exam.is_enabled and not has_permission("override_marks_lock")):
-            return jsonify({
-                "success": False,
-                "message": (
-                    "This exam is disabled. "
-                    "You do not have permission "
-                    "to fill marks."
-                )
-            }), 403
-
-
-        # ----------------------------------------------------
-        # Verify exam assigned to student's class
-        # ----------------------------------------------------
-
         class_exam = (
-            db.session.query(ClassExams)
+            db.session.query(
+                ClassExams.id.label("class_exam_id"),
+                Exams.id.label("exam_db_id"),
+                Exams.exam_name,
+                Exams.weightage,
+                Exams.is_enabled,
+            )
+            .join(
+                Exams,
+                Exams.id == ClassExams.exam_id
+            )
             .filter(
+                ClassExams.id == exam_id,
                 ClassExams.class_id == student_class_id,
-                ClassExams.exam_id  == exam_id
-            ).first()
+                Exams.school_id == school_id,
+                (
+                    (ClassExams.start_session.is_(None))
+                    | (ClassExams.start_session <= current_session_id)
+                ),
+                (
+                    (ClassExams.end_session.is_(None))
+                    | (ClassExams.end_session >= current_session_id)
+                )
+            )
+            .first()
         )
 
         if not class_exam:
             return jsonify({
                 "success": False,
-                "message": (
-                    "This exam is not assigned "
-                    "to student's class."
-                )
+                "message": "This exam is not assigned to student's class."
             }), 400
 
+        if not class_exam.is_enabled and not has_permission("override_marks_lock"):
+            return jsonify({
+                "success": False,
+                "message": (
+                    "This exam is disabled. "
+                    "You do not have permission to fill marks."
+                )
+            }), 403
 
         # ----------------------------------------------------
         # Score range
         # ----------------------------------------------------
-
-        if score is not None:
-            if (
-                exam.weightage is not None
-                and (score < 0 or score > float(exam.weightage))
+        if score is not None and isinstance(score, (int, float)):
+            if class_exam.weightage is not None and (
+                score < 0 or score > float(class_exam.weightage)
             ):
-
                 return jsonify({
                     "success": False,
                     "message": (
-                        f"Score must be between 0 "
-                        f"and {exam.weightage}"
+                        f"Score must be between 0 and {class_exam.weightage}"
                     )
                 }), 400
 
         # ====================================================
         # CASE 1: Update using marks_id
         # ====================================================
-
         if marks_id is not None:
             student_marks = (
                 StudentMarks.query
                 .filter(
                     StudentMarks.id == marks_id,
-                    StudentMarks.student_id == student_id,
-                    StudentMarks.subject_id == subject_id,
-                    StudentMarks.exam_id == exam_id,
-                    StudentMarks.session_id == current_session_id,
-                    StudentMarks.school_id == school_id
-                ).first()
+                    StudentMarks.student_session_id == student_session_id,
+                    StudentMarks.subject_id == class_subject_id,
+                    StudentMarks.exm_id == exam_id,
+                )
+                .first()
             )
 
             if not student_marks:
@@ -604,56 +670,55 @@ def update_marks_api():
             db.session.commit()
 
             return jsonify({
-                "success": True, "message": "Marks updated successfully.",
+                "success": True,
+                "message": "Marks updated successfully.",
                 "mark_id": student_marks.id,
-                "score": student_marks.score
+                "score": student_marks.score,
             }), 200
 
         # ====================================================
         # CASE 2: Find existing mark
         # ====================================================
-
         existing = (
             StudentMarks.query
             .filter(
-                StudentMarks.student_id == student_id,
-                StudentMarks.subject_id == subject_id,
-                StudentMarks.exam_id == exam_id,
-                StudentMarks.session_id == current_session_id,
-                StudentMarks.school_id == school_id
-            ).first()
+                StudentMarks.student_session_id == student_session_id,
+                StudentMarks.subject_id == class_subject_id,
+                StudentMarks.exm_id == exam_id,
+            )
+            .first()
         )
         if existing:
             existing.score = score
             db.session.commit()
             return jsonify({
-                "success": True, "message": "Marks updated successfully.",
-                "mark_id": existing.id, "score": existing.score
+                "success": True,
+                "message": "Marks updated successfully.",
+                "mark_id": existing.id,
+                "score": existing.score,
             }), 200
 
         # ====================================================
         # CASE 3: Create new mark
         # ====================================================
-
         new_mark = StudentMarks(
-            student_id=student_id,
-            subject_id=class_subject.id,
-            exam_id=exam_id,
+            student_session_id=student_session_id,
+            subject_id=class_subject_id,
+            exm_id=exam_id,
             score=score,
-            session_id=current_session_id,
-            school_id=school_id
         )
         db.session.add(new_mark)
         db.session.commit()
 
         return jsonify({
-            "success": True, "message": "Marks inserted successfully.",
-            "mark_id": new_mark.id, "score": new_mark.score
+            "success": True,
+            "message": "Marks inserted successfully.",
+            "mark_id": new_mark.id,
+            "score": new_mark.score,
         }), 201
 
     except IntegrityError:
         db.session.rollback()
-
         return jsonify({
             "success": False,
             "message": (
@@ -666,7 +731,8 @@ def update_marks_api():
         db.session.rollback()
         print(f"update_marks_api error: {e}")
         return jsonify({
-            "success": False, "message": "Internal server error."
+            "success": False,
+            "message": "Internal server error."
         }), 500
 
 
@@ -683,11 +749,9 @@ def get_all_exams():
     try:
         exams = (
             Exams.query
-            .filter(
-                Exams.school_id == school_id
-            ).order_by(
-                Exams.display_order.asc()
-            ).all()
+            .filter( Exams.school_id == school_id)
+            .order_by( Exams.display_order.asc())
+            .all()
         )
 
         return jsonify([

@@ -39,6 +39,8 @@ class StudentSessions(db.Model):
     fee_data = db.relationship("FeeData", back_populates="student_sessions")
     attendance = db.relationship("Attendance", back_populates="student_sessions")
     tc_records = db.relationship("TCRecords", back_populates="student_sessions")
+    marks = db.relationship("StudentMarks", back_populates="student_sessions")
+    student_subjects = db.relationship("StudentSubjects", back_populates="student_session")
 
     __table_args__ = (
         UniqueConstraint('session_id', 'tc_number', name='uix_tc_session'),

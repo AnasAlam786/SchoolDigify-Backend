@@ -113,21 +113,21 @@
                 {% endif %}
 
                 <!-- QnA, FillUp, TF Type Questions -->
-                {% if question.type in ["QnA", "fillUp", "TF"] and question.subQuestion|length != 0 %}
+                {% if question["type"] in ["QnA", "fillUp", "TF"] and question["subQuestion"] | length != 0 %}
                 <div style="display: flex; justify-content: space-between; margin-bottom: 0; width: 100%;">
                     <p style="margin: 0; line-height: 1.4; padding-left: 35px; text-indent: -35px;">
-                        <strong>Q{{ loop.index }}. {{ question.qText }}</strong>
+                        <strong>Q{{ loop.index }}. {{ question["qText"] }}</strong>
                     </p>
 
-                    <span style="font-weight: bold;">{{ question.marks }}</span>
+                    <span style="font-weight: bold;">{{ question["marks"] }}</span>
                 </div>
 
                 <div style="margin-bottom: 5px; padding-left: 15px;">
 
-                    {% for subQuestion in question.subQuestion %}
+                    {% for subQuestion in question["subQuestion"] %}
                     {% if subQuestion %}
                     <p style="margin: 0 0 3px 0; line-height: 1.4; padding-left: 20px; text-indent: -20px;">
-                        {{ "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[loop.index-1] }}: {{ subQuestion.text }}
+                        {{ "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[loop.index-1] }}: {{ subQuestion }}
                     </p>
                     {% endif %}
                     {% endfor %}
@@ -138,8 +138,8 @@
                 <!-- SingleWord Type Questions -->
                 {% if question.type == "singleWord" and question.subQuestion|length != 0 %}
                 <div style="display: flex; justify-content: space-between; margin-bottom: 0; width: 100%;">
-                    <p style="margin: 0; line-height: 1.4; padding-left: 35px; text-indent: -35px;"><strong>Q{{
-                            loop.index }}. {{ question.qText }}</strong></p>
+                    <p style="margin: 0; line-height: 1.4; padding-left: 35px; text-indent: -35px;"><strong>
+                        Q{{ loop.index }}. {{ question.qText }}</strong></p>
                     <span style="font-weight: bold;">{{ question.marks }}</span>
                 </div>
 
@@ -148,8 +148,7 @@
                     {% for subQuestion in question.subQuestion %}
                     {% if subQuestion %}
                     <p style="margin: 0 0 3px 0; margin-right: 20px;">{{ "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[loop.index-1] }}:
-                        {{
-                        subQuestion }}</p>
+                        {{ subQuestion }}</p>
                     {% endif %}
                     {% endfor %}
                 </div>
@@ -158,8 +157,8 @@
                 <!-- MCQ Type Questions -->
                 {% if question.type == "mcq" and question.subQuestion|length != 0 %}
                 <div style="display: flex; justify-content: space-between; margin-bottom: 0; width: 100%;">
-                    <p style="margin: 0; line-height: 1.4; padding-left: 35px; text-indent: -35px;"><strong>Q{{
-                            loop.index }}. {{ question.qText }}</strong></p>
+                    <p style="margin: 0; line-height: 1.4; padding-left: 35px; text-indent: -35px;"><strong>
+                        Q{{ loop.index }}. {{ question.qText }}</strong></p>
                     <span style="font-weight: bold;">{{ question.marks }}</span>
                 </div>
 

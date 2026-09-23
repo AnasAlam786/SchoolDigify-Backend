@@ -6,9 +6,11 @@ from .Sessions import  Sessions
 from .SchoolSession import SchoolSession
 from .ClassData import ClassData
 from .ClassAccess import ClassAccess
+from .ClassSubject import ClassSubject
 
 from .StudentsDB import StudentsDB
 from .StudentSessions import StudentSessions
+from .StudentSubjects import StudentSubjects
 from .RTEInfo import RTEInfo
 from .TeachersLogin import TeachersLogin
 
@@ -19,6 +21,7 @@ from .StudentMarks import StudentMarks
 from .Subjects import Subjects
 from .Exams import Exams
 from .ClassExams import ClassExams
+from .Papers import Papers
 
 from .Roles import Roles
 from .Permissions import Permissions
@@ -41,9 +44,11 @@ __all__ = [
     "TCRecords",
     "ClassData",
     "ClassAccess",
-    
+    "ClassSubject",
+
     "StudentsDB",
     "StudentSessions",
+    "StudentSubjects",
     "RTEInfo",
     "TeachersLogin",
 
@@ -53,9 +58,9 @@ __all__ = [
     "StudentMarks",
     "Exams",
     "ClassExams",
+    "Papers",
     "Subjects",
 
-    
     "Roles",
     "Permissions",
     "RolePermissions",

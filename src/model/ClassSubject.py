@@ -25,6 +25,8 @@ class ClassSubject(db.Model):
         ), nullable=True
     )
 
+    is_optional = Column(db.Boolean, nullable=False, default=False)
+
     start_session = Column(
         BigInteger,ForeignKey(
             'Sessions.id',onupdate="CASCADE",ondelete="RESTRICT"
@@ -43,6 +45,7 @@ class ClassSubject(db.Model):
 
     class_data = db.relationship("ClassData",back_populates="class_subjects")
     subject = db.relationship("Subjects",back_populates="class_subjects")
+    student_subjects = db.relationship("StudentSubjects",back_populates="class_subject")
     start_session_data = db.relationship("Sessions",foreign_keys=[start_session])
     end_session_data = db.relationship("Sessions",foreign_keys=[end_session])
 

@@ -1,67 +1,144 @@
 from collections import OrderedDict, defaultdict
 import re
+
 from .calc_grades import get_grade
 
 
-# -------------------------------
-# Utility: Safe subject summation
-# -------------------------------
+def to_float(value, default=0.0):
+    if value in (None, "", "-"):
+        return default
 
-def sum_subject_marks(records):
-    totals = OrderedDict()
-
-    for record in records:
-        subj_dict = record.get("subject_marks_dict")
-        if not isinstance(subj_dict, dict):
-            continue
-
-        for subj, mark in subj_dict.items():
-            try:
-                mark = int(mark)
-                totals[subj] = totals.get(subj, 0) + mark
-            except (ValueError, TypeError):
-                continue
-
-    return totals
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return default
 
 
-# -------------------------------
-# Utility: Extract numeric term
-# -------------------------------
+def to_percentage(value, default=0.0):
+    if value in (None, "", "-", "—"):
+        return default
+
+    try:
+        return round(float(value), 2)
+    except (TypeError, ValueError):
+        return default
+
 
 def extract_term_number(term):
     match = re.search(r"(\d+)", str(term))
     return int(match.group(1)) if match else 0
 
 
+def subject_order_from_records(records):
+    order = []
+    for record in records:
+        subject_marks = record.get("subject_marks_dict")
+        if not isinstance(subject_marks, dict):
+            continue
 
-def process_marks(
-    student_marks_data,
-    add_grand_total_flag=True,
-    add_grades_flag=True,
-):
+        for subject in subject_marks.keys():
+            if subject not in order:
+                order.append(subject)
 
+    return order
+
+
+def sum_subject_marks(records):
+    totals = OrderedDict()
+
+    for record in records:
+        subject_marks = record.get("subject_marks_dict")
+        if not isinstance(subject_marks, dict):
+            continue
+
+        for subject, value in subject_marks.items():
+            numeric_value = to_float(value, None)
+            if numeric_value is None:
+                continue
+
+            totals.setdefault(subject, 0.0)
+            totals[subject] += numeric_value
+
+    return totals
+
+
+def ordered_subjects(subjects, preferred_order=None):
+    ordered = OrderedDict()
+
+    if preferred_order:
+        for subject in preferred_order:
+            if subject in subjects:
+                ordered[subject] = subjects[subject]
+
+    for subject, value in subjects.items():
+        if subject not in ordered:
+            ordered[subject] = value
+
+    return ordered
+
+
+def weighted_average_percentage(records):
+    """Use the exam percentage already stored in the raw data as the source of truth."""
+    weighted_total = 0.0
+    weight_total = 0.0
+
+    for record in records:
+        percentage = to_float(record.get("percentage"), None)
+        if percentage is None:
+            continue
+
+        weightage = to_float(record.get("weightage"), 1.0)
+        if weightage > 0:
+            weighted_total += percentage * weightage
+            weight_total += weightage
+        else:
+            weighted_total += percentage
+            weight_total += 1.0
+
+    if weight_total == 0:
+        return 0.0
+
+    return round(weighted_total / weight_total, 2)
+
+
+def safe_exam_value(value):
+    if value in (None, "", "-", "—"):
+        return ""
+
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return value
+
+
+def build_exam_payload(record, preferred_subject_order):
+    percentage_raw = record.get("percentage")
+    weightage_raw = record.get("weightage")
+
+    return {
+        "subject_marks_dict": ordered_subjects(
+            record.get("subject_marks_dict", {}),
+            preferred_subject_order,
+        ),
+        "exam_total": safe_exam_value(record.get("exam_total")),
+        "percentage": to_percentage(percentage_raw, 0.0) if percentage_raw not in (None, "", "-", "—") else "",
+        "weightage": weightage_raw if weightage_raw not in (None, "", "-") else "",
+        "exam_term": record.get("exam_term"),
+        "exam_display_order": record.get("exam_display_order", 0),
+    }
+
+
+def process_marks(student_marks_data, add_grand_total_flag=True, add_grades_flag=True):
     if not student_marks_data:
         return []
 
-    # -----------------------------------
-    # 1. Group records by student_id
-    # -----------------------------------
-
-    students = defaultdict(list)
-
+    records_by_student = defaultdict(list)
     for record in student_marks_data:
-        students[record["student_id"]].append(dict(record))  # shallow copy
+        records_by_student[record["student_id"]].append(dict(record))
 
     final_output = []
 
-    # -----------------------------------
-    # 2. Process each student separately
-    # -----------------------------------
-
-    for student_id, records in students.items():
-
-        # Sort by term number + exam_display_order
+    for student_id, records in records_by_student.items():
         records.sort(
             key=lambda r: (
                 extract_term_number(r.get("exam_term")),
@@ -69,169 +146,85 @@ def process_marks(
             )
         )
 
+        preferred_subject_order = subject_order_from_records(records)
         original_exam_names = {r["exam_name"] for r in records}
         processed = list(records)
 
-        # ===================================
-        # 3. Add Term Totals
-        # ===================================
-
         term_groups = defaultdict(list)
-        for r in records:
-            term_groups[r.get("exam_term")].append(r)
+        for record in records:
+            term_groups[record.get("exam_term")].append(record)
 
         for term in sorted(term_groups, key=extract_term_number):
-
             term_records = term_groups[term]
-
-            total_subject_marks = sum_subject_marks(term_records)
-            weightage_sum = sum(
-                float(r.get("weightage", 0) or 0)
-                for r in term_records
+            total_subject_marks = ordered_subjects(
+                sum_subject_marks(term_records),
+                preferred_subject_order,
             )
-
-            subject_count = len(total_subject_marks)
-            exam_total = sum(total_subject_marks.values())
-
-            max_marks = weightage_sum * subject_count
-            percentage = (
-                (exam_total / max_marks) * 100
-                if max_marks > 0 else 0
-            )
+            exam_total = round(sum(total_subject_marks.values()), 1)
+            weightage_sum = sum(to_float(r.get("weightage"), 0.0) for r in term_records)
+            percentage = weighted_average_percentage(term_records)
 
             base = dict(term_records[-1])
-
             base.update({
                 "exam_name": f"{term} Total",
-                "exam_total": round(exam_total, 1),
+                "exam_total": exam_total,
                 "weightage": weightage_sum,
-                "percentage": round(percentage, 1),
+                "percentage": percentage,
                 "subject_marks_dict": total_subject_marks,
             })
-
             processed.append(base)
 
-        # ===================================
-        # 4. Add Grand Total (BEFORE Grades)
-        # ===================================
-
         if add_grand_total_flag:
-
-            total_records = [
-                r for r in processed
-                if r["exam_name"] in original_exam_names
-            ]
-
+            total_records = [r for r in processed if r["exam_name"] in original_exam_names]
             if total_records:
-
-                total_subject_marks = sum_subject_marks(total_records)
-                weightage_sum = sum(
-                    float(r.get("weightage", 0) or 0)
-                    for r in total_records
+                total_subject_marks = ordered_subjects(
+                    sum_subject_marks(total_records),
+                    preferred_subject_order,
                 )
-
-                subject_count = len(total_subject_marks)
-                exam_total = sum(total_subject_marks.values())
-
-                max_marks = weightage_sum * subject_count
-                percentage = (
-                    (exam_total / max_marks) * 100
-                    if max_marks > 0 else 0
-                )
+                exam_total = round(sum(total_subject_marks.values()), 1)
+                weightage_sum = sum(to_float(r.get("weightage"), 0.0) for r in total_records)
+                percentage = weighted_average_percentage(total_records)
 
                 base = dict(total_records[-1])
-
                 base.update({
                     "exam_name": "G. Total",
-                    "exam_total": round(exam_total, 1),
+                    "exam_total": exam_total,
                     "weightage": weightage_sum,
-                    "percentage": round(percentage, 1),
+                    "percentage": percentage,
                     "subject_marks_dict": total_subject_marks,
                 })
-
                 processed.append(base)
 
-        # ===================================
-        # 5. Add Grades (ALWAYS LAST)
-        # ===================================
-
         if add_grades_flag:
-
-            grade_records = [
-                r for r in processed
-                if r["exam_name"] in original_exam_names
-            ]
-
+            grade_records = [r for r in processed if r["exam_name"] in original_exam_names]
             if grade_records:
-
-                subject_totals = sum_subject_marks(grade_records)
-
-                weightage_sum = sum(
-                    float(r.get("weightage", 0) or 0)
-                    for r in grade_records
-                )
-
-                subject_grades = OrderedDict()
-
-                for subj, total in subject_totals.items():
-                    # print(subj, total, weightage_sum)
-
-                    percentage = (
-                        (total / weightage_sum) * 100
-                        if weightage_sum > 0 else 0
-                    )
-
-                    grade, _ = get_grade(percentage)
-                    subject_grades[subj] = grade
-
-                subject_count = len(subject_grades)
-                max_total = weightage_sum * subject_count
-
-                total_percentage = (
-                    (sum(subject_totals.values()) / max_total) * 100
-                    if max_total > 0 else 0
-                )
-
+                total_percentage = weighted_average_percentage(grade_records)
                 grade, _ = get_grade(total_percentage)
 
-                base = dict(grade_records[-1])
+                subject_totals = ordered_subjects(
+                    sum_subject_marks(grade_records),
+                    preferred_subject_order,
+                )
 
+                base = dict(grade_records[-1])
                 base.update({
                     "exam_name": "Grades",
                     "exam_total": grade,
                     "weightage": "",
                     "percentage": "-",
-                    "subject_marks_dict": subject_grades,
+                    "subject_marks_dict": OrderedDict((subject, grade) for subject in subject_totals),
                 })
-
-                # print("Adding Grades Record:", base)
-
                 processed.append(base)
 
-        
-
-        # ===================================
-        # 6. Final Ordering Logic
-        # ===================================
-
-        def exam_priority(r):
-            """
-            Ensures order:
-            1. Regular Exams
-            2. Term Totals
-            3. Grand Total
-            4. Grades (always last)
-            """
-            name = r["exam_name"]
-
+        def exam_priority(record):
+            name = record["exam_name"]
             if name == "Grades":
                 return 3
-            elif name == "G. Total":
+            if name == "G. Total":
                 return 2
-            elif name.endswith("Total"):
+            if name.endswith("Total"):
                 return 1
-            else:
-                return 0
+            return 0
 
         processed.sort(
             key=lambda r: (
@@ -241,60 +234,20 @@ def process_marks(
             )
         )
 
-        # Fresh display order
-        for idx, r in enumerate(processed, start=1):
-            r["exam_display_order"] = idx
-
-        # ===================================
-        # 7. Build Final Output Structure
-        # ===================================
+        for idx, record in enumerate(processed, start=1):
+            record["exam_display_order"] = idx
 
         ordered_exams = OrderedDict()
+        ordered_exam_names = []
 
-        for r in processed:
-            # Normalize the values to prevent crashes when None or invalid types are present.
-            percentage_raw = r.get("percentage")
-            if percentage_raw is None:
-                percentage_value = ""
-            else:
-                try:
-                    percentage_value = round(float(percentage_raw), 2)
-                except (TypeError, ValueError):
-                    percentage_value = ""
-
-            exam_total_raw = r.get("exam_total")
-            if exam_total_raw is None:
-                exam_total_value = ""
-            elif isinstance(exam_total_raw, str) and exam_total_raw.strip() != "":
-                exam_total_value = exam_total_raw
-            else:
-                try:
-                    exam_total_value = float(exam_total_raw)
-                except (TypeError, ValueError):
-                    exam_total_value = ""
-
-            weightage_raw = r.get("weightage")
-            if weightage_raw is None:
-                weightage_value = ""
-            elif isinstance(weightage_raw, str) and weightage_raw.strip() != "":
-                weightage_value = weightage_raw
-            else:
-                try:
-                    weightage_value = int(weightage_raw)
-                except (TypeError, ValueError):
-                    weightage_value = ""
-
-            ordered_exams[r["exam_name"]] = {
-                "subject_marks_dict": r.get("subject_marks_dict", {}),
-                "exam_total": exam_total_value,
-                "percentage": percentage_value,
-                "weightage": weightage_value,
-                "exam_term": r.get("exam_term"),
-            }
+        for record in processed:
+            exam_name = record["exam_name"]
+            ordered_exams[exam_name] = build_exam_payload(record, preferred_subject_order)
+            ordered_exam_names.append(exam_name)
 
         base_info = {
-            k: v for k, v in processed[0].items()
-            if k not in {
+            key: value for key, value in processed[0].items()
+            if key not in {
                 "exam_name",
                 "subject_marks_dict",
                 "exam_total",
@@ -304,16 +257,11 @@ def process_marks(
                 "exam_term",
             }
         }
-
         base_info["marks"] = ordered_exams
+        base_info["exam_order"] = ordered_exam_names
+        base_info["subject_order"] = preferred_subject_order
         final_output.append(base_info)
 
-    # ===================================
-    # 8. Sort Students by CLASS + ROLL
-    # ===================================
-
-    final_output.sort(
-        key=lambda r: (r.get("CLASS"), r.get("ROLL"))
-    )
+    final_output.sort(key=lambda r: (r.get("CLASS"), r.get("ROLL")))
 
     return final_output
