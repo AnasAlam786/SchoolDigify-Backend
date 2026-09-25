@@ -25,6 +25,8 @@ from .fees.get_transactions import get_transactions_api_bp
 from .fees.setup_fee_session_data.get_fee_session_setup_data import get_fee_session_setup_data_api_bp
 from .fees.setup_fee_session_data.save_fee_session_setup import save_fee_session_setup_api_bp
 
+from .fees.dashboard.dashboard import fees_dashboard_api_bp
+
 
 from .marks.fill_marks.fill_marks import fill_marks_bp
 from .marks.show_marks.show_marks import show_marks_bp
@@ -113,6 +115,7 @@ def register_blueprints(app):
     app.register_blueprint(transaction_action_api_bp)
     app.register_blueprint(get_fee_session_setup_data_api_bp)
     app.register_blueprint(save_fee_session_setup_api_bp)
+    app.register_blueprint(fees_dashboard_api_bp)
     
     
 

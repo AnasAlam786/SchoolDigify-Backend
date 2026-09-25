@@ -34,8 +34,9 @@ def question_paper_PDF():
         school = "School Name"
 
     # Render the paper template
-    html = render_template('paper_elements.html', questions=questions, school=school, 
-                            event=event, subject=subject, std=std, MM=MM, hrs=hrs, fontSize=font_size)
+    html = render_template(
+        'paper_elements.html', questions=questions, school=school, 
+        event=event, subject=subject, std=std, MM=MM, hrs=hrs, fontSize=font_size)
     return jsonify({"html": str(html)})
 
 
@@ -61,19 +62,15 @@ def question_paper_PDF_by_id(paper_id):
     try:
         school = session.get("school_name", "School Name")
         questions = paper.paper_data.get('questions', [])
-        
+                
         # read font size from query string if provided
         font_size = request.args.get('fontSize')
         
-        html = render_template('paper_elements.html', 
-                             questions=questions, 
-                             school=school,
-                             event=paper.event,
-                             subject=paper.subject,
-                             std=paper.class_name,
-                             MM=paper.marks,
-                             hrs=paper.duration,
-                             fontSize=font_size)
+        html = render_template(
+            'paper_elements.html', questions=questions, school=school,
+            event=paper.event, subject=paper.subject, std=paper.class_name,
+            MM=paper.marks, hrs=paper.duration, fontSize=font_size
+        )
                 
         return jsonify({"html": str(html)})
     
