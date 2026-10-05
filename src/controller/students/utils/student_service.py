@@ -1,5 +1,6 @@
 # src/controller/students/utils/student_service.py
 
+import os
 import re
 from typing import Any, Dict, List, Optional, Tuple
 from datetime import datetime, date
@@ -263,7 +264,7 @@ class StudentService:
                 setattr(rte_row, k, v)
 
             # Image handling
-            deleted_folder = "1e8iHskcj2Vtv_Mg_Mtp4BzdHocuhLd_f"
+            deleted_folder = os.getenv("DELETED_IMAGE_FOLDER_ID")
             school = Schools.query.filter_by(id=school_id).first()
             if not school:
                 return "School not found."

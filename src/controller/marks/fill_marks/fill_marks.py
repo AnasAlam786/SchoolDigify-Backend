@@ -21,8 +21,7 @@ from src.controller.permissions.has_permission import has_permission
 
 
 fill_marks_bp = Blueprint(
-    "fill_marks_bp",
-    __name__
+    "fill_marks_bp", __name__
 )
 
 # ============================================================

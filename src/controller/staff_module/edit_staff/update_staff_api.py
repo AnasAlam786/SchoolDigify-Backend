@@ -147,8 +147,7 @@ def resolve_role_id(role_id_raw, role_name_raw):
 # =========================================================
 
 @update_staff_api_bp.route(
-    "/api/update_staff_api",
-    methods=["POST"]
+    "/api/update_staff_api", methods=["POST"]
 )
 @login_required
 @permission_required("update_staff")

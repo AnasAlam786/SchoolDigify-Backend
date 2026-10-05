@@ -54,7 +54,7 @@ def show_marks_api():
         return jsonify({"message": "You are not authorized to access this class."}), 403
     
     extra_fields = {
-        "StudentsDB": ["STUDENTS_NAME", "DOB", "FATHERS_NAME", "FATHERS_NAME"],
+        "StudentsDB": ["STUDENTS_NAME", "DOB", "FATHERS_NAME", "FATHERS_NAME", "IMAGE"],
         "ClassData": ["CLASS"],
         "StudentSessions": ["ROLL", "class_id"]
     }

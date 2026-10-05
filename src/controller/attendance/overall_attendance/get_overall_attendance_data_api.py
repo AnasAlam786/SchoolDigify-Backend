@@ -14,7 +14,7 @@ get_overall_attendance_data_api_bp = Blueprint('get_overall_attendance_data_api_
 
 @get_overall_attendance_data_api_bp.route('/api/get_overall_attendance_data', methods=["GET"])
 @login_required
-@permission_required('attendance')
+@permission_required('overall_attendance')
 def get_overall_attendance_data_api():
     class_id = request.args.get("classID")
 

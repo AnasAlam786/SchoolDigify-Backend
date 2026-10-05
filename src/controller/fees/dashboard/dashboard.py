@@ -295,4 +295,3 @@ def fees_dashboard():
         db.session.rollback()
         print("Fee dashboard error:", repr(e))
         return jsonify({"error": "Unable to load fee dashboard."}), 500
-

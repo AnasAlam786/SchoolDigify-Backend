@@ -76,7 +76,8 @@ def get_students_by_class(class_id):
         StudentSessions.class_id,
         ClassData.CLASS,
         ClassData.Section,
-        TeachersLogin.Sign.label('teachers_sign')
+        TeachersLogin.Sign.label('teachers_sign'),
+        TeachersLogin.Name.label('teachers_name')
     ).join(
         StudentSessions, StudentSessions.student_id == StudentsDB.id
     ).join(
@@ -102,10 +103,13 @@ def get_students_by_class(class_id):
         Schools.id == school_id
     ).first()
 
-    principal_sign = db.session.query(TeachersLogin.Sign).filter(
+    principal_sign, principal_name = db.session.query(
+        TeachersLogin.Sign,
+        TeachersLogin.Name
+    ).filter(
         TeachersLogin.school_id == school_id,
         TeachersLogin.role_id == 2
-    ).scalar()
+    ).first()
 
     current_session = int(current_session)
     session_year = f"{current_session}-{str(current_session + 1)[-2:]}"
@@ -124,6 +128,7 @@ def get_students_by_class(class_id):
             'class': student.CLASS,
             'section': student.Section,
             'teacher_sign': student.teachers_sign,
+            'teacher_name': student.teachers_name,
             'class_roll': f"{student.CLASS} - {student.ROLL}",
             'session_year': session_year
         })
@@ -136,7 +141,8 @@ def get_students_by_class(class_id):
             'phone': school.Phone if school else '',
             'logo': school.Logo if school else '',
             'udise': school.UDISE if school else '',
-            'principal_sign': principal_sign if principal_sign else ''
+            'principal_sign': principal_sign if principal_sign else '',
+            'principal_name': principal_name if principal_name else '',
         },
         
     })

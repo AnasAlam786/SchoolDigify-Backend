@@ -1,0 +1,1101 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Premium School ID Cards — 8 Layouts</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box
+        }
+
+        html,
+        body {
+            min-height: 100%
+        }
+
+        body {
+            font-family: Inter, system-ui, sans-serif;
+            background: #e9edf1;
+            padding: 28px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 24px;
+            justify-content: center;
+            align-items: flex-start;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact
+        }
+
+        .id-card {
+            width: 54mm;
+            height: 85.6mm;
+            position: relative;
+            overflow: hidden;
+            background: #fff;
+            color: #202830;
+            font-family: Inter, system-ui, sans-serif;
+            flex: 0 0 auto;
+            isolation: isolate;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact
+        }
+
+        .id-card img {
+            display: block
+        }
+
+        .clamp2 {
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 2;
+            overflow: hidden
+        }
+
+        .clamp3 {
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 3;
+            overflow: hidden
+        }
+
+        .logo {
+            overflow: hidden;
+            background: #fff
+        }
+
+        .logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover
+        }
+
+        .photo {
+            position: absolute;
+            overflow: hidden;
+            background: #e9eef2
+        }
+
+        .photo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: top center
+        }
+
+        .school {
+            font-weight: 900;
+            line-height: 1.06;
+            letter-spacing: .05px
+        }
+
+        .udise,
+        .session {
+            font-size: 3.9pt;
+            line-height: 1;
+            font-weight: 800;
+            letter-spacing: .35px;
+            white-space: nowrap;
+            text-transform: uppercase
+        }
+
+        .name {
+            font-size: 8.9pt;
+            line-height: 1.02;
+            font-weight: 900;
+            letter-spacing: -.05px
+        }
+
+        .father {
+            font-size: 5pt;
+            line-height: 1.05;
+            font-weight: 650
+        }
+
+        .rows {
+            position: absolute
+        }
+
+        .row {
+            display: flex;
+            align-items: baseline;
+            min-height: 4.15mm
+        }
+
+        .row .k {
+            width: 16mm;
+            flex: 0 0 16mm;
+            font-size: 4.05pt;
+            line-height: 1.05;
+            font-weight: 800;
+            letter-spacing: .3px;
+            text-transform: uppercase;
+            white-space: nowrap
+        }
+
+        .row .colon {
+            width: 1.4mm;
+            flex: 0 0 1.4mm;
+            font-size: 4.8pt;
+            font-weight: 900;
+            text-align: center
+        }
+
+        .row .v {
+            min-width: 0;
+            flex: 1;
+            font-size: 5.55pt;
+            line-height: 1.04;
+            font-weight: 750;
+            overflow-wrap: anywhere
+        }
+
+        .row .v.sm {
+            font-size: 4.75pt;
+            font-weight: 700
+        }
+
+        .signs {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 46mm;
+            display: flex;
+            justify-content: space-between;
+            z-index: 15
+        }
+
+        .sign {
+            width: 21mm;
+            text-align: center
+        }
+
+        .sign .imgbox {
+            height: 5mm;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center
+        }
+
+        .sign img {
+            max-height: 5mm;
+            max-width: 20mm;
+            width: auto;
+            object-fit: contain
+        }
+
+        .sign span {
+            display: block;
+            margin-top: .35mm;
+            padding-top: .5mm;
+            border-top: .25mm solid;
+            font-size: 3.85pt;
+            font-weight: 800;
+            letter-spacing: .38px;
+            text-transform: uppercase
+        }
+
+        .footer {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: 7mm;
+            z-index: 20;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 1mm 3mm
+        }
+
+        .footer .addr {
+            width: 100%;
+            font-size: 3.65pt;
+            line-height: 1.04;
+            font-weight: 650;
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 2;
+            overflow: hidden;
+            overflow-wrap: anywhere
+        }
+
+        .footer .phone {
+            margin-top: .45mm;
+            font-size: 4.55pt;
+            line-height: 1;
+            font-weight: 850;
+            white-space: nowrap
+        }
+
+        /* =============== 01 QUIET NAVY =============== */
+        .d1 {
+            --a: #3b7896;
+            --deep: #18384c;
+            --pale: #edf6f8;
+            --ink: #202a31;
+            --muted: #6c7880;
+            --line: #dbe6eb;
+            background: #fff
+        }
+
+        .d1 .band {
+            position: relative;
+            inset: 0 0 auto;
+            height: 16mm;
+            background: var(--pale);
+            border-bottom: .25mm solid #d7e7ed
+        }
+
+        .d1 .head {
+            position: absolute;
+            top: 4.2mm;
+            left: 4.5mm;
+            right: 4.5mm;
+            height: 10.5mm;
+            display: flex;
+            gap: 2.2mm;
+            align-items: center;
+            z-index: 5
+        }
+
+        .d1 .logo {
+            width: 8mm;
+            height: 8mm;
+            border-radius: 50%;
+            border: .4mm solid #fff;
+            box-shadow: 0 0 0 .25mm #bdd7e1
+        }
+
+        .d1 .school {
+            font-size: 8pt;
+            color: var(--deep);
+            max-height: 7.3mm;
+            white-space: normal;
+            word-break: break-word;
+            overflow-wrap: break-word;
+        }
+
+        .d1 .udise {
+            margin-top: .65mm;
+            color: var(--a)
+        }
+
+        .d1 .session {
+            position: absolute;
+            top: 4.5mm;
+            right: 4.5mm;
+            padding: 1.1mm 1.5mm;
+            border: .25mm solid #b9d6e1;
+            border-radius: 5mm;
+            color: var(--deep);
+            background: #fff;
+            z-index: 10;
+        }
+
+        .d1 .photo {
+            top: 18mm;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 23mm;
+            height: 27mm;
+            border: .65mm solid #fff;
+            border-radius: 3.5mm;
+            box-shadow: 0 1.2mm 3.5mm rgba(39, 74, 96, .13)
+        }
+
+        .d1 .identity {
+            position: absolute;
+            top: 46.7mm;
+            left: 5mm;
+            width: 44mm;
+            text-align: center;
+            z-index: 5
+        }
+
+        .d1 .name {
+            color: var(--deep);
+            max-height: 7.3mm
+        }
+
+        .d1 .father {
+            margin-top: 1mm;
+            color: var(--muted)
+        }
+
+        .d1 .rows {
+            top: 53.4mm;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 46mm;
+            z-index: 5
+        }
+
+        .d1 .row {
+            padding: .72mm 0;
+            border-bottom: .2mm solid var(--line)
+        }
+
+        .d1 .row:last-child {
+            border-bottom: 0
+        }
+
+        .d1 .k {
+            color: #78919e
+        }
+
+        .d1 .v {
+            color: var(--ink)
+        }
+
+        .d1 .signs {
+            top: 69.8mm
+        }
+
+        .d1 .sign span {
+            border-color: #91bac9;
+            color: var(--deep)
+        }
+
+        .d1 .footer {
+            background: var(--deep);
+            color: #fff
+        }
+
+        .d1 .footer .addr {
+            color: #d0e5ec
+        }
+
+        /* =============== 03 SOFT MONOLITH =============== */
+        .d3 {
+            --a: #5b8a9e;
+            --deep: #213f50;
+            --pale: #edf5f7;
+            --ink: #253039;
+            --muted: #71808a;
+            --line: #dde7eb;
+            background: #fff
+        }
+
+        .d3 .upper {
+            position: absolute;
+            inset: 0 0 auto;
+            height: 31mm;
+            background: var(--pale)
+        }
+
+        .d3 .header {
+            position: absolute;
+            top: 4.5mm;
+            left: 5mm;
+            right: 5mm;
+            height: 8.5mm;
+            display: flex;
+            gap: 2mm;
+            align-items: center;
+            z-index: 5
+        }
+
+        .d3 .logo {
+            width: 8mm;
+            height: 8mm;
+            border-radius: 50%;
+            border: .35mm solid #fff;
+            box-shadow: 0 0 0 .25mm #c9dde5
+        }
+
+
+        .d3 .school {
+            font-size: 5.95pt;
+            color: var(--deep);
+            max-height: 6.9mm;
+            white-space: normal;
+            word-break: break-word;
+            overflow-wrap: break-word;
+        }
+
+        .d3 .udise {
+            margin-top: .55mm;
+            color: var(--a)
+        }
+
+        .d3 .session {
+            color: var(--deep)
+        }
+
+        .d3 .photo {
+            top: 15.6mm;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 24mm;
+            height: 28mm;
+            border: 1.2mm solid #fff;
+            border-radius: 4mm;
+            box-shadow: 0 1.5mm 4mm rgba(37, 66, 82, .14)
+        }
+
+        .d3 .lower {
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 45mm;
+            bottom: 0;
+            background: #f1f7f9;
+            border-top: .25mm solid #d9e7ec
+        }
+
+        .d3 .identity {
+            position: absolute;
+            top: 47.3mm;
+            left: 5mm;
+            width: 44mm;
+            text-align: center;
+            color: var(--deep);
+            z-index: 5
+        }
+
+        .d3 .name {
+            max-height: 7.4mm
+        }
+
+        .d3 .father {
+            margin-top: 1mm;
+            color: var(--muted)
+        }
+
+        .d3 .rows {
+            top: 56mm;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 46mm;
+            z-index: 5
+        }
+
+        .d3 .row {
+            padding: .72mm 0;
+            border-bottom: .2mm solid #d7e4e9
+        }
+
+        .d3 .row:last-child {
+            border-bottom: 0
+        }
+
+        .d3 .k {
+            color: #78929e
+        }
+
+        .d3 .v {
+            color: var(--ink)
+        }
+
+        .d3 .signs {
+            top: 70.1mm
+        }
+
+        .d3 .sign span {
+            border-color: #7ca5b7;
+            color: #dcebf0
+        }
+
+        .d3 .footer {
+            height: 7.2mm;
+            background: #e5f0f4;
+            color: var(--deep)
+        }
+
+        .d3 .footer .addr {
+            color: #67808d
+        }
+
+
+
+        /* =============== 07 KIDS SKY =============== */
+        .d7 {
+            --a: #4d98ca;
+            --deep: #284d65;
+            --pale: #eef8fd;
+            --ink: #294150;
+            --muted: #708998;
+            --line: #dcecf5;
+            background: #fcfeff
+        }
+
+        .d7 .sun {
+            position: absolute;
+            top: -9mm;
+            right: -8mm;
+            width: 21mm;
+            height: 21mm;
+            border-radius: 50%;
+            background: #fff3c9
+        }
+
+        .d7 .cloud1 {
+            position: absolute;
+            left: -8mm;
+            top: 18mm;
+            width: 26mm;
+            height: 11mm;
+            border-radius: 50%;
+            background: #f7fcff;
+            border: .2mm solid #e2f0f6
+        }
+
+        .d7 .cloud2 {
+            position: absolute;
+            right: -7mm;
+            top: 39mm;
+            width: 18mm;
+            height: 9mm;
+            border-radius: 50%;
+            background: #f5fbfe;
+            border: .2mm solid #e1eef5
+        }
+
+        .d7 .head {
+            position: absolute;
+            top: 5mm;
+            left: 5mm;
+            right: 5mm;
+            height: 10mm;
+            display: flex;
+            gap: 2mm;
+            align-items: center;
+            z-index: 5
+        }
+
+        .d7 .logo {
+            width: 8.5mm;
+            height: 8.5mm;
+            border-radius: 3mm;
+            border: .4mm solid #fff;
+            box-shadow: 0 0 0 .25mm #bcdbea
+        }
+
+        .d7 .school {
+            color: var(--deep);
+            font-size: 6pt;
+            max-height: 7mm;
+            white-space: normal !important;
+            word-break: break-word !important;
+            overflow-wrap: break-word !important;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            /* Limits it strictly to 2 lines */
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .d7 .udise {
+            margin-top: .6mm;
+            color: var(--a)
+        }
+
+        .d7 .session {
+            padding: 1mm 1.35mm;
+            border-radius: 4mm;
+            background: #f1f9fd;
+            color: var(--a)
+        }
+
+        .d7 .photo {
+            top: 18.7mm;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 22mm;
+            height: 25mm;
+            border-radius: 50%;
+            border: .85mm solid #fff;
+            outline: .35mm solid #91c8e3;
+            box-shadow: 0 1.2mm 3.2mm rgba(69, 139, 184, .12)
+        }
+
+        .d7 .identity {
+            position: absolute;
+            top: 45.7mm;
+            left: 5mm;
+            width: 44mm;
+            text-align: center;
+            z-index: 5
+        }
+
+        .d7 .name {
+            color: var(--deep);
+            max-height: 7.3mm
+        }
+
+        .d7 .father {
+            margin-top: 1mm;
+            color: #5a8eaa
+        }
+
+        .d7 .rows {
+            top: 52.8mm;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 46mm;
+            z-index: 5
+        }
+
+        .d7 .row {
+            min-height: 4.1mm;
+            margin-bottom: .55mm;
+            padding: .7mm 1.3mm;
+            background: #f6fbfe;
+            border: .2mm solid #deeff7;
+            border-radius: 1.7mm
+        }
+
+        .d7 .k {
+            color: #558eb0
+        }
+
+        .d7 .v {
+            color: #2e4a5a
+        }
+
+        .d7 .signs {
+            top: 69.8mm
+        }
+
+        .d7 .sign span {
+            border-color: #9ecbe2;
+            color: #4e88a7
+        }
+
+        .d7 .footer {
+            height: 7.4mm;
+            background: #e3f3fb;
+            color: #355f74
+        }
+
+        .d7 .footer .addr {
+            color: #62869a
+        }
+
+        /* =============== 08 KIDS PEACH + MINT =============== */
+        .d8 {
+            --a: #d58378;
+            --mint: #79a998;
+            --deep: #584946;
+            --pale: #fff4f0;
+            --ink: #47403e;
+            --muted: #8d7d78;
+            --line: #eedfd9;
+            background: #fffdfb
+        }
+
+        .d8 .topline {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1.8mm;
+            background: var(--mint)
+        }
+
+        .d8 .dot1,
+        .d8 .dot2,
+        .d8 .dot3 {
+            position: absolute;
+            border-radius: 50%
+        }
+
+        .d8 .dot1 {
+            width: 7mm;
+            height: 7mm;
+            right: -3mm;
+            top: 19mm;
+            background: #fae2dd
+        }
+
+        .d8 .dot2 {
+            width: 5mm;
+            height: 5mm;
+            left: -2mm;
+            top: 42mm;
+            background: #e0f2eb
+        }
+
+        .d8 .dot3 {
+            width: 3.5mm;
+            height: 3.5mm;
+            right: 4mm;
+            top: 47mm;
+            background: #fdebc9
+        }
+
+        .d8 .head {
+            position: absolute;
+            top: 5mm;
+            left: 5mm;
+            right: 5mm;
+            height: 10mm;
+            display: flex;
+            gap: 2mm;
+            align-items: center;
+            z-index: 5
+        }
+
+        .d8 .logo {
+            width: 8.5mm;
+            height: 8.5mm;
+            border-radius: 50%;
+            border: .4mm solid #f3d9d4
+        }
+
+        .d8 .school {
+            color: var(--deep);
+            font-size: 6pt;
+            max-height: 7mm;
+            white-space: normal !important;
+            word-break: break-word !important;
+            overflow-wrap: break-word !important;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            /* Limits it strictly to 2 lines */
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .d8 .udise {
+            margin-top: .6mm;
+            color: var(--a)
+        }
+
+        .d8 .session {
+            padding: 1mm 1.35mm;
+            background: #eff8f5;
+            border-radius: 4mm;
+            color: #568878
+        }
+
+        .d8 .photo {
+            top: 18.7mm;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 21.8mm;
+            height: 25mm;
+            border-radius: 4.8mm;
+            border: .8mm solid #fff;
+            outline: .35mm solid #df968c;
+            box-shadow: 0 1.2mm 3.2mm rgba(137, 91, 84, .11)
+        }
+
+        .d8 .identity {
+            position: absolute;
+            top: 45.8mm;
+            left: 5mm;
+            width: 44mm;
+            text-align: center;
+            z-index: 5
+        }
+
+        .d8 .name {
+            color: var(--deep);
+            max-height: 7.3mm
+        }
+
+        .d8 .father {
+            margin-top: 1mm;
+            color: #7e6e69
+        }
+
+        .d8 .rows {
+            top: 52.8mm;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 46mm;
+            z-index: 5
+        }
+
+        .d8 .row {
+            min-height: 4.1mm;
+            margin-bottom: .55mm;
+            padding: .7mm 1.3mm;
+            border-radius: 1.8mm;
+            background: #fff7f4
+        }
+
+        .d8 .row:nth-child(even) {
+            background: #f3faf7
+        }
+
+        .d8 .k {
+            color: #a66b63
+        }
+
+        .d8 .v {
+            color: #504643
+        }
+
+        .d8 .signs {
+            top: 69.7mm
+        }
+
+        .d8 .sign span {
+            border-color: #ddb1a9;
+            color: #98665e
+        }
+
+        .d8 .footer {
+            height: 7.2mm;
+            background: #eef7f3;
+            border-top: .25mm solid #d9e9e2;
+            color: #456c60
+        }
+
+        .d8 .footer .addr {
+            color: #718c82
+        }
+
+        @media screen {
+            .id-card {
+                box-shadow: 0 7px 25px rgba(20, 30, 40, .10)
+            }
+        }
+
+        @page {
+            size: 54mm 85.6mm;
+            margin: 0
+        }
+
+        @media print {
+
+            html,
+            body {
+                margin: 0;
+                padding: 0;
+                background: #fff
+            }
+
+            body {
+                display: block
+            }
+
+            .id-card {
+                box-shadow: none !important;
+                margin: 0 !important;
+                break-after: page;
+                page-break-after: always
+            }
+
+            .id-card:last-child {
+                break-after: auto;
+                page-break-after: auto
+            }
+        }
+
+        /* JS fine-tuning hook */
+        .fit {
+            transform-origin: center top
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Repeated structure intentionally keeps the same data-field API. -->
+
+    <div class="id-card d1">
+        <div class="band"></div>
+        <div class="head">
+            <div class="logo"><img data-field="logo"></div>
+            <div style="min-width: 0; flex: 1;">
+                <div class="school clamp2" data-field="schoolName">Falak Public School</div>
+                <div class="udise">UDISE : <span data-field="udise">12345678901</span></div>
+            </div>
+            <div class="session" data-field="session">2025-26</div>
+
+        </div>
+        <div class="photo">
+            <img data-field="photo">
+        </div>
+        <div class="identity">
+            <div class="name clamp2 fit" data-field="name">Aarav Sharma</div>
+            <div class="father clamp2" data-field="father">S/o Rajesh Sharma</div>
+        </div>
+        <div class="rows">
+            <div class="row"><span class="k">Class / Roll</span><span class="colon">:</span><span class="v"
+                    data-field="classRoll">X-A / 12</span></div>
+            <div class="row"><span class="k">Date of Birth</span><span class="colon">:</span><span class="v"
+                    data-field="dob">14 Aug 2010</span></div>
+            <div class="row"><span class="k">Phone</span><span class="colon">:</span><span class="v"
+                    data-field="phone">+91 98765 43210</span></div>
+            <div class="row"><span class="k">Address</span><span class="colon">:</span><span class="v sm"
+                    data-field="address">12, MG Road, Bengaluru 560001</span></div>
+        </div>
+        <div class="signs">
+            <div class="sign">
+                <div class="imgbox"><img data-field="teacherSign"></div><span>Teacher</span>
+            </div>
+            <div class="sign">
+                <div class="imgbox"><img data-field="principalSign"></div><span>Principal</span>
+            </div>
+        </div>
+        <div class="footer">
+            <div class="addr fit" data-field="schoolAddress">MG Road, Bengaluru, Karnataka 560001</div>
+            <div class="phone" data-field="schoolPhone">+91 80 1234 5678</div>
+        </div>
+    </div>
+
+    <div class="id-card d3">
+        <div class="upper"></div>
+        <div class="header">
+            <div class="logo"><img data-field="logo"></div>
+            <div>
+                <div class="school clamp2 fit" data-field="schoolName">Greenwood International School</div>
+                <div class="udise">UDISE : <span data-field="udise">12345678901</span></div>
+            </div>
+            <div class="session" data-field="session">2025-26</div>
+        </div>
+        <div class="photo"><img data-field="photo"></div>
+        <div class="lower"></div>
+        <div class="identity">
+            <div class="name clamp2 fit" data-field="name">Aarav Sharma</div>
+            <div class="father clamp2" data-field="father">S/o Rajesh Sharma</div>
+        </div>
+        <div class="rows">
+            <div class="row"><span class="k">Class / Roll</span><span class="colon">:</span><span class="v"
+                    data-field="classRoll">X-A / 12</span></div>
+            <div class="row"><span class="k">Date of Birth</span><span class="colon">:</span><span class="v"
+                    data-field="dob">14 Aug 2010</span></div>
+            <div class="row"><span class="k">Phone</span><span class="colon">:</span><span class="v"
+                    data-field="phone">+91 98765 43210</span></div>
+            <div class="row"><span class="k">Address</span><span class="colon">:</span><span class="v sm"
+                    data-field="address">12, MG Road, Bengaluru 560001</span></div>
+        </div>
+        <div class="signs">
+            <div class="sign">
+                <div class="imgbox"><img data-field="teacherSign"></div><span>Teacher</span>
+            </div>
+            <div class="sign">
+                <div class="imgbox"><img data-field="principalSign"></div><span>Principal</span>
+            </div>
+        </div>
+        <div class="footer">
+            <div class="addr fit" data-field="schoolAddress">MG Road, Bengaluru, Karnataka 560001</div>
+            <div class="phone" data-field="schoolPhone">+91 80 1234 5678</div>
+        </div>
+    </div>
+
+    <div class="id-card d7">
+        <div class="sun"></div>
+        <div class="cloud1"></div>
+        <div class="cloud2"></div>
+        <div class="head">
+            <div class="logo"><img data-field="logo"></div>
+            <div style="min-width: 0; flex: 1;">
+                <div class="school clamp2" data-field="schoolName">Falak Public School</div>
+                <div class="udise">UDISE : <span data-field="udise">12345678901</span></div>
+            </div>
+            <div class="session" data-field="session">2025-26</div>
+        </div>
+        <div class="photo"><img data-field="photo"></div>
+        <div class="identity">
+            <div class="name clamp2 fit" data-field="name">Aarav Sharma</div>
+            <div class="father clamp2" data-field="father">S/o Rajesh Sharma</div>
+        </div>
+        <div class="rows">
+            <div class="row"><span class="k">Class / Roll</span><span class="colon">:</span><span class="v"
+                    data-field="classRoll">X-A / 12</span></div>
+            <div class="row"><span class="k">Date of Birth</span><span class="colon">:</span><span class="v"
+                    data-field="dob">14 Aug 2010</span></div>
+            <div class="row"><span class="k">Phone</span><span class="colon">:</span><span class="v"
+                    data-field="phone">+91 98765 43210</span></div>
+            <div class="row"><span class="k">Address</span><span class="colon">:</span><span class="v sm"
+                    data-field="address">12, MG Road, Bengaluru 560001</span></div>
+        </div>
+        <div class="signs">
+            <div class="sign">
+                <div class="imgbox"><img data-field="teacherSign"></div><span>Teacher</span>
+            </div>
+            <div class="sign">
+                <div class="imgbox"><img data-field="principalSign"></div><span>Principal</span>
+            </div>
+        </div>
+        <div class="footer">
+            <div class="addr fit" data-field="schoolAddress">MG Road, Bengaluru, Karnataka 560001</div>
+            <div class="phone" data-field="schoolPhone">+91 80 1234 5678</div>
+        </div>
+    </div>
+
+    <div class="id-card d8">
+        <div class="topline"></div>
+        <div class="dot1"></div>
+        <div class="dot2"></div>
+        <div class="dot3"></div>
+        <div class="head">
+            <div class="logo"><img data-field="logo"></div>
+            <div style="min-width: 0; flex: 1;">
+                <div class="school clamp2" data-field="schoolName">Falak Public School</div>
+                <div class="udise">UDISE : <span data-field="udise">12345678901</span></div>
+            </div>
+            <div class="session" data-field="session">2025-26</div>
+        </div>
+        <div class="photo"><img data-field="photo"></div>
+        <div class="identity">
+            <div class="name clamp2 fit" data-field="name">Aarav Sharma</div>
+            <div class="father clamp2" data-field="father">S/o Rajesh Sharma</div>
+        </div>
+        <div class="rows">
+            <div class="row"><span class="k">Class / Roll</span><span class="colon">:</span><span class="v"
+                    data-field="classRoll">X-A / 12</span></div>
+            <div class="row"><span class="k">Date of Birth</span><span class="colon">:</span><span class="v"
+                    data-field="dob">14 Aug 2010</span></div>
+            <div class="row"><span class="k">Phone</span><span class="colon">:</span><span class="v"
+                    data-field="phone">+91 98765 43210</span></div>
+            <div class="row"><span class="k">Address</span><span class="colon">:</span><span class="v sm"
+                    data-field="address">12, MG Road, Bengaluru 560001</span></div>
+        </div>
+        <div class="signs">
+            <div class="sign">
+                <div class="imgbox"><img data-field="teacherSign"></div><span>Teacher</span>
+            </div>
+            <div class="sign">
+                <div class="imgbox"><img data-field="principalSign"></div><span>Principal</span>
+            </div>
+        </div>
+        <div class="footer">
+            <div class="addr fit" data-field="schoolAddress">MG Road, Bengaluru, Karnataka 560001</div>
+            <div class="phone" data-field="schoolPhone">+91 80 1234 5678</div>
+        </div>
+    </div>
+
+    <script>
+        const schoolLogo = "https://schooldigify-backend.onrender.com/static/school_logos/falak.png";
+        const studentImage = "https://lh3.googleusercontent.com/d/1pfoDyHsxfM3TOhDpnmrDKkwkm7az_TDG=s200"
+        const BLANK = "data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==";
+        const DATA = {
+            schoolName: "Falak Public School",
+            udise: "12345678901",
+            session: "2026-27",
+            schoolAddress: "Meena Nagar, Jayantipur Road Moradabad",
+            schoolPhone: "+91 8533998822",
+            logo: schoolLogo,
+            photo: studentImage,
+            name: "Mohammad Uzain",
+            father: "C/O Iqrar Husain",
+            classRoll: "1st / 35",
+            dob: "Thu, 22 August 2019",
+            phone: "9411897919",
+            address: "Meena Nagar Tikoniya Masjid Karula Mbd",
+            teacherSign: BLANK,
+            principalSign: BLANK
+        };
+
+        document.querySelectorAll('[data-field]').forEach(el => { const k = el.dataset.field; if (!(k in DATA)) return; const v = DATA[k]; if (el.tagName === 'IMG') { el.src = v || BLANK; el.onerror = () => el.src = BLANK } else el.textContent = v });
+
+        function fitText(el, min = 8) { const maxW = el.clientWidth, maxH = el.clientHeight; if (!maxW || !maxH) return; let size = parseFloat(getComputedStyle(el).fontSize); for (let i = 0; i < 22 && size > min; i++) { el.style.fontSize = size + 'px'; if (el.scrollWidth <= maxW + 1 && el.scrollHeight <= maxH + 1) break; size -= .3 } }
+        function fitAll() { document.querySelectorAll('.fit').forEach(el => fitText(el, 8)); document.querySelectorAll('.footer .addr.fit').forEach(el => fitText(el, 7)); }
+        window.addEventListener('load', () => requestAnimationFrame(fitAll)); window.addEventListener('resize', fitAll);
+    </script>
+</body>
+
+</html>

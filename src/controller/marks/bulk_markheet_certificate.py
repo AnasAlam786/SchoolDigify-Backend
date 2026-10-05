@@ -1,4 +1,4 @@
-# src/controller/marks/bulk_download_results.py
+# src/controller/marks/bulk_certificate_results.py
 
 from flask import session, request, jsonify, Blueprint, render_template
 from sqlalchemy import func
@@ -49,7 +49,6 @@ def bulk_download_results():
         "StudentSessions": ["ROLL", "class_id", "Attendance"],
     }
 
-    print("Hello", student_session_ids)
 
     try:
         student_marks_data = result_data(

@@ -5,6 +5,8 @@ from .auth.logout import logout_bp
 
 from .home import home_bp
 from .students_list.student_list import student_list_bp
+from .students_list.update_image import update_student_image_bp
+
 from .utils.student_modal_data_api import student_modal_data_api_bp
 from .students_list.get_students_data_api import get_students_data_api_bp
 from .students_list.get_students_pdf_api import get_students_pdf_api_bp
@@ -93,6 +95,7 @@ def register_blueprints(app):
 
     app.register_blueprint(home_bp)
     app.register_blueprint(student_list_bp)
+    app.register_blueprint(update_student_image_bp)
     app.register_blueprint(student_modal_data_api_bp)
     app.register_blueprint(get_students_data_api_bp)
     app.register_blueprint(get_students_pdf_api_bp)

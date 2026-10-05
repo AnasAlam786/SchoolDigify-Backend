@@ -34,7 +34,7 @@ def get_exams():
         # ========================================================
 
         has_marks = exists().where(
-            StudentMarks.exam_id == Exams.id
+            StudentMarks.exm_id == Exams.id
         )
 
         # ========================================================
