@@ -6,7 +6,7 @@ __pycache__/
 
 # Ignore virtual environments
 venv/
-
+.venv/
 # Ignore environment variables file (.env)
 .env
 service_account.json

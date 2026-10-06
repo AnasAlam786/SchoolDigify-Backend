@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,394 +8,837 @@
     <link rel="icon" href="static/logo.svg" type="image/svg+xml">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-    /* Page setup */
+        /* Page setup */
 
-    @page {
-        size: A4 portrait ; /* or portrait if needed */
-        margin: 2mm; /* safe margin to prevent printer cutoff */
-    }
-    .a4-page {
-        width: 297mm;
-        height: 210mm;
-        padding: 1mm;
-        display: flex;
-        flex-wrap: wrap;
-        gap: 4px; /* small gap to avoid exact 50% wrapping glitches */
-        justify-content: flex-start; /* prevent uneven spacing that can cause wrapping/overlap */
-        margin: 0 auto;
-        background-color: #fff;
-    }
+        @page {
+            size: A4 portrait;
+            /* or portrait if needed */
+            margin: 2mm;
+            /* safe margin to prevent printer cutoff */
+        }
 
-    /* Card container - 2 rows × 2 columns per page */
-    .card-container {
-        width: calc(50% - 4px); /* account for gap */
-        height: 49.9%;
-        box-sizing: border-box;
-    }
-
-    /* Both mode - 2 cards side by side */
-    .both-container {
-        width: calc(50% - 4px); /* account for gap */
-        height: 49.9%;
-        box-sizing: border-box;
-    }
-    /* Ensure card content doesn't overflow and push other cards */
-    .card {
-        height: 100%;
-        overflow: hidden; /* prevent content overflow that can overlap siblings */
-    }
-
-    /* Card styling */
-    .card {
-        height: 100%;
-        /* border: 2px solid #000; */
-        border-radius: 5px;
-        padding: 5px;
-        box-sizing: border-box;
-        display: flex;
-        flex-direction: column;
-    }
-
-    /* Make all card text black by default */
-    .card, 
-    .card * {
-        color: #000 !important;
-    }
-
-    /* Keep the Admit Card paragraph gray */
-    .card-header p {
-        color: #6c757d !important; /* Gray text only for this p */
-    }
-
-    /* Card header - flex to align logo and text */
-    .card-header {
-        display: flex;
-        align-items: center;      /* vertical centering */
-        gap: 10px;                /* space between logo and text */
-        padding: 0.5rem;
-        background-color: transparent;
-        border-bottom: 1px solid #ccc;
-    }
-
-    .card-header .school-info {
-        display: flex;
-        flex-direction: column;
-        justify-content: center;   /* vertical centering inside text column */
-        align-items: center;       /* horizontally center h4 and p */
-        width: 100%;               /* take remaining space */
-    }
-
-    .card-header h4 {
-        font-size: clamp(1.2rem, 2vw, 2rem);
-        font-weight: 900;
-        letter-spacing: 1px;
-        text-transform: uppercase;
-        margin: 0;
-
-        /* Prevent wrapping */
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-
-        /* Better fitting */
-        width: 100%;
-        text-align: center;
-    }
-
-    .card-header p {
-        font-size: 1.5rem;
-        font-weight: 500;
-        color: #6c757d;           /* keep gray */
-        margin: 0;
-        text-align: center;        /* center this p */
-    }
-
-    /* Logo styling */
-    .card-header img.logo {
-        width: 90px;
-        height: 90px;
-        object-fit: contain;
-    }
-
-    /* Student info section */
-    .student-section {
-        display: flex;
-        align-items: center;      /* Vertically centers image and table */
-        justify-content: center;  /* Horizontally centers the whole section */
-        gap: 10px;                /* Space between image and table */
-    }
-
-    .student-section img {
-        width: 150px;
-        height: 170px;
-        object-fit: cover;
-        object-position: top;
-        border: 2px solid #808080;
-        margin: 0;            /* Remove top margin so flex centering works */
-    }
-
-    /* Student details table */
-    .student-section table {
-        width: 100%;
-        font-size: 1.5rem;
-        border-collapse: collapse;
-    }
-
-    .student-section td {
-        padding: 5px;
-    }
-
-    /* Exam scheme styling - FIXED */
-    .exam-scheme {
-        padding: 2px;
-        height: 100%;             /* fill card space */
-        box-sizing: border-box;
-    }
-
-    .exam-scheme table {
-        width: 100%;
-        height: 100%;             /* make table stretch */
-        border-collapse: collapse;
-        font-size: 0.9rem;
-        table-layout: fixed;      /* align columns */
-    }
-
-    .exam-scheme thead {
-        height: 20px;             /* fixed header row height */
-    }
-
-    .exam-scheme tbody {
-        height: calc(100% - 40px);  /* take remaining space after header */
-    }
-
-    .exam-scheme tbody tr {
-        height: calc(100% / var(--row-count)); /* distribute equally */
-    }
-
-    .exam-scheme th,
-    .exam-scheme td {
-        border: 1px solid #000;
-        text-align: center;
-        word-wrap: break-word;
-        vertical-align: middle;
-    }
-
-    .exam-scheme td {
-        background-color: #f8f9fa;
-        font-weight: bold;
-    }
-
-    
-
-    .exam-scheme tr:nth-child(even) {
-        background-color: #f8f9fa;
-    }
-
-    .exam-scheme tr:nth-child(odd) {
-        background-color: #fff;
-    }
-
-
-    .exam-scheme-title {
-        font-size: 0.9rem;
-        font-weight: bold;
-        text-align: center;
-        color: #000000;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-    }
-
-    /* Print adjustments */
-    @media print {
-
-        html, body {
+        .a4-page {
             width: 297mm;
             height: 210mm;
-            background: #fff;
-        }
-        body {
-            margin: 0;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
+            padding: 1mm;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            /* small gap to avoid exact 50% wrapping glitches */
+            justify-content: flex-start;
+            /* prevent uneven spacing that can cause wrapping/overlap */
+            margin: 0 auto;
+            background-color: #fff;
         }
 
-        
+        /* Card container - 2 rows × 2 columns per page */
+        .card-container {
+            width: calc(50% - 4px);
+            /* account for gap */
+            height: 49.9%;
+            box-sizing: border-box;
+        }
 
-        .card-header h4, 
-        .card-header p, 
-        .student-section table {
+        /* Both mode - 2 cards side by side */
+        .both-container {
+            width: calc(50% - 4px);
+            /* account for gap */
+            height: 49.9%;
+            box-sizing: border-box;
+        }
+
+        /* Ensure card content doesn't overflow and push other cards */
+        .card {
+            height: 100%;
+            overflow: hidden;
+            /* prevent content overflow that can overlap siblings */
+        }
+
+        /* Card styling */
+        .card {
+            height: 100%;
+            /* border: 2px solid #000; */
+            border-radius: 5px;
+            padding: 5px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Make all card text black by default */
+        .card,
+        .card * {
             color: #000 !important;
         }
-        
-        .exam-scheme th {
-            background-color: #f8f9fa !important;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
+
+        /* Keep the Admit Card paragraph gray */
+        .card-header p {
+            color: #6c757d !important;
+            /* Gray text only for this p */
         }
-        
+
+        /* Card header - flex to align logo and text */
+        .card-header {
+            display: flex;
+            align-items: center;
+            /* space between logo and text */
+            padding: 0.5rem;
+            background-color: transparent;
+            border-bottom: 1px solid #ccc;
+        }
+
+        .card-header .school-info {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            /* vertical centering inside text column */
+            align-items: center;
+            /* horizontally center h4 and p */
+            width: 100%;
+            /* take remaining space */
+        }
+
+        .card-header h4 {
+            font-size: 2rem;
+            font-weight: 900;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin: 0;
+
+            /* Prevent wrapping */
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+
+            /* Better fitting */
+            width: 100%;
+            text-align: center;
+        }
+
+        .card-header p {
+            font-size: 1.5rem;
+            font-weight: 500;
+            color: #6c757d;
+            /* keep gray */
+            margin: 0;
+            text-align: center;
+            /* center this p */
+        }
+
+        /* Logo styling */
+        .card-header img.logo {
+            width: 70px;
+            height: 70px;
+            object-fit: contain;
+        }
+
+        /* Student info section */
+        .student-section {
+            display: flex;
+            align-items: center;
+            /* Vertically centers image and table */
+            justify-content: center;
+            /* Horizontally centers the whole section */
+            gap: 10px;
+            /* Space between image and table */
+        }
+
+        .student-section img {
+            width: 150px;
+            height: 170px;
+            object-fit: cover;
+            object-position: top;
+            border: 2px solid #808080;
+            margin: 0;
+            /* Remove top margin so flex centering works */
+        }
+
+        /* Student details table */
+        .student-section table {
+            width: 100%;
+            font-size: 1.5rem;
+            border-collapse: collapse;
+        }
+
+        .student-section td {
+            padding: 5px;
+        }
+
+        /* Exam scheme styling - FIXED */
+        .exam-scheme {
+            padding: 2px;
+            height: 100%;
+            /* fill card space */
+            box-sizing: border-box;
+        }
+
+        .exam-scheme table {
+            width: 100%;
+            height: 100%;
+            /* make table stretch */
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            table-layout: fixed;
+            /* align columns */
+        }
+
+        .exam-scheme thead {
+            height: 20px;
+            /* fixed header row height */
+        }
+
+        .exam-scheme tbody {
+            height: calc(100% - 40px);
+            /* take remaining space after header */
+        }
+
+        .exam-scheme tbody tr {
+            height: calc(100% / var(--row-count));
+            /* distribute equally */
+        }
+
+        .exam-scheme th,
+        .exam-scheme td {
+            border: 1px solid #000;
+            text-align: center;
+            word-wrap: break-word;
+            vertical-align: middle;
+        }
+
+        .exam-scheme td {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+
         .exam-scheme tr:nth-child(even) {
-            background-color: #f8f9fa !important;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
+            background-color: #f8f9fa;
         }
-        /* Ensure paired admit+scheme stays together and occupies a full printed page */
-        .both-wrapper {
-            /* Avoid breaking the pair across pages */
-            page-break-inside: avoid;
-            -webkit-column-break-inside: avoid;
-            break-inside: avoid;
-            /* Force each pair to start on a fresh printed page */
-            page-break-after: always;
-            break-after: page;
+
+        .exam-scheme tr:nth-child(odd) {
+            background-color: #fff;
         }
-        /* Prevent an extra blank page after the last pair */
-        .both-wrapper:last-child {
-            page-break-after: auto;
-            break-after: auto;
+
+        .exam-scheme-title {
+            font-size: 0.9rem;
+            font-weight: bold;
+            text-align: center;
+            color: #000000;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin: 3px 0;
         }
-    }
+
+        /* Fee notice styling */
+        .fee-notice {
+            padding: 2px;
+            height: 100%;
+            box-sizing: border-box;
+        }
+
+        .fee-notice-title {
+            font-size: 1rem;
+            font-weight: bold;
+            text-align: center;
+            color: #000000;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin: 3px 0 5px 0;
+        }
+
+        /* Fee notice student information */
+        .fee-student-info {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 6px;
+            font-size: 1rem;
+            table-layout: fixed;
+        }
+
+        .fee-student-info td {
+            padding: 2px 4px;
+            vertical-align: middle;
+            line-height: 1.2;
+        }
+
+        .fee-student-info .label {
+            font-weight: 700;
+            width: 15%;
+            white-space: nowrap;
+        }
+
+        .fee-student-info .value {
+            width: 35%;
+            word-wrap: break-word;
+        }
+
+        .fee-notice table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 1rem;
+            table-layout: fixed;
+        }
+
+        .fee-notice th,
+        .fee-notice td {
+            border: 1px solid #000;
+            text-align: center;
+            word-wrap: break-word;
+            vertical-align: middle;
+            padding: 3px 4px;
+            line-height: 1.2;
+        }
+
+        .fee-notice th {
+            background-color: #f8f9fa;
+        }
+
+        .fee-notice td {
+            font-weight: bold;
+        }
+
+        .fee-total {
+            margin-top: 5px;
+            text-align: right;
+            font-size: 1rem;
+            font-weight: bold;
+        }
+
+        /* Print adjustments */
+        @media print {
+
+            html,
+            body {
+                width: 297mm;
+                height: 210mm;
+                background: #fff;
+            }
+
+            body {
+                margin: 0;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .card-header h4,
+            .card-header p,
+            .student-section table {
+                color: #000 !important;
+            }
+
+            .exam-scheme th {
+                background-color: #f8f9fa !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .exam-scheme tr:nth-child(even) {
+                background-color: #f8f9fa !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .fee-notice th {
+                background-color: #f8f9fa !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            /* Ensure paired admit+scheme stays together and occupies a full printed page */
+            .both-wrapper {
+                /* Avoid breaking the pair across pages */
+                page-break-inside: avoid;
+                -webkit-column-break-inside: avoid;
+                break-inside: avoid;
+                /* Force each pair to start on a fresh printed page */
+                page-break-after: always;
+                break-after: page;
+            }
+
+            /* Prevent an extra blank page after the last pair */
+            .both-wrapper:last-child {
+                page-break-after: auto;
+                break-after: auto;
+            }
+        }
     </style>
 </head>
+
 <body>
-    
-    {% if outputType == 'admitOnly' %}
-        <!-- Admit Card Only Mode -->
-        {% for groups in data %}
-        <div class="a4-page">
-            {% for student in groups %}
-                <div class="card-container">
-                    <div class="card" style="border: 2px solid #000;">
-                        <div class="card-header">
-                            <img src="{{ logo }}" alt="School Logo" class="logo" loading="lazy">
-                            <div class="school-info">
-                                <h4>{{ school }}</h4>
-                                <p>{{ admit_heading }}</p>
-                            </div>
-                        </div>
 
-                        <div class="student-section" style="margin-top: 12px;">
-                            <img src="{{ ('https://lh3.googleusercontent.com/d/' + student.IMAGE + '=s200') if student.IMAGE else '' }}" alt="Paste Photo Here">
-                            <div class="ms-3 text-start">
-                                <table>
-                                    <tr><td style="font-weight:700">Name</td><td>{{ student.STUDENTS_NAME }}</td></tr>
-                                    <tr><td style="font-weight:700">F/N</td><td>{{ student.FATHERS_NAME }}</td></tr>
-                                    <!-- <tr><td style="font-weight:700">M/N</td><td>{{ student.MOTHERS_NAME }}</td></tr> -->
-                                    <tr><td style="font-weight:700">Class</td><td>{{ student.CLASS }} - {{ student.ROLL }}</td></tr>
-                                    <tr><td style="font-weight:700">DOB</td><td>{{ student.DOB }}</td></tr>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            {% endfor %}
-        </div>
-        {% endfor %}
-    
-    {% elif outputType == 'SchemeOnly' %}
-        <!-- Exam scheme Only Mode -->
-        
-        {% for groups in data %}
-        <div class="a4-page">
-            {% for student in groups %}
-                <div class="card-container">
-                    <div class="card" style="border: 2px solid #000;">
-                        <div class="card-header">
-                            <img src="{{ logo }}" alt="School Logo" class="logo" loading="lazy">
-                            <div class="school-info">
-                                <h4>{{ school }}</h4>
-                                <p>{{ scheme_heading }}</p>
-                            </div>
-                        </div>
-                        
-                        <div class="exam-scheme" style="--row-count: {{ examScheme|length }}">
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th style="width: 25%">Date</th>
-                                        <th style="width: 25%">Day</th>
-                                        <th style="width: 50%">Subject</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for exam in examScheme %}
-                                    <tr>
-                                        <td>{{ exam.date }}</td>
-                                        <td>{{ exam.day }}</td>
-                                        <td>{{ exam.examName }}</td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            {% endfor %}
-        </div>
-        {% endfor %}
-    
-    {% elif outputType == 'both' %}
-        <!-- Both Admit Card and Exam scheme Mode -->
-        {% for groups in data %}
-        <div class="a4-page">
-            {% for student in groups %}
-                <!-- Paired container: Admit Card + Exam scheme (each 50%) -->
-                <!-- Admit Card - 50% width -->
-                <div class="both-container" >
-                    <div class="card" style="border: 2px solid #000;">
-                        <div class="card-header">
-                            <img src="{{ logo }}" alt="School Logo" class="logo" loading="lazy">
-                            <div class="school-info">
-                                <h4>{{ school }}</h4>
-                                <p>{{ admit_heading }}</p>
-                            </div>
-                        </div>
+    <!-- ========================================================= -->
+    <!-- MACROS                                                    -->
+    <!-- ========================================================= -->
 
-                        <div class="student-section" style="margin-top: 12px;">
-                            <img src="{{ ('https://lh3.googleusercontent.com/d/' + student.IMAGE + '=s200') if student.IMAGE else '' }}" alt="Paste Photo Here">
-                            <div class="ms-3 text-start">
-                                <table>
-                                    <tr><td style="font-weight:700">Name</td><td>{{ student.STUDENTS_NAME }}</td></tr>
-                                    <tr><td style="font-weight:700">F/N</td><td>{{ student.FATHERS_NAME }}</td></tr>
-                                    <tr><td style="font-weight:700">M/N</td><td>{{ student.MOTHERS_NAME }}</td></tr>
-                                    <tr><td style="font-weight:700">Class</td><td>{{ student.CLASS }} - {{ student.ROLL }}</td></tr>
-                                    <tr><td style="font-weight:700">DOB</td><td>{{ student.DOB }}</td></tr>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Exam scheme - 50% width -->
-                <div class="both-container">
-                    <div class="card" style="border: 2px solid #000;">     
-                        <h4 class="exam-scheme-title">{{ scheme_heading }}</h4>                       
-                        <div class="exam-scheme" style="--row-count: {{ examScheme|length }}">
-                            
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>Date</th>
-                                        <th>Day</th>
-                                        <th>Subject</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for exam in examScheme %}
-                                    <tr>
-                                        <td>{{ exam.date }}</td>
-                                        <td>{{ exam.day }}</td>
-                                        <td>{{ exam.examName }}</td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            {% endfor %}
+    {% macro admit_card(student, show_school_header=true) %}
+    <div class="card" style="border: 2px solid #000;">
+
+        {% if show_school_header %}
+        <div class="card-header">
+            <img src="{{ session['logo'] }}" alt="School Logo" class="logo" loading="lazy">
+            <div class="school-info">
+                <h4>{{ school }}</h4>
+                <p style="font-size: 10px;">{{ admit_heading }}</p>
+            </div>
         </div>
-        {% endfor %}
-    {% endif %}
+        {% endif %}
+
+        <div class="student-section" style="margin-top: 12px;">
+            <img src="{{ ('https://lh3.googleusercontent.com/d/' + student.IMAGE + '=s200') if student.IMAGE else '' }}"
+                alt="Paste Photo Here">
+
+            <div class="ms-3 text-start">
+                <table>
+                    <tr>
+                        <td style="font-weight:700">Name</td>
+                        <td>{{ student.STUDENTS_NAME }}</td>
+                    </tr>
+
+                    <tr>
+                        <td style="font-weight:700">F/N</td>
+                        <td>{{ student.FATHERS_NAME }}</td>
+                    </tr>
+
+                    <!-- <tr><td style="font-weight:700">M/N</td><td>{{ student.MOTHERS_NAME }}</td></tr> -->
+
+                    <tr>
+                        <td style="font-weight:700">Class</td>
+                        <td>{{ student.CLASS }} - {{ student.ROLL }}</td>
+                    </tr>
+
+                    <tr>
+                        <td style="font-weight:700">DOB</td>
+                        <td>{{ student.DOB }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
     </div>
+    {% endmacro %}
+
+
+    {% macro exam_scheme(student, show_heading=true) %}
+    <div class="card" style="border: 2px solid #000;">
+
+        {% if show_heading %}
+        <div class="card-header">
+            <img src="{{ session['logo'] }}" alt="School Logo" class="logo" loading="lazy">
+
+            <div class="school-info">
+                <h4>{{ school }}</h4>
+                <p style="font-size: 20px;">{{ scheme_heading }}</p>
+            </div>
+        </div>
+        {% else %}
+        <h4 class="exam-scheme-title">{{ scheme_heading }}</h4>
+        {% endif %}
+
+        <div class="exam-scheme" style="--row-count: {{ examScheme|length }}">
+
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 25%">Date</th>
+                        <th style="width: 25%">Day</th>
+                        <th style="width: 50%">Subject</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for exam in examScheme %}
+                    <tr>
+                        <td>{{ exam.date }}</td>
+                        <td>{{ exam.day }}</td>
+                        <td>{{ exam.examName }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+        </div>
+    </div>
+    {% endmacro %}
+
+
+{% macro fee_notice(student, show_school_header=false) %}
+
+    {% if student.fee_notice %}
+
+        <div class="card"
+             style="border: 2px solid #000; border-radius: 5px; overflow: hidden; background: #fff;">
+
+            {% if show_school_header %}
+
+                <div class="card-header"
+                     style="padding: 8px 10px; display: flex; align-items: center; border-bottom: 1.5px solid #000; background: #fafafa;">
+
+                    <img src="{{ session['logo'] }}"
+                         alt="School Logo"
+                         class="logo"
+                         loading="lazy"
+                         style="width: 45px; height: 45px; object-fit: contain; margin-right: 10px;">
+
+                    <div class="school-info">
+
+                        <h4 style="margin: 0; font-size: 17px; font-weight: 800;">
+                            {{ school }}
+                        </h4>
+
+                        <p style="margin: 3px 0 0; font-size: 12px; font-weight: 600;">
+                            {{ fee_heading }}
+                        </p>
+
+                    </div>
+
+                </div>
+
+            {% else %}
+
+                <div style="padding: 1px 10px; background: #fafafa;">
+
+                    <h4 class="fee-notice-title"
+                        style="text-align: center; margin: 0; font-size: 17px; font-weight: 800;">
+                        {{ fee_heading }}
+                    </h4>
+
+                </div>
+
+            {% endif %}
+
+
+            <div class="fee-notice" style="padding: 9px 11px 11px;">
+
+
+                <!-- Student Information -->
+
+                <table class="fee-student-info"
+                       style="width: 100%; border-collapse: collapse; margin-bottom: 9px; font-size: 15px;">
+
+                    <tr>
+
+                        <td style="padding: 2px 1px; border: 1px solid #999; width: 12%; font-weight: 700; background: #f2f2f2;">
+                            Name
+                        </td>
+
+                        <td style="padding: 2px 1px; border: 1px solid #999; width: 38%; font-weight: 600;">
+                            {{ student.STUDENTS_NAME }}
+                        </td>
+
+                        <td style="padding: 2px 1px; border: 1px solid #999; width: 12%; font-weight: 700; background: #f2f2f2;">
+                            Class
+                        </td>
+
+                        <td style="padding: 2px 1px; border: 1px solid #999; width: 38%; font-weight: 600;">
+                            {{ student.CLASS }}
+                        </td>
+
+                    </tr>
+
+                    <tr>
+
+                        <td style="padding: 2px 1px; border: 1px solid #999; font-weight: 700; background: #f2f2f2;">
+                            Father
+                        </td>
+
+                        <td style="padding: 2px 1px; border: 1px solid #999; font-weight: 600;">
+                            {{ student.FATHERS_NAME }}
+                        </td>
+
+                        <td style="padding: 2px 1px; border: 1px solid #999; font-weight: 700; background: #f2f2f2;">
+                            Roll No
+                        </td>
+
+                        <td style="padding: 2px 1px; border: 1px solid #999; font-weight: 600;">
+                            {{ student.ROLL }}
+                        </td>
+
+                    </tr>
+
+                </table>
+
+
+                <!-- Due Fee Table -->
+
+                <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+
+                    <thead>
+
+                        <tr>
+
+                            <th style="padding: 6px 7px; border: 1px solid #000; text-align: left; width: 65%; background: #eeeeee; font-size: 12px; font-weight: 800;">
+                                Fee Details
+                            </th>
+
+                            <th style="padding: 6px 7px; border: 1px solid #000; text-align: right; width: 35%; background: #eeeeee; font-size: 12px; font-weight: 800;">
+                                Amount
+                            </th>
+
+                        </tr>
+
+                    </thead>
+
+
+                    <tbody>
+
+                        {% for fee_type in student.fee_notice['items'] | map(attribute='fee_type') | unique %}
+
+                            {% set fee_items = student.fee_notice['items']
+                                | selectattr('fee_type', 'equalto', fee_type)
+                                | list %}
+
+                            <tr>
+
+                                <td style="padding: 7px; border: 1px solid #ccc; line-height: 1.45; vertical-align: middle;">
+
+                                    <strong style="font-size: 12px; font-weight: 600;">
+                                        {{ fee_type }}
+                                    </strong>
+
+                                    <span style="font-size: 12.5px; font-weight: 900;">
+                                        —
+                                        {% for item in fee_items %}
+                                            {{ item['period_name'] }}{% if not loop.last %}, {% endif %}
+                                        {% endfor %}
+                                    </span>
+
+                                </td>
+
+                                <td style="padding: 3px; border: 1px solid #ccc; text-align: right; white-space: nowrap; vertical-align: middle;">
+
+                                    <span style="font-size: 15px; color: #c00000; font-weight: 700;">
+                                        {{ fee_items | length }} ×
+                                        ₹{{ "%.2f"|format(fee_items[0]['amount']) }}
+                                    </span>
+
+                                    <span style="font-size: 12px; color: #555; margin: 0 2px;">
+                                        =
+                                    </span>
+
+                                    <strong style="font-size: 15px; color: #c00000; font-weight: 800;">
+                                        ₹{{ "%.2f"|format(
+                                            fee_items | sum(attribute='due_amount')
+                                        ) }}
+                                    </strong>
+
+                                </td>
+
+                            </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+
+                <!-- Total Due -->
+
+                <div style="margin-top: 10px; border: 2px solid #000; border-radius: 4px; padding: 8px 10px; display: flex; align-items: center; justify-content: space-between; background: #fafafa;">
+
+                    <div>
+
+                        <div style="font-size: 15px; font-weight: 900; letter-spacing: 0.2px;">
+                            TOTAL DUE AMOUNT 
+                        </div>
+
+                        <div style="margin-top: 3px; font-size: 15px; font-weight: 900;">
+                            कुल बकाया राशि
+                        </div>
+
+                    </div>
+
+
+                    <div style="padding: 5px 10px; border: 2px solid #c00000; border-radius: 3px; background: #fff; color: #c00000; font-size: 20px; font-weight: 900; white-space: nowrap;">
+
+                        ₹{{ "%.2f"|format(student.fee_notice['total_due']) }}
+
+                    </div>
+
+                </div>
+
+
+                <!-- Payment Warning -->
+
+                <div style="margin-top: 8px; padding: 6px 8px; border-top: 1px solid #c00000; border-bottom: 1px solid #c00000; text-align: center; color: #c00000;">
+
+                    <div style="font-size: 11px; font-weight: 800;">
+                        ⚠ Please pay this fee before examination.
+                    </div>
+
+                    <div style="margin-top: 3px; font-size: 11px; font-weight: 700;">
+                        ⚠ कृपया परीक्षा से पहले इस शुल्क का भुगतान करें।
+                    </div>
+
+                </div>
+
+
+            </div>
+
+        </div>
+
+    {% endif %}
+
+{% endmacro %}
+
+
+    <!-- ========================================================= -->
+    <!-- OUTPUT TYPES                                              -->
+    <!-- ========================================================= -->
+
+
+    {% if outputType == 'admitOnly' %}
+
+    <!-- Admit Card Only Mode -->
+
+    {% for groups in data %}
+
+    <div class="a4-page">
+
+        {% for student in groups %}
+
+        <div class="card-container">
+            {{ admit_card(student, true) }}
+        </div>
+
+        {% endfor %}
+
+    </div>
+
+    {% endfor %}
+
+
+    {% elif outputType == 'SchemeOnly' %}
+
+    <!-- Exam scheme Only Mode -->
+
+    {% for groups in data %}
+
+    <div class="a4-page">
+
+        {% for student in groups %}
+
+        <div class="card-container">
+            {{ exam_scheme(student, true) }}
+        </div>
+
+        {% endfor %}
+
+    </div>
+
+    {% endfor %}
+
+
+    {% elif outputType == 'feeOnly' %}
+
+    <!-- Fee Only Mode -->
+
+    {% for groups in data %}
+
+    <div class="a4-page">
+
+        {% for student in groups %}
+
+        {% if student.fee_notice %}
+        <div class="card-container">
+            {{ fee_notice(student, false) }}
+        </div>
+        {% endif %}
+
+        {% endfor %}
+
+    </div>
+
+    {% endfor %}
+
+
+    {% elif outputType == 'admitScheme' %}
+
+    <!-- Both Admit Card and Exam scheme Mode -->
+
+    {% for groups in data %}
+
+    <div class="a4-page">
+
+        {% for student in groups %}
+
+        <!-- Admit Card - 50% width -->
+
+        <div class="both-container">
+            {{ admit_card(student, true) }}
+        </div>
+
+        <!-- Exam scheme - 50% width -->
+
+        <div class="both-container">
+            {{ exam_scheme(student, false) }}
+        </div>
+
+        {% endfor %}
+
+    </div>
+
+    {% endfor %}
+
+
+    {% elif outputType == 'admitFee' %}
+
+    <!-- Both Admit Card and Fee Notice Mode -->
+
+    {% for groups in data %}
+
+    <div class="a4-page">
+
+        {% for student in groups %}
+
+        <!-- Admit Card - 50% width -->
+
+        <div class="both-container">
+            {{ admit_card(student, true) }}
+        </div>
+
+        <!-- Fee Notice - 50% width -->
+
+        <div class="both-container">
+            {{ fee_notice(student, false) }}
+        </div>
+
+        {% endfor %}
+
+    </div>
+
+    {% endfor %}
+
+
+    {% elif outputType == 'schemeFee' %}
+
+    <!-- Both Exam scheme and Fee Notice Mode -->
+
+    {% for groups in data %}
+
+    <div class="a4-page">
+
+        {% for student in groups %}
+
+        <!-- Exam scheme - 50% width -->
+
+        <div class="both-container">
+            {{ exam_scheme(student, true) }}
+        </div>
+
+        <!-- Fee Notice - 50% width -->
+
+        <div class="both-container">
+            {{ fee_notice(student, false) }}
+        </div>
+
+        {% endfor %}
+
+    </div>
+
+    {% endfor %}
+
+    {% endif %}
+
 </body>
+
 </html>
