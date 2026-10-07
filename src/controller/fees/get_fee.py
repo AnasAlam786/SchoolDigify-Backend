@@ -38,6 +38,7 @@ def get_fee_api():
         isSuccess, result = fetch_fee_data(
             session_id=current_session,
             school_id=school_id,
+            user_id=session["user_id"],
             phone=phone,
             selected_student_session_id=student_session_id
         )

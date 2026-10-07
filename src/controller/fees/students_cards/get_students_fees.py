@@ -14,6 +14,8 @@ from datetime import date
 from collections import defaultdict
 from decimal import Decimal
 
+from src.model.ClassAccess import ClassAccess
+
 
 def build_basic_student_record(student):
     """Return the basic student payload that is safe to expose for RTE students.
@@ -65,6 +67,11 @@ def get_students_fees_api():
         # 2. Get students in current session
         # ---------------------------------------------------------
 
+        user_id = session["user_id"]
+        authorized_class_ids = db.session.query(ClassAccess.class_id).filter(
+            ClassAccess.staff_id == user_id
+        )
+
         students = (
             db.session.query(
                 StudentsDB.id,
@@ -98,6 +105,7 @@ def get_students_fees_api():
             .filter(
                 StudentsDB.school_id == school_id,
                 StudentSessions.session_id == current_session_id,
+                StudentSessions.class_id.in_(authorized_class_ids),
             )
             .all()
         )
@@ -153,6 +161,7 @@ def get_students_fees_api():
                 .filter(
                     FeeSessionData.session_id == current_session_id,
                     FeeStructure.school_id == school_id,
+                    FeeSessionData.class_id.in_(authorized_class_ids),
                 )
                 .all()
             )

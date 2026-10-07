@@ -12,11 +12,12 @@ from src.model.FeeHeads import FeeHeads
 from src.model.FeeStructure import FeeStructure
 from src.model.FeeTransaction import FeeTransaction
 from src.model.StudentsDB import StudentsDB
+from src.model.ClassAccess import ClassAccess
 from src import db
 
 
 def fetch_fee_data(    
-    session_id, school_id,
+    session_id, school_id, user_id,
     phone=None, class_id=None,
     student_session_ids=None, student_id=None,
     selected_student_session_id=None
@@ -45,6 +46,13 @@ def fetch_fee_data(
         .outerjoin(
             RTEInfo,
             RTEInfo.student_id == StudentsDB.id
+        )
+        .filter(
+            StudentSessions.class_id.in_(
+                db.session.query(ClassAccess.class_id).filter(
+                    ClassAccess.staff_id == user_id
+                )
+            )
         )
     )
 

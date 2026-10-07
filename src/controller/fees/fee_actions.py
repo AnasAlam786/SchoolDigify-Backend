@@ -290,6 +290,7 @@ def pay_fee_api():
         is_success, updated_fee = fetch_fee_data(
             session_id=session_id, 
             school_id=school_id, 
+            user_id=session["user_id"],
             phone=phone_number
         )
     except Exception:
