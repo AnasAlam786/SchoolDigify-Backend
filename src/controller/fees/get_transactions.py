@@ -109,7 +109,7 @@ def get_fee_transactions():
                 FeeTransaction.school_id == school_id,
                 FeeSessionData.session_id == current_session_id
             )
-            .order_by(desc(FeeTransaction.created_at), FeeTransaction.id, FeeData.id)
+            .order_by(FeeTransaction.payment_date.desc(), FeeTransaction.id.desc(), FeeData.id)
             .all()
         )
 

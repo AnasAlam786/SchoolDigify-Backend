@@ -9,7 +9,7 @@ from src.controller.permissions.permission_required import permission_required
 from src.model.ClassAccess import ClassAccess
 from src import db
 
-from src.controller.marks.utils.marks_processing import result_data
+from src.controller.marks.utils.new_marks_processing_format import result_data
 from src.controller.marks.utils.process_marks import process_marks
 from src.model.ClassData import ClassData
 from src.model.TeachersLogin import TeachersLogin
@@ -71,11 +71,8 @@ def show_marks_api():
         print("No student marks data found for the given class.")
         # html = render_template('marks_management/marks_table.html', student_marks=[], class_empty=True)
         return jsonify({'error': 'No student marks data found for the given class.'}), 403
-    
-    student_marks = process_marks(
-        student_marks_data,  add_grades_flag=False, add_grand_total_flag=True
-    )
 
 
-    return jsonify({"student_marks":student_marks})
+
+    return jsonify({"student_marks":student_marks_data})
     

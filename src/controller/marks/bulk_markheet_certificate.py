@@ -1,9 +1,10 @@
 # src/controller/marks/bulk_certificate_results.py
 
-from flask import session, request, jsonify, Blueprint, render_template
-from sqlalchemy import func
+import re
 
-from src.model import SchoolSession, StudentsDB
+from flask import session, request, jsonify, Blueprint, render_template
+
+from src.model import SchoolSession
 from src.model.ClassAccess import ClassAccess
 from src.model.Roles import Roles
 from src.model.Schools import Schools
@@ -11,12 +12,114 @@ from src.model.TeachersLogin import TeachersLogin
 from src import db
 
 
-from .utils.marks_processing import result_data
-from .utils.process_marks import process_marks
+from .utils.new_marks_processing_format import result_data
+from .utils.calc_grades import get_grade
 from src.controller.permissions.permission_required import permission_required
 from src.controller.auth.login_required import login_required
 
 bulk_markheet_certificate_bp = Blueprint('bulk_markheet_certificate_bp', __name__)
+
+
+def numeric_scores(values):
+    for value in values:
+        if value in (None, ""):
+            continue
+        try:
+            yield float(value)
+        except (TypeError, ValueError):
+            continue
+
+
+def prepare_result_for_template(result):
+    exams = result["exams"]
+    subjects = result["subjects"]
+    exam_totals = result["exam_totals"]
+    summary = result["summary"]
+    exam_columns = []
+    terms = {}
+
+    for exam in exams:
+        totals = exam_totals[str(exam["id"])]
+        column = {
+            "name": exam["name"],
+            "weightage": exam["weightage"],
+            "exam_total": totals["total"],
+            "percentage": totals["percentage"],
+            "subject_marks": {
+                subject["name"]: subject["marks"].get(str(exam["id"]), "")
+                for subject in subjects
+            },
+        }
+        exam_columns.append(column)
+
+        term_number_match = re.search(r"\d+", str(exam["term"] or ""))
+        if term_number_match:
+            terms.setdefault(int(term_number_match.group()), []).append((exam, column))
+
+    ordered_columns = []
+    for term_number, term_exams in sorted(terms.items()):
+        ordered_columns.extend(column for _, column in term_exams)
+
+        term_total = round(sum(float(column["exam_total"] or 0) for _, column in term_exams), 1)
+        term_max = sum(
+            float(exam["weightage"] or 0) * len(subjects)
+            for exam, _ in term_exams
+        )
+        term_subject_marks = {}
+        for subject in subjects:
+            scores = numeric_scores(
+                column["subject_marks"].get(subject["name"])
+                for _, column in term_exams
+            )
+            scores = list(scores)
+            term_subject_marks[subject["name"]] = round(sum(scores), 1) if scores else ""
+
+        ordered_columns.append({
+            "name": f"{term_number} Total",
+            "weightage": sum(float(exam["weightage"] or 0) for exam, _ in term_exams),
+            "exam_total": term_total,
+            "percentage": round(term_total / term_max * 100, 2) if term_max else 0,
+            "subject_marks": term_subject_marks,
+        })
+
+    ordered_columns.extend(
+        column
+        for exam, column in zip(exams, exam_columns)
+        if not re.search(r"\d+", str(exam["term"] or ""))
+    )
+
+    all_subject_marks = {}
+    for subject in subjects:
+        scores = list(numeric_scores(
+            column["subject_marks"].get(subject["name"])
+            for column in exam_columns
+        ))
+        all_subject_marks[subject["name"]] = round(sum(scores), 1) if scores else ""
+
+    ordered_columns.extend([
+        {
+            "name": "G. Total",
+            "weightage": summary["grand_max_total"],
+            "exam_total": summary["grand_total"],
+            "percentage": summary["overall_percentage"],
+            "subject_marks": all_subject_marks,
+        },
+    ])
+
+    grade, _ = get_grade(summary["overall_percentage"])
+    ordered_columns.append({
+        "name": "Grades",
+        "weightage": "",
+        "exam_total": grade,
+        "percentage": "-",
+        "subject_marks": {subject["name"]: grade for subject in subjects},
+    })
+
+    result["exam_columns"] = ordered_columns
+    dob = result["student"].get("DOB")
+    if hasattr(dob, "strftime"):
+        result["student"]["DOB"] = dob.strftime("%a, %d %b %Y")
+    return result
 
 
 @bulk_markheet_certificate_bp.route('/api/bulk_download_results', methods=["POST"])
@@ -42,9 +145,8 @@ def bulk_download_results():
         return jsonify({"message": "Session data missing. Please logout and login again!"}), 403
 
     extra_fields = {
-        "StudentsDB": ["STUDENTS_NAME", "FATHERS_NAME", "IMAGE",
-                       "MOTHERS_NAME", "ADDRESS", "PHONE", 'GENDER', "PEN"],
-        "expr": [func.to_char(StudentsDB.DOB, 'Dy, DD Mon YYYY').label("DOB")],
+        "StudentsDB": ["STUDENTS_NAME", "DOB", "FATHERS_NAME", "IMAGE",
+                       "MOTHERS_NAME", "ADDRESS", "PHONE", "GENDER", "PEN"],
         "ClassData": ["CLASS"],
         "StudentSessions": ["ROLL", "class_id", "Attendance"],
     }
@@ -55,6 +157,10 @@ def bulk_download_results():
             school_id, current_session_id, class_id, 
             student_session_ids=student_session_ids,
             extra_fields=extra_fields)
+        student_marks_data = [
+            prepare_result_for_template(result)
+            for result in student_marks_data
+        ]
     except Exception as e:
         print(e)
         return jsonify({"error": "Some error to fetch marks"}), 400
@@ -62,9 +168,6 @@ def bulk_download_results():
     if not student_marks_data:
         return jsonify({"message": "No Data Found"}), 400
 
-    
-
-    student_marks = process_marks(student_marks_data, add_grades_flag=True, add_grand_total_flag=True)
 
     school = (
         db.session.query(
@@ -93,6 +196,8 @@ def bulk_download_results():
 
     principal_sign = None
     teacher_sign = None
+    principal_name = ""
+    teacher_name = ""
 
     for sign, name, role, cls_id in rows:
         if role == "Principal":
@@ -118,7 +223,7 @@ def bulk_download_results():
     session_year = f"{current_session}-{str(current_session + 1)[-2:]}"
 
     # Generate HTML for bulk results
-    html = render_template('pdf-components/tall_result.html', students=student_marks, 
+    html = render_template('pdf-components/tall_result.html', students=student_marks_data, 
                             attandance_out_of = attandance_out_of, 
                             principle_sign=principal_sign, teacher_sign=teacher_sign, 
                             principal_name=principal_name, teacher_name=teacher_name,

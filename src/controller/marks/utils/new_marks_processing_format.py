@@ -9,6 +9,22 @@ from src.model.Subjects import Subjects
 from src.model.Exams import Exams
 from src.model.StudentMarks import StudentMarks
 
+from flask import Blueprint, jsonify
+
+del_after_bp = Blueprint('del_after_bp', __name__)
+
+
+@del_after_bp.route("/api/result-data", methods=["GET"])
+def get_result_data():
+    data = result_data(
+        school_id='falak',
+        session_id=2025,
+        class_id=4,
+        student_session_ids=None,
+    )
+
+    return jsonify(data)
+
 
 def result_data(
     school_id,
@@ -56,8 +72,7 @@ def result_data(
     # =========================================================
     # 2. GET EXAMS
     #
-    # IMPORTANT:
-    # display_order controls the sequence.
+    # Exams.weightage = maximum marks per subject
     # =========================================================
 
     exam_rows = (
@@ -98,9 +113,6 @@ def result_data(
 
     # =========================================================
     # 3. GET SUBJECTS
-    #
-    # IMPORTANT:
-    # display_order controls the sequence.
     # =========================================================
 
     subject_rows = (
@@ -108,8 +120,6 @@ def result_data(
             ClassSubject.id.label("class_subject_id"),
             Subjects.id.label("subject_id"),
             Subjects.subject,
-            Subjects.max_marks,
-            Subjects.pass_marks,
             Subjects.evaluation_type,
             Subjects.display_order,
         )
@@ -142,7 +152,7 @@ def result_data(
 
 
     # =========================================================
-    # 4. IDs FOR MARKS QUERY
+    # 4. GET ALL MARKS
     # =========================================================
 
     student_ids = [
@@ -160,11 +170,6 @@ def result_data(
         for subject in subject_rows
     ]
 
-
-    # =========================================================
-    # 5. GET ALL MARKS
-    # =========================================================
-
     mark_rows = (
         db.session.query(StudentMarks)
         .filter(
@@ -177,11 +182,7 @@ def result_data(
 
 
     # =========================================================
-    # 6. MAKE MARKS LOOKUP
-    #
-    # (student_session_id, exam_id, subject_id)
-    #                     ↓
-    #                   score
+    # 5. MAKE MARKS LOOKUP
     # =========================================================
 
     marks_lookup = {}
@@ -198,10 +199,7 @@ def result_data(
 
 
     # =========================================================
-    # 7. BUILD EXAM DEFINITIONS ONCE
-    #
-    # This order is exactly the order returned by
-    # .order_by(Exams.display_order)
+    # 6. BUILD EXAM DEFINITIONS
     # =========================================================
 
     exams = []
@@ -219,7 +217,7 @@ def result_data(
 
 
     # =========================================================
-    # 8. BUILD RESULT
+    # 7. BUILD STUDENT RESULTS
     # =========================================================
 
     results = []
@@ -227,7 +225,7 @@ def result_data(
     for student_session, student, class_data in student_rows:
 
         # -----------------------------------------------------
-        # Student's subjects
+        # Student subjects and marks
         # -----------------------------------------------------
 
         subjects = []
@@ -246,7 +244,6 @@ def result_data(
 
                 score = marks_lookup.get(key)
 
-                # Use string exam ID as JSON key
                 marks[str(exam.class_exam_id)] = (
                     score if score is not None else ""
                 )
@@ -256,25 +253,26 @@ def result_data(
                 "subject_id": subject.subject_id,
                 "name": subject.subject,
                 "type": subject.evaluation_type,
-                "max_marks": subject.max_marks,
-                "pass_marks": subject.pass_marks,
                 "display_order": subject.display_order,
                 "marks": marks,
             })
 
 
         # -----------------------------------------------------
-        # Calculate exam totals
+        # Calculate each exam's total and percentage
         # -----------------------------------------------------
 
         exam_totals = {}
 
         grand_total = 0
+        grand_max_total = 0
 
         for exam in exam_rows:
 
             exam_total = 0
-            max_total = 0
+            exam_max_total = (
+                float(exam.weightage or 0) * len(subject_rows)
+            )
 
             for subject in subject_rows:
 
@@ -286,10 +284,6 @@ def result_data(
 
                 score = marks_lookup.get(key)
 
-                # -----------------------------
-                # Score
-                # -----------------------------
-
                 if score not in (None, ""):
 
                     try:
@@ -297,46 +291,40 @@ def result_data(
                     except (ValueError, TypeError):
                         pass
 
-                # -----------------------------
-                # Maximum marks
-                # -----------------------------
 
-                if subject.max_marks is not None:
-
-                    try:
-                        max_total += float(
-                            subject.max_marks
-                        )
-                    except (ValueError, TypeError):
-                        pass
-
-
-            # -----------------------------
-            # Percentage
-            # -----------------------------
-
-            if max_total:
-                percentage = (
-                    exam_total / max_total
+            # Exam percentage
+            if exam_max_total > 0:
+                exam_percentage = (
+                    exam_total / exam_max_total
                 ) * 100
             else:
-                percentage = 0.0
+                exam_percentage = 0.0
 
 
             exam_totals[str(exam.class_exam_id)] = {
-                "total": exam_total,
-                "max_total": max_total,
-                "percentage": round(
-                    percentage,
-                    2,
-                ),
+                "total": round(exam_total, 2),
+                "max_total": round(exam_max_total, 2),
+                "percentage": round(exam_percentage, 2),
             }
 
             grand_total += exam_total
+            grand_max_total += exam_max_total
 
 
         # -----------------------------------------------------
-        # Student object
+        # Calculate overall percentage
+        # -----------------------------------------------------
+
+        if grand_max_total > 0:
+            overall_percentage = (
+                grand_total / grand_max_total
+            ) * 100
+        else:
+            overall_percentage = 0.0
+
+
+        # -----------------------------------------------------
+        # Student information
         # -----------------------------------------------------
 
         student_data = {
@@ -349,18 +337,12 @@ def result_data(
 
 
         # -----------------------------------------------------
-        # Extra fields
+        # Optional extra fields
         # -----------------------------------------------------
 
         if extra_fields:
 
             allowed_models = {
-                "StudentsDB": StudentsDB,
-                "StudentSessions": StudentSessions,
-                "ClassData": ClassData,
-            }
-
-            sources = {
                 "StudentsDB": student,
                 "StudentSessions": student_session,
                 "ClassData": class_data,
@@ -368,20 +350,12 @@ def result_data(
 
             for table_name, fields in extra_fields.items():
 
-                model = allowed_models.get(table_name)
-
-                if model is None:
-                    continue
-
-                if not isinstance(
-                    fields,
-                    (list, tuple, set),
-                ):
-                    continue
-
-                source = sources.get(table_name)
+                source = allowed_models.get(table_name)
 
                 if source is None:
+                    continue
+
+                if not isinstance(fields, (list, tuple, set)):
                     continue
 
                 for field in fields:
@@ -389,13 +363,11 @@ def result_data(
                     if field in student_data:
                         continue
 
-                    value = getattr(
+                    student_data[field] = getattr(
                         source,
                         field,
                         None,
                     )
-
-                    student_data[field] = value
 
 
         # -----------------------------------------------------
@@ -404,86 +376,49 @@ def result_data(
 
         results.append({
             "student": student_data,
-
-            # Already ordered
             "exams": exams,
-
-            # Already ordered
             "subjects": subjects,
-
             "exam_totals": exam_totals,
-
             "summary": {
-                "grand_total": grand_total,
+                "grand_total": round(grand_total, 2),
+                "grand_max_total": round(grand_max_total, 2),
+                "overall_percentage": round(overall_percentage, 2),
                 "rank": None,
             },
         })
 
 
     # =========================================================
-    # 9. CALCULATE RANK
+    # 8. CALCULATE RANK
+    #
+    # Rank is based on overall percentage.
+    # Equal percentages receive the same rank.
     # =========================================================
 
-    student_totals = []
-
-    for index, result in enumerate(results):
-
-        total = result["summary"]["grand_total"]
-
-        student_totals.append({
-            "index": index,
-            "total": total,
-        })
-
-
-    # Highest total first
-    sorted_totals = sorted(
-        student_totals,
-        key=lambda x: x["total"],
+    sorted_results = sorted(
+        results,
+        key=lambda result: result["summary"]["overall_percentage"],
         reverse=True,
     )
 
-
-    # ---------------------------------------------------------
-    # Assign ranking
-    # ---------------------------------------------------------
-
-    rank_lookup = {}
-
-    previous_total = None
+    previous_percentage = None
     current_rank = 0
 
-    for position, item in enumerate(
-        sorted_totals,
-        start=1,
-    ):
+    for position, result in enumerate(sorted_results, start=1):
 
-        total = item["total"]
+        percentage = result["summary"]["overall_percentage"]
 
-        if total != previous_total:
+        if percentage != previous_percentage:
             current_rank = position
 
-        rank_lookup[item["index"]] = current_rank
-
-        previous_total = total
+        result["summary"]["rank"] = current_rank
+        previous_percentage = percentage
 
 
     # =========================================================
-    # 10. PUT RANK INTO ORIGINAL RESULT
+    # 9. RETURN RESULTS
     #
-    # IMPORTANT:
-    # We DO NOT sort results here.
-    #
-    # Therefore the student order from the database is preserved.
-    # =========================================================
-
-    for index, result in enumerate(results):
-
-        result["summary"]["rank"] = rank_lookup[index]
-
-
-    # =========================================================
-    # 11. RETURN
+    # Original student order is preserved.
     # =========================================================
 
     return results

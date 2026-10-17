@@ -174,6 +174,9 @@
 
 <body>
   {% for student in students %}
+  {% set student_data = student.student %}
+  {% set exam_columns = student.exam_columns %}
+  {% set subjects = student.subjects %}
   <div class="student-result">
 
     <img class="decorative-icon" src="{{ url_for('static', filename='marksheet_icons/Book_Icon.png', _external=True) }}" style="
@@ -280,8 +283,8 @@
 
             <!-- Student Image -->
             <img class="logo-img student-image" style="object-fit: cover; object-position: top; border-radius: 30%;"
-              src="{{ 'https://lh3.googleusercontent.com/d/' + student['IMAGE'] + '=s600'
-                      if student['IMAGE']
+              src="{{ 'https://lh3.googleusercontent.com/d/' + student_data['IMAGE'] + '=s600'
+                      if student_data['IMAGE']
                       else 'https://cdn.pixabay.com/photo/2016/04/22/04/57/graduation-1345143_1280.png' }}">
           </div>
 
@@ -293,42 +296,42 @@
         <table style="width: 100%; border-collapse: collapse;">
           <tr>
             <td><strong>Class:</strong></td>
-            <td>{{student["CLASS"]}}</td>
+            <td>{{student_data["CLASS"]}}</td>
             <td><strong>Roll no:</strong></td>
-            <td>{{student["ROLL"]}}</td>
+            <td>{{student_data["ROLL"]}}</td>
           </tr>
 
           <tr>
             <td><strong>Name:</strong></td>
-            <td>{{student["STUDENTS_NAME"]}}</td>
+            <td>{{student_data["STUDENTS_NAME"]}}</td>
             <td><strong>PEN:</strong></td>
-            <td>{{student["PEN"]}}</td>
+            <td>{{student_data["PEN"]}}</td>
           </tr>
 
           <tr>
             <td><strong>Gender:</strong></td>
-            <td>{{student["GENDER"]}}</td>
+            <td>{{student_data["GENDER"]}}</td>
             <td><strong>DOB:</strong></td>
-            <td>{{student["DOB"]}}</td>
+            <td>{{student_data["DOB"]}}</td>
           </tr>
 
           <tr>
             <td><strong>Father:</strong></td>
-            <td>{{student["FATHERS_NAME"]}}</td>
+            <td>{{student_data["FATHERS_NAME"]}}</td>
             <td><strong>Mother:</strong></td>
-            <td>{{student["MOTHERS_NAME"]}}</td>
+            <td>{{student_data["MOTHERS_NAME"]}}</td>
           </tr>
 
           <tr>
             <td><strong>Phone:</strong></td>
-            <td>{{student["PHONE"]}}</td>
+            <td>{{student_data["PHONE"]}}</td>
             <td colspan="2"></td>
           </tr>
         </table>
         <table style="width: 100%; border-collapse: collapse;">
           <tr>
             <td style="text-align: left; vertical-align: top; width: 15%;"><strong>Address:</strong></td>
-            <td style="text-align: left; vertical-align: top;">{{student["ADDRESS"]}}</td>
+            <td style="text-align: left; vertical-align: top;">{{student_data["ADDRESS"]}}</td>
           </tr>
         </table>
       </div>
@@ -338,14 +341,11 @@
 
         <table
           style="width: 100%; height: 100%; border-collapse: collapse; text-align: center; border: 1px solid #c7c7c7;">
-          {% set marks = student.marks %}
-          {% set exam_names = student.exam_order if student.exam_order else marks.keys() | list %}
-          {% set subjects = student.subject_order if student.subject_order else student.marks[exam_names[0]].subject_marks_dict.keys() | list %}
-
           <thead>
             <tr>
               <th class="light-border" style="padding: 10px; font-size: 25px;">Subjects</th>
-              {% for exam_name, exam_data in student.marks.items() %}
+              {% for exam_data in exam_columns %}
+              {% set exam_name = exam_data.name %}
               {% if "G. Total" in exam_name or "Grand" in exam_name %}
               <th class="red light-border grand-total-header" style="font-size: 18px;">
                 {{ exam_name }}
@@ -368,22 +368,22 @@
           <tbody>
             {% for subject in subjects %}
             <tr class="text-center subject-row" style="font-size: 21px; font-weight: 500;">
-              <th class="light-border text-start" style="font-size: 22px; color: black">{{ subject }}</th>
-              {% for exam_name in exam_names %}
-              {% set exam_data = marks[exam_name] %}
+              <th class="light-border text-start" style="font-size: 22px; color: black">{{ subject.name }}</th>
+              {% for exam_data in exam_columns %}
+              {% set exam_name = exam_data.name %}
               {% if "G. Total" in exam_name or "Grand" in exam_name %}
               <td class="light-border grand-total-cell text-center">
-                {{ exam_data.subject_marks_dict.get(subject, "") }}
+                {{ exam_data.subject_marks.get(subject.name, "") }}
               </td>
               {% elif "Total" in exam_name %}
               <td class="light-border term-total-cell text-center">
-                {{ exam_data.subject_marks_dict.get(subject, "") }}
+                {{ exam_data.subject_marks.get(subject.name, "") }}
               </td>
               {% else %}
               <td class="light-border text-center">
-                {% if exam_data.subject_marks_dict.get(subject) is not none and
-                exam_data.subject_marks_dict.get(subject) != "" %}
-                {{ exam_data.subject_marks_dict.get(subject) }}
+                {% if exam_data.subject_marks.get(subject.name) is not none and
+                exam_data.subject_marks.get(subject.name) != "" %}
+                {{ exam_data.subject_marks.get(subject.name) }}
                 {% else %}
                 -
                 {% endif %}
@@ -396,9 +396,9 @@
             <!-- Grand Total -->
             <tr class="total-row" style="color: red; font-weight: 500;">
               <th>G.Total</th>
-              {% for exam_name in exam_names %}
+              {% for exam_data in exam_columns %}
               <td class="light-border text-center">
-                {{ marks[exam_name].exam_total }}
+                {{ exam_data.exam_total }}
               </td>
               {% endfor %}
             </tr>
@@ -406,9 +406,9 @@
             <!-- Percentage -->
             <tr class="total-row" style="color: red; font-weight: 500;">
               <th>%age</th>
-              {% for exam_name in exam_names %}
+              {% for exam_data in exam_columns %}
               <td class="light-border text-center">
-                {% set p = marks[exam_name].percentage %}
+                {% set p = exam_data.percentage %}
                 {% if p %}
                 {{ p }}
                 {% else %}
@@ -422,7 +422,7 @@
       </div>
 
       <!-- Rank/Attendance Section -->
-      {% set overall_rank = student["overall_rank"] %}
+      {% set overall_rank = student.summary.rank %}
       {% set grid_columns = 4 if overall_rank <= 10 else 3 %} {% set rank_image=None %} {% if overall_rank==1 %} {% set
         rank_image='1st-rank-gold-outline.png' %} {% elif overall_rank==2 %} {% set rank_image='2nd-rank-badge.png' %}
         {% elif overall_rank==3 %} {% set rank_image='3rd-rank-badge.png' %} {% endif %} <div
@@ -442,7 +442,7 @@
 
   <div style="text-align: center;">
     <div style="color: green; font-size: 28px; font-weight: 800; margin-bottom: 4px;">
-      {{ student["Attendance"] }}<span style="color: black">/{{ attandance_out_of }}</span>
+      {{ student_data["Attendance"] }}<span style="color: black">/{{ attandance_out_of }}</span>
     </div>
     <div style="font-size: 14px; letter-spacing: 0.5px;">ATTENDANCE</div>
   </div>
