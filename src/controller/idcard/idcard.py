@@ -141,13 +141,18 @@ def get_students_by_class(class_id):
         Schools.id == school_id
     ).first()
 
-    principal_sign, principal_name = db.session.query(
-        TeachersLogin.Sign,
-        TeachersLogin.Name
-    ).filter(
-        TeachersLogin.school_id == school_id,
-        TeachersLogin.role_id == 2
-    ).first()
+    principal = db.session.query(
+            TeachersLogin.Sign,
+            TeachersLogin.Name
+        ).filter(
+            TeachersLogin.school_id == school_id,
+            TeachersLogin.role_id == 2
+        ).first()
+
+    if principal:
+        principal_sign, principal_name = principal
+    else:
+        principal_sign, principal_name = None, None
 
     current_session = int(current_session)
     session_year = f"{current_session}-{str(current_session + 1)[-2:]}"
