@@ -2,6 +2,7 @@
 
 from flask import jsonify, session, Blueprint
 from sqlalchemy import case, func
+from sqlalchemy.orm import aliased
 
 from src.model.RTEInfo import RTEInfo
 from src.model.StudentsDB import StudentsDB
@@ -227,3 +228,61 @@ def get_students_data():
         }
 
     })
+
+
+@get_students_data_api_bp.route('/api/get_students_print_data', methods=['GET'])
+@login_required
+@permission_required('student_list')
+def get_students_print_data():
+    school_id = session['school_id']
+    selected_session = session['session_id']
+    user_id = session['user_id']
+    admission_class = aliased(ClassData)
+
+    students = db.session.query(
+        StudentsDB.STUDENTS_NAME,
+        ClassData.CLASS.label("CLASS"),
+        StudentSessions.ROLL,
+        StudentsDB.DOB,
+        StudentsDB.AADHAAR,
+        StudentsDB.FATHERS_NAME,
+        StudentsDB.MOTHERS_NAME,
+        StudentsDB.PHONE,
+        StudentsDB.ADMISSION_DATE,
+        StudentsDB.SR,
+        StudentsDB.ADDRESS,
+        admission_class.CLASS.label("ADMISSION_CLASS"),
+        ClassData.id.label("class_id"),
+        ClassData.display_order,
+    ).join(
+        StudentSessions,
+        StudentSessions.student_id == StudentsDB.id
+    ).join(
+        ClassData,
+        StudentSessions.class_id == ClassData.id
+    ).join(
+        ClassAccess,
+        ClassAccess.class_id == ClassData.id
+    ).outerjoin(
+        admission_class,
+        admission_class.id == StudentsDB.admission_class_id
+    ).filter(
+        StudentsDB.school_id == school_id,
+        StudentSessions.session_id == selected_session,
+        ClassAccess.staff_id == user_id
+    ).distinct().order_by(
+        ClassData.display_order.asc(),
+        ClassData.CLASS.asc(),
+        StudentSessions.ROLL.asc(),
+        StudentsDB.STUDENTS_NAME.asc()
+    ).all()
+
+    student_data = []
+    for student in students:
+        record = student._asdict()
+        for field in ("DOB", "ADMISSION_DATE"):
+            value = record[field]
+            record[field] = value.strftime("%d-%m-%Y") if value else ""
+        student_data.append(record)
+
+    return jsonify({"status": "success", "students": student_data})

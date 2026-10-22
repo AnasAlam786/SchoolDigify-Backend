@@ -11,6 +11,7 @@ from src.controller.permissions.has_permission import has_permission
 from src.model import (
     StudentsDB, ClassData, StudentSessions, Schools, RTEInfo,
     FeeData, FeeHeads, FeeSessionData, FeeStructure, FeeTransaction,
+    TeachersLogin,
 )
 from src import db
 
@@ -305,20 +306,31 @@ def get_admit_cards_api():
         for i in range(0, len(student_objs), page_size)
     ]
 
+    print(pages)
+
     # Get school info for logo and name
     school = db.session.query(Schools).filter_by(
         id=school_id
     ).first()
 
     school_name = school.School_Name if school else ''
+    school_address = school.Address if school else ''
+    school_phone = school.Phone if school else ''
     logo = school.Logo if school else ''
+    principal_name = db.session.query(TeachersLogin.Name).filter_by(
+        school_id=school_id,
+        role_id=2,
+    ).scalar() or ''
 
 
     html = render_template(
-        'admit_card/admit_pdf.html',
+        'admit_card/admit_pdf_detailed.html',
         data=pages,
         logo=logo,
         school=school_name,
+        school_address=school_address,
+        school_phone=school_phone,
+        principal_name=principal_name,
         admit_heading=admit_heading,
         scheme_heading=scheme_heading,
         fee_heading=fee_heading,
