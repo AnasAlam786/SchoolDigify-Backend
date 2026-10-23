@@ -9,7 +9,7 @@ from src.controller.permissions.has_permission import has_permission
 from src.controller.permissions.permission_required import permission_required
 from src.controller.auth.login_required import login_required
 
-from src.model import Attendance, AttendanceHolidays, StudentSessions
+from src.model import Attendance, AttendanceHolidays, ClassData, StudentSessions
 from src import db
 
 mark_attendance_api_bp = Blueprint( 'mark_attendance_api_bp',   __name__)
@@ -153,3 +153,95 @@ def mark_attendance_api():
     print(f"Attendance took {end_time - start_time:.6f} to mark")
 
     return jsonify({"message": "success"}), 200
+
+
+@mark_attendance_api_bp.route('/api/bulk_mark_attendance', methods=["POST"])
+@login_required
+@permission_required('attendance')
+def bulk_mark_attendance_api():
+    data = request.get_json(silent=True) or {}
+    class_id = data.get("class_id")
+    date_str = data.get("date")
+    action = data.get("action")
+
+    if not class_id or not date_str:
+        return jsonify({"message": "Class and date are required"}), 400
+    if action not in {"PRESENT", "ABSENT", "UNMARK"}:
+        return jsonify({"message": "Invalid bulk attendance action"}), 400
+
+    date = None
+    for date_format in ("%Y-%m-%d", "%d/%m/%Y", "%d-%m-%Y"):
+        try:
+            date = datetime.strptime(date_str, date_format).date()
+            break
+        except (TypeError, ValueError):
+            continue
+    if date is None:
+        return jsonify({"message": "Invalid date format"}), 400
+
+    current_date = datetime.today().date()
+    if current_date != date and not has_permission("mark_any_day_attendance"):
+        return jsonify({"message": "Access denied. You are only authorized to record attendance for today only."}), 403
+
+    school_id = session.get("school_id")
+    current_session = session["session_id"]
+    user_id = session["user_id"]
+    class_data = ClassData.query.filter_by(id=class_id, school_id=school_id).first()
+    if not class_data:
+        return jsonify({"message": "Invalid class"}), 404
+
+    holiday = AttendanceHolidays.query.filter(
+        AttendanceHolidays.school_id == school_id,
+        AttendanceHolidays.date == date,
+        or_(AttendanceHolidays.class_id == class_id, AttendanceHolidays.class_id.is_(None)),
+    ).first()
+    if holiday:
+        return jsonify({"message": "Attendance cannot be recorded on a scheduled holiday."}), 400
+    if date.weekday() == 6:
+        return jsonify({"message": "Attendance cannot be recorded for Sundays."}), 400
+
+    student_session_ids = [row[0] for row in db.session.query(StudentSessions.id).filter(
+        StudentSessions.class_id == class_id,
+        StudentSessions.session_id == current_session,
+    ).all()]
+
+    if not student_session_ids:
+        return jsonify({"message": "No students are enrolled in this class for the selected session.", "student_count": 0}), 200
+
+    attendance_rows = Attendance.query.filter(
+        Attendance.student_session_id.in_(student_session_ids),
+        Attendance.date == date,
+    ).all()
+
+    try:
+        if action == "UNMARK":
+            removed_count = len(attendance_rows)
+            for attendance in attendance_rows:
+                db.session.delete(attendance)
+            message = f"Attendance cleared for {removed_count} student(s)."
+        else:
+            attendance_by_student = {row.student_session_id: row for row in attendance_rows}
+            for student_session_id in student_session_ids:
+                attendance = attendance_by_student.get(student_session_id)
+                if attendance:
+                    attendance.status = action
+                    attendance.marked_by = user_id
+                else:
+                    db.session.add(Attendance(
+                        student_session_id=student_session_id,
+                        date=date,
+                        status=action,
+                        marked_by=user_id,
+                    ))
+            message = f"{action.title()} attendance marked for {len(student_session_ids)} student(s)."
+
+        db.session.commit()
+    except Exception as error:
+        db.session.rollback()
+        print("Bulk Attendance Error:", error)
+        return jsonify({"message": "Database error while updating attendance"}), 500
+
+    return jsonify({
+        "message": message,
+        "student_count": len(student_session_ids),
+    }), 200
