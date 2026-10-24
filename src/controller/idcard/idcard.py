@@ -12,6 +12,7 @@ from sqlalchemy import and_, func, or_
 from cryptography.exceptions import InvalidTag
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
+
 from src.model import Schools, TeachersLogin
 from src.model.StudentsDB import StudentsDB
 from src.model.StudentSessions import StudentSessions
@@ -29,8 +30,8 @@ from src.model.Sessions import Sessions
 from src import db
 from src.controller.auth.login_required import login_required
 from src.controller.permissions.permission_required import permission_required
-from src.controller.marks.utils.new_marks_processing_format import result_data
-
+from src.controller.marks.utils.fetch_marks import result_data
+from src.controller.marks.utils.format_marks import prepare_marks_format
 
 AES_KEY = bytes.fromhex(os.environ["QR_CODE_SECRET"])
 cipher = AESGCM(AES_KEY)
@@ -415,18 +416,27 @@ def verify_student_idcard(token):
         ),
     }
 
-    marks_data = result_data(
-        school_id=school.id,
-        session_id=student_session.session_id,
-        class_id=student_session.class_id,
-        student_session_ids=[student_session.id],
-    )
-    marksheet = marks_data[0] if marks_data else None
-    if marksheet:
-        marksheet['student'] = {
-            key: marksheet['student'].get(key)
-            for key in ('name', 'roll', 'class')
-        }
+    try:
+
+
+        marks_data = result_data(
+            school_id=school.id,
+            session_id=student_session.session_id,
+            class_id=student_session.class_id,
+            student_session_ids=[student_session.id],
+        )
+
+        marksheet = [
+            prepare_marks_format(result)
+            for result in marks_data
+        ]
+
+
+    except Exception as e:
+        print(f"Error fetching marks data for student {student_session.id}: {str(e)}")
+        marksheet = None
+
+
 
     response = jsonify({
         'student': {

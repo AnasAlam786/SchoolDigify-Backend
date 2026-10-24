@@ -1,7 +1,7 @@
 # src/controller/show_marks_api.py
 
 
-from flask import session, request, jsonify, Blueprint, render_template
+from flask import json, session, request, jsonify, Blueprint, render_template
 from sqlalchemy import exists 
 
 from src.controller.auth.login_required import login_required
@@ -9,8 +9,8 @@ from src.controller.permissions.permission_required import permission_required
 from src.model.ClassAccess import ClassAccess
 from src import db
 
-from src.controller.marks.utils.new_marks_processing_format import result_data
-from src.controller.marks.utils.process_marks import process_marks
+from src.controller.marks.utils.fetch_marks import result_data
+from src.controller.marks.utils.format_marks import prepare_marks_format
 from src.model.ClassData import ClassData
 from src.model.TeachersLogin import TeachersLogin
 
@@ -33,7 +33,7 @@ def show_marks():
     return render_template('marks_management/show_marks.html', Data=None, classes = classes)
 
 
-@show_marks_bp.route('/api/show_marks', methods=["POST"])
+@show_marks_bp.route('/api/show_marks', methods=["GET"])
 @login_required
 @permission_required('show_marks')  # Assuming same permission as single download
 def show_marks_api():
@@ -42,7 +42,7 @@ def show_marks_api():
     user_id = session["user_id"]
 
     try:
-        class_id = int(request.json.get("class_id"))
+        class_id = int(request.args.get("class_id"))
     except (TypeError, ValueError):
         return jsonify({"message": "Invalid class selected."}), 400
 
@@ -54,14 +54,26 @@ def show_marks_api():
         return jsonify({"message": "You are not authorized to access this class."}), 403
     
     extra_fields = {
-        "StudentsDB": ["STUDENTS_NAME", "DOB", "FATHERS_NAME", "FATHERS_NAME", "IMAGE"],
+        "StudentsDB": [
+            "STUDENTS_NAME", "DOB", "FATHERS_NAME", "MOTHERS_NAME",
+            "IMAGE", "PEN", "PHONE", "GENDER", "ADDRESS",
+        ],
         "ClassData": ["CLASS"],
-        "StudentSessions": ["ROLL", "class_id"]
+        "StudentSessions": ["ROLL", "class_id", "Attendance"]
     }
 
     try:
-        student_marks_data = result_data(school_id, current_session_id, class_id, 
-                                     extra_fields=extra_fields)    
+        student_marks_data = result_data(
+            school_id,
+            current_session_id,
+            class_id,
+            extra_fields=extra_fields
+        )
+
+        student_marks_data = [
+            prepare_marks_format(result)
+            for result in student_marks_data
+        ]
 
     except Exception as e:
         return jsonify({"message": f"Error fetching marks data: {str(e)}"}), 500
@@ -71,8 +83,6 @@ def show_marks_api():
         print("No student marks data found for the given class.")
         # html = render_template('marks_management/marks_table.html', student_marks=[], class_empty=True)
         return jsonify({'error': 'No student marks data found for the given class.'}), 403
-
-
 
     return jsonify({"student_marks":student_marks_data})
     

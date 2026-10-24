@@ -89,7 +89,6 @@ from .setup.exam_setup import exam_setup_api_bp
 from .setup.subject_setup import subject_setup_api_bp
 
 
-from .marks.utils.new_marks_processing_format import del_after_bp
 def register_blueprints(app):
     app.register_blueprint(login_bp)
     app.register_blueprint(logout_bp)
@@ -180,6 +179,5 @@ def register_blueprints(app):
     app.register_blueprint(exam_setup_api_bp)
     app.register_blueprint(subject_setup_api_bp)
 
-    app.register_blueprint(del_after_bp)
 
     

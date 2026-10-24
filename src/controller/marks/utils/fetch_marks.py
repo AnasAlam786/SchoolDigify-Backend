@@ -9,23 +9,6 @@ from src.model.Subjects import Subjects
 from src.model.Exams import Exams
 from src.model.StudentMarks import StudentMarks
 
-from flask import Blueprint, jsonify
-
-del_after_bp = Blueprint('del_after_bp', __name__)
-
-
-@del_after_bp.route("/api/result-data", methods=["GET"])
-def get_result_data():
-    data = result_data(
-        school_id='falak',
-        session_id=2025,
-        class_id=4,
-        student_session_ids=None,
-    )
-
-    return jsonify(data)
-
-
 def result_data(
     school_id,
     session_id,
@@ -55,6 +38,10 @@ def result_data(
         .filter(
             StudentSessions.session_id == session_id,
             StudentSessions.class_id == class_id,
+        )
+        .order_by(
+            ClassData.grade_level.asc(),
+            StudentSessions.ROLL.asc(),
         )
     )
 
@@ -149,6 +136,11 @@ def result_data(
 
     if not subject_rows:
         return []
+
+    numeric_subject_count = sum(
+        subject.evaluation_type != "grading"
+        for subject in subject_rows
+    )
 
 
     # =========================================================
@@ -271,7 +263,7 @@ def result_data(
 
             exam_total = 0
             exam_max_total = (
-                float(exam.weightage or 0) * len(subject_rows)
+                float(exam.weightage or 0) * numeric_subject_count
             )
 
             for subject in subject_rows:

@@ -19,16 +19,14 @@ def login_required(f):
             if key not in session:
                
                return jsonify({
-                "authenticated": False,
-                "error": "Login Required!"
+                "authenticated": False, "error": "Login Required!"
             }), 401
 
         try:
             redis_permission_no = r.get(session["user_id"])
         except Exception:
             return jsonify({
-                "authenticated": False,
-                "error": "Server Error"
+                "authenticated": False, "error": "Server Error"
             }), 500
         
 
