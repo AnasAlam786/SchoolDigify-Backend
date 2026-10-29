@@ -60,7 +60,7 @@ def final_admission_api():
     except Exception as e:
         print(e)
         return jsonify({
-            "error": error
+            "error": "Error: " + str(e)
         }), 500
 
     

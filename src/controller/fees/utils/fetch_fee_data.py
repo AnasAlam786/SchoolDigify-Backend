@@ -2,7 +2,7 @@
 from datetime import date, datetime
 from operator import or_
 
-from sqlalchemy import case
+from sqlalchemy import and_, case, or_
 from src.model import RTEInfo
 from src.model.FeeSessionData import FeeSessionData
 from src.model.StudentSessions import StudentSessions
@@ -14,6 +14,12 @@ from src.model.FeeTransaction import FeeTransaction
 from src.model.StudentsDB import StudentsDB
 from src.model.ClassAccess import ClassAccess
 from src import db
+from src.controller.fees.utils.fee_calculations import (
+    ZERO,
+    aggregate_fee_allocations,
+    calculate_fee_balance,
+    json_money,
+)
 
 
 def fetch_fee_data(    
@@ -114,15 +120,28 @@ def fetch_fee_data(
         db.session.query(
             FeeData.fee_session_id,
             FeeData.student_session_id,
-            FeeData.fee_payment_status,
-            FeeTransaction.paid_amount, 
+            FeeData.paid_amount,
+            FeeData.late_fee,
+            FeeData.transaction_id,
+            FeeTransaction.paid_amount.label("transaction_paid_amount"),
+            FeeTransaction.discount,
             FeeTransaction.transaction_no,
             FeeTransaction.payment_date
         )
         .outerjoin(FeeTransaction, FeeTransaction.id == FeeData.transaction_id)
         .filter(
             FeeData.student_session_id.in_(extracted_student_session_ids),
-            or_(FeeTransaction.is_deleted != True, FeeTransaction.is_deleted == None)
+            or_(
+                FeeData.transaction_id.is_(None),
+                and_(
+                    FeeTransaction.school_id == school_id,
+                    FeeTransaction.session_id == session_id,
+                    or_(
+                        FeeTransaction.is_deleted.is_(False),
+                        FeeTransaction.is_deleted.is_(None),
+                    ),
+                ),
+            ),
         )
         .all()
     )
@@ -136,21 +155,7 @@ def build_fee_data(students, fee_structure, fee_payments, current_session):
     today = date.today()
     result = []
 
-    # Map payments by (student_session_id, fee_session_id)
-    payment_map = {}
-    for fee in fee_payments:
-        raw_status = fee.fee_payment_status
-        status_value = (
-            raw_status.value if hasattr(raw_status, "value") 
-            else str(raw_status) if raw_status is not None 
-            else None
-        )
-
-        payment_map[(fee.student_session_id, fee.fee_session_id)] = {
-            "status": status_value,
-            "payment_date": fee.payment_date,
-            "transaction_no": fee.transaction_no,
-        }
+    payment_map = aggregate_fee_allocations(fee_payments)
 
     for idx, s in enumerate(students):
         student = {
@@ -168,7 +173,11 @@ def build_fee_data(students, fee_structure, fee_payments, current_session):
             "monthlyFees": [],
             "otherFees": [],
             "selectedFees": [],
-            "total_due_amount": 0,
+            "total_paid_amount": ZERO,
+            "total_remaining_amount": ZERO,
+            "total_due_amount": ZERO,
+            "total_upcoming_amount": ZERO,
+            "total_overpaid_amount": ZERO,
             "total_due_terms": 0
         }
 
@@ -195,20 +204,28 @@ def build_fee_data(students, fee_structure, fee_payments, current_session):
             key = (student["student_session_id"], f.fee_session_id)
             payment = payment_map.get(key)
 
-            if payment:
-                status = payment["status"]
-                paid_date = payment["payment_date"]
-                transaction_no = payment["transaction_no"]
+            balance = calculate_fee_balance(f.amount, payment)
+            amount = balance["obligatory_amount"]
+            remaining_amount = balance["remaining_amount"]
+            payment_status = balance["status"]
+            is_due = due_date <= today
+            display_status = (
+                payment_status if payment_status != "UNPAID"
+                else "DUE" if is_due else "UPCOMING"
+            )
+
+            paid_date = payment["payment_date"] if payment else None
+            transaction_no = payment["transaction_no"] if payment else None
+
+            student["total_paid_amount"] += balance["paid_amount"]
+            student["total_remaining_amount"] += max(remaining_amount, ZERO)
+            student["total_overpaid_amount"] += max(-remaining_amount, ZERO)
+            if is_due:
+                student["total_due_amount"] += max(remaining_amount, ZERO)
             else:
-                status = "DUE" if today > due_date else "UPCOMING"
-                paid_date = None
-                transaction_no = None
+                student["total_upcoming_amount"] += max(remaining_amount, ZERO)
 
-            amount = float(f.amount or 0)
-
-            # Check against upper case "DUE"
-            if status == "DUE":
-                student["total_due_amount"] += amount
+            if payment_status in ("UNPAID", "PARTIAL", "OVERPAID") and is_due:
                 if f.fee_type and f.fee_type.lower() == "tuition fee":
                     student["total_due_terms"] += 1
 
@@ -217,9 +234,18 @@ def build_fee_data(students, fee_structure, fee_payments, current_session):
                 "fee_id": f.fee_session_id,
                 "fee_type": f.fee_type,
                 "period_name": f.period_name,
-                "amount": amount,
+                "amount": json_money(amount),
+                "obligatory_amount": json_money(amount),
+                "paid_amount": json_money(balance["paid_amount"]),
+                "discount_amount": json_money(balance["discount_amount"]),
+                "settled_amount": json_money(balance["settled_amount"]),
+                "late_fee": json_money(balance["late_fee"]),
+                "remaining_amount": json_money(remaining_amount),
+                "payment_status": payment_status,
+                "is_overpaid": payment_status == "OVERPAID",
                 "dueDate": due_date.strftime("%d-%m-%Y"),
-                "status": status,
+                "due_status": "DUE" if is_due else "UPCOMING",
+                "status": display_status,
                 "paid_date": paid_date.strftime("%d-%m-%Y") if paid_date else None,
                 "transaction_no": transaction_no,
             }
@@ -228,6 +254,15 @@ def build_fee_data(students, fee_structure, fee_payments, current_session):
                 student["monthlyFees"].append(fee_item)
             else:
                 student["otherFees"].append(fee_item)
+
+        for field in (
+            "total_paid_amount",
+            "total_remaining_amount",
+            "total_due_amount",
+            "total_upcoming_amount",
+            "total_overpaid_amount",
+        ):
+            student[field] = json_money(student[field])
 
         result.append(student)
 

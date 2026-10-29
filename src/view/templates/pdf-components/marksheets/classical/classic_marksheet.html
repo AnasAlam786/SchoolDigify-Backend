@@ -17,15 +17,21 @@
     @media print {
       @page {
         size: A4 portrait;
-        margin: 3mm;
-        border: 2px solid #000;
-
+        margin: 0;
       }
 
       html,
       body {
         padding: 0;
         margin: 0;
+      }
+
+      .classic-front,
+      .student-result {
+        width: 210mm;
+        height: 297mm;
+        margin: 0;
+        box-sizing: border-box;
       }
 
       .student-result:last-child {
@@ -48,12 +54,22 @@
 
     .student-result {
       width: 210mm;
-      /* subtract left+right margin */
       height: 297mm;
 
       box-sizing: border-box;
       position: relative;
       overflow: hidden;
+      padding: 4mm;
+      print-color-adjust: exact;
+      -webkit-print-color-adjust: exact;
+    }
+
+    .student-result::before {
+      position: absolute;
+      content: "";
+      inset: 2.2mm;
+      border: 0.6px solid #e6dfd2;
+      pointer-events: none;
     }
 
     .result-container {
@@ -137,7 +153,7 @@
       left: 50%;
       transform: translate(-50%, -50%);
       width: 90%;
-      opacity: 0.17;
+      opacity: 0.10;
       z-index: -1;
     }
 
@@ -179,7 +195,8 @@
   {% set subjects = student.subjects %}
   <div class="student-result">
 
-    <img class="decorative-icon" src="{{ url_for('static', filename='marksheet_icons/Book_Icon.png', _external=True) }}" style="
+    <img class="decorative-icon" src="{{ url_for('static', filename='marksheet_icons/Book_Icon.png', _external=True) }}"
+      style="
         position: absolute;
         top: 300px;
         right: 100px;
@@ -189,7 +206,8 @@
         opacity: 0.3;
         transform: rotate(45deg);">
 
-    <img class="decorative-icon" src="{{ url_for('static', filename='marksheet_icons/Computer_Icon.png', _external=True) }}" style="
+    <img class="decorative-icon"
+      src="{{ url_for('static', filename='marksheet_icons/Computer_Icon.png', _external=True) }}" style="
         position: absolute;
         top: 200px;
         right: 350px;
@@ -200,7 +218,8 @@
         transform: rotate(15deg);">
 
 
-    <img class="decorative-icon" src="{{ url_for('static', filename='marksheet_icons/Color_Plate_Icon.png', _external=True) }}" style="
+    <img class="decorative-icon"
+      src="{{ url_for('static', filename='marksheet_icons/Color_Plate_Icon.png', _external=True) }}" style="
         position: absolute;
         top: 940px;
         right:700px;
@@ -211,7 +230,8 @@
         transform: rotate(45deg);">
 
 
-    <img class="decorative-icon" src="{{ url_for('static', filename='marksheet_icons/DNA_icon.png', _external=True) }}" style="
+    <img class="decorative-icon" src="{{ url_for('static', filename='marksheet_icons/DNA_icon.png', _external=True) }}"
+      style="
         position: absolute;
         top: 930px;
         right: 20px;
@@ -221,7 +241,8 @@
         opacity: 0.3;
         transform: rotate(45deg);">
 
-    <img class="decorative-icon" src="{{ url_for('static', filename='marksheet_icons/Eqn_Icon.png', _external=True) }}" style="
+    <img class="decorative-icon" src="{{ url_for('static', filename='marksheet_icons/Eqn_Icon.png', _external=True) }}"
+      style="
         position: absolute;
         top: 140px;
         right: 630px;
@@ -232,7 +253,8 @@
         transform: rotate(20deg);">
 
 
-    <img class="decorative-icon" src="{{ url_for('static', filename='marksheet_icons/Globe_Icon.png', _external=True) }}" style="
+    <img class="decorative-icon"
+      src="{{ url_for('static', filename='marksheet_icons/Globe_Icon.png', _external=True) }}" style="
         position: absolute;
         top: 1000px;
         right: 300px;
@@ -241,7 +263,8 @@
         z-index: 0;
         opacity: 0.3;">
 
-    <img class="decorative-icon" src="{{ url_for('static', filename='marksheet_icons/Microscope_Icon.png', _external=True) }}" style="
+    <img class="decorative-icon"
+      src="{{ url_for('static', filename='marksheet_icons/Microscope_Icon.png', _external=True) }}" style="
         position: absolute;
         top: 250px;
         right: 650px;
@@ -252,7 +275,8 @@
         transform: rotate(24deg);">
 
 
-    <img class="decorative-icon" src="{{ url_for('static', filename='marksheet_icons/Geometry_Icon.png', _external=True) }}" style="
+    <img class="decorative-icon"
+      src="{{ url_for('static', filename='marksheet_icons/Geometry_Icon.png', _external=True) }}" style="
         position: absolute;
         top:150px;
         right: 10px;

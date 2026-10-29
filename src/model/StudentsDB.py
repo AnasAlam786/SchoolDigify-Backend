@@ -47,8 +47,7 @@ EncryptedText = create_encrypted_text_type(fernet)
 
 class StudentsDB(db.Model):
     __tablename__ = 'StudentsDB'
-    
-    id = Column(BigInteger, unique=True, primary_key=True)
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
     STUDENTS_NAME = Column(Text, nullable=False)
     DOB = Column(Date, nullable=True)
     ADMISSION_DATE = Column(Date, nullable=True)

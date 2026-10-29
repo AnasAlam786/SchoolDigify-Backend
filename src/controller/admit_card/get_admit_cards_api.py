@@ -1,8 +1,7 @@
 from types import SimpleNamespace
 from datetime import date, datetime
-from decimal import Decimal
 from flask import render_template, session, request, Blueprint, jsonify
-from sqlalchemy import func
+from sqlalchemy import and_, or_
 
 from src.controller.auth.login_required import login_required
 from src.controller.permissions.permission_required import permission_required
@@ -14,6 +13,10 @@ from src.model import (
     TeachersLogin,
 )
 from src import db
+from src.controller.fees.utils.fee_calculations import (
+    aggregate_fee_allocations,
+    calculate_fee_balance,
+)
 
 get_admit_cards_api_bp = Blueprint('get_admit_cards_api_bp', __name__)
 
@@ -25,7 +28,6 @@ def get_admit_cards_api():
     """Render admit cards, exam schemes, fee due notices, or supported pairs."""
 
     data = request.json or {}
-
 
     admit_heading = data.get('admitHeading', '')
     scheme_heading = data.get('schemeHeading', '')
@@ -62,7 +64,6 @@ def get_admit_cards_api():
             "message": "You do not have permission to view fee notices."
         }), 403
 
-    # Build base query for students in the current session and school
     query = db.session.query(
         StudentsDB.id,
         StudentsDB.STUDENTS_NAME,
@@ -90,7 +91,6 @@ def get_admit_cards_api():
         ClassData.display_order,
         StudentSessions.ROLL
     )
-
 
     students = query.all()
 
@@ -128,60 +128,59 @@ def get_admit_cards_api():
             }), 400
 
         fee_session_ids = [fee.fee_session_id for fee in fee_structures]
-
         payment_records = (
             db.session.query(
                 FeeData.student_session_id,
                 FeeData.fee_session_id,
+                FeeData.transaction_id,
                 FeeData.paid_amount,
-                FeeData.fee_payment_status,
+                FeeData.late_fee,
+                FeeTransaction.paid_amount.label('transaction_paid_amount'),
+                FeeTransaction.discount,
+                FeeTransaction.payment_date,
+                FeeTransaction.transaction_no,
             )
             .outerjoin(FeeTransaction, FeeTransaction.id == FeeData.transaction_id)
             .filter(
                 FeeData.student_session_id.in_(student_session_ids),
                 FeeData.fee_session_id.in_(fee_session_ids),
-                func.coalesce(FeeTransaction.is_deleted, False) == False,
+                or_(
+                    FeeTransaction.id.is_(None),
+                    and_(
+                        FeeTransaction.school_id == school_id,
+                        FeeTransaction.session_id == current_session_id,
+                        or_(
+                            FeeTransaction.is_deleted.is_(False),
+                            FeeTransaction.is_deleted.is_(None),
+                        ),
+                    ),
+                ),
             )
             .all()
         )
-
-        payments_by_student_fee = {}
-
-        for payment in payment_records:
-            key = (
-                payment.student_session_id,
-                payment.fee_session_id
-            )
-
-            payments_by_student_fee.setdefault(key, []).append(payment)
+        payments_by_student_fee = aggregate_fee_allocations(payment_records)
 
         for student in students:
             if bool(student.is_RTE):
                 continue
 
             due_items = []
-
             for fee in fee_structures:
-
                 if fee.custom_due_date:
                     due_date = fee.custom_due_date
-
                     if isinstance(due_date, datetime):
                         due_date = due_date.date()
-
                 else:
                     if not fee.due_month or not fee.due_day:
                         return jsonify({
                             "message": "A fee due date is missing from this class's fee setup. Please correct it in Fee Management."
                         }), 400
-
                     try:
                         due_date = date(
                             current_session_year + int(fee.year_increment or 0),
                             int(fee.due_month),
                             int(fee.due_day),
                         )
-
                     except ValueError:
                         return jsonify({
                             "message": "A fee due date is invalid in this class's fee setup. Please correct it in Fee Management."
@@ -190,79 +189,39 @@ def get_admit_cards_api():
                 if due_date > today:
                     continue
 
-                payments = payments_by_student_fee.get(
-                    (
+                balance = calculate_fee_balance(
+                    fee.amount,
+                    payments_by_student_fee.get((
                         student.student_session_id,
-                        fee.fee_session_id
-                    ),
-                    [],
+                        fee.fee_session_id,
+                    )),
                 )
-
-                if any(
-                    getattr(
-                        payment.fee_payment_status,
-                        'value',
-                        payment.fee_payment_status
-                    ) == 'PAID'
-                    for payment in payments
-                ):
-                    continue
-
-                paid_amount = sum(
-                    (
-                        Decimal(str(payment.paid_amount or 0))
-                        for payment in payments
-                    ),
-                    Decimal('0'),
-                )
-
-                amount = Decimal(str(fee.amount or 0))
-
-                balance = max(
-                    amount - paid_amount,
-                    Decimal('0')
-                )
-
-                if balance <= 0:
+                remaining_amount = balance['remaining_amount']
+                if remaining_amount <= 0:
                     continue
 
                 due_items.append({
                     'fee_type': fee.fee_type or 'Fee',
                     'period_name': fee.period_name or '',
                     'due_date': due_date.strftime('%d-%m-%Y'),
-                    'amount': float(amount),
-                    'paid_amount': float(
-                        min(paid_amount, amount)
-                    ),
-                    'due_amount': float(balance),
+                    'amount': float(balance['obligatory_amount']),
+                    'paid_amount': float(balance['paid_amount']),
+                    'due_amount': float(remaining_amount),
                 })
 
             if due_items:
                 fee_notices[student.student_session_id] = {
                     'items': due_items,
-                    'total_amount': sum(
-                        item['amount']
-                        for item in due_items
-                    ),
-                    'total_paid': sum(
-                        item['paid_amount']
-                        for item in due_items
-                    ),
-                    'total_due': sum(
-                        item['due_amount']
-                        for item in due_items
-                    ),
+                    'total_amount': sum(item['amount'] for item in due_items),
+                    'total_paid': sum(item['paid_amount'] for item in due_items),
+                    'total_due': sum(item['due_amount'] for item in due_items),
                 }
 
-    # Convert rows to mutable objects and format dates
     has_students = bool(students)
     student_objs = []
-
-    for s in students:
-        obj = SimpleNamespace(**s._asdict())
-
+    for student in students:
+        obj = SimpleNamespace(**student._asdict())
         dob = getattr(obj, 'DOB', None)
-
         if dob:
             try:
                 obj.DOB = dob.strftime('%d-%m-%Y')
@@ -271,48 +230,20 @@ def get_admit_cards_api():
         else:
             obj.DOB = ''
 
-        obj.is_RTE = bool(
-            getattr(obj, 'is_RTE', False)
-        )
-
-        obj.fee_notice = fee_notices.get(
-            obj.student_session_id
-        )
-
+        obj.is_RTE = bool(getattr(obj, 'is_RTE', False))
+        obj.fee_notice = fee_notices.get(obj.student_session_id)
         student_objs.append(obj)
 
     if output_type == 'feeOnly':
-        student_objs = [
-            student
-            for student in student_objs
-            if student.fee_notice
-        ]
+        student_objs = [student for student in student_objs if student.fee_notice]
 
-    # Every standalone output uses the same 2 × 2 A4 grid.
-    #
-    # 1 output per student:
-    #     4 students per A4 page
-    #
-    # 2 outputs per student:
-    #     2 students per A4 page
-    #     because every student occupies 2 grid cells.
-    if len(selected_outputs) == 2:
-        page_size = 2
-    else:
-        page_size = 4
-
+    page_size = 2 if len(selected_outputs) == 2 else 4
     pages = [
         student_objs[i:i + page_size]
         for i in range(0, len(student_objs), page_size)
     ]
 
-    print(pages)
-
-    # Get school info for logo and name
-    school = db.session.query(Schools).filter_by(
-        id=school_id
-    ).first()
-
+    school = db.session.query(Schools).filter_by(id=school_id).first()
     school_name = school.School_Name if school else ''
     school_address = school.Address if school else ''
     school_phone = school.Phone if school else ''
@@ -321,7 +252,6 @@ def get_admit_cards_api():
         school_id=school_id,
         role_id=2,
     ).scalar() or ''
-
 
     html = render_template(
         'admit_card/admit_pdf_detailed.html',

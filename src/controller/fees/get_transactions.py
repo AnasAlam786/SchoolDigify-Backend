@@ -167,10 +167,8 @@ def get_fee_transactions():
             fee_name = getattr(fee_data, "fee_name", None) or (getattr(fee_head, "fee_name", None) if fee_head else None) or getattr(fee_structure, "period_name", None)
             # month label could be stored on FeeData (month_label) or as period_name on FeeStructure
             month_label = getattr(fee_data, "month_label", None) or getattr(fee_structure, "period_name", None)
-            # amount: prefer FeeData.amount (paid amount for the line), else FeeSessionData.amount
-            amount = getattr(fee_data, "amount", None)
-            if amount is None:
-                amount = getattr(fee_session, "amount", None)
+            # FeeData.paid_amount is the amount allocated by this transaction.
+            amount = getattr(fee_data, "paid_amount", None)
             amount = _num(amount)
 
             # Process monthly vs one-time

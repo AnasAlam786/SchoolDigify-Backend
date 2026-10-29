@@ -2,7 +2,7 @@
 
 from flask import session, jsonify, Blueprint
 
-from sqlalchemy import select, func, case, and_
+from sqlalchemy import or_, select, func, case, and_
 from src.controller.permissions.permission_required import permission_required
 from src.model import (ClassData, FeeData, FeeHeads, FeeSessionData, FeeStructure, FeeTransaction, RTEInfo, StudentsDB, StudentSessions)
 from src import db
@@ -13,6 +13,12 @@ from src.controller.auth.login_required import login_required
 from datetime import date
 from collections import defaultdict
 from decimal import Decimal
+from src.controller.fees.utils.fee_calculations import (
+    ZERO,
+    aggregate_fee_allocations,
+    calculate_fee_balance,
+    json_money,
+)
 
 from src.model.ClassAccess import ClassAccess
 
@@ -129,7 +135,7 @@ def get_students_fees_api():
 
         fee_sessions = []
         fees_by_class = defaultdict(list)
-        paid_fees_by_student = defaultdict(list)
+        paid_fees_by_student = {}
 
         if non_rte_students:
             # ---------------------------------------------------------
@@ -195,8 +201,10 @@ def get_students_fees_api():
                         FeeData.fee_session_id,
                         FeeData.transaction_id,
                         FeeData.paid_amount,
-                        FeeData.fee_payment_status,
+                        FeeData.late_fee,
 
+                        FeeTransaction.paid_amount.label("transaction_paid_amount"),
+                        FeeTransaction.discount,
                         FeeTransaction.payment_date,
                     )
                     .outerjoin(
@@ -205,20 +213,21 @@ def get_students_fees_api():
                     )
                     .filter(
                         FeeData.student_session_id.in_(student_session_ids),
-
-                        # NULL means "not deleted"
-                        func.coalesce(
-                            FeeTransaction.is_deleted,
-                            False,
-                        ) == False,
+                        or_(
+                            FeeTransaction.id.is_(None),
+                            and_(
+                                FeeTransaction.school_id == school_id,
+                                FeeTransaction.session_id == current_session_id,
+                                or_(
+                                    FeeTransaction.is_deleted.is_(False),
+                                    FeeTransaction.is_deleted.is_(None),
+                                ),
+                            ),
+                        ),
                     )
                     .all()
                 )
-
-                for fee in fee_records:
-                    paid_fees_by_student[
-                        fee.student_session_id
-                    ].append(fee)
+                paid_fees_by_student = aggregate_fee_allocations(fee_records)
 
         # ---------------------------------------------------------
         # 6. Build student response
@@ -248,21 +257,11 @@ def get_students_fees_api():
             # Payment records for this student
             # -----------------------------------------------------
 
-            paid_fees = paid_fees_by_student.get(
-                student.student_session_id,
-                [],
-            )
-
-            # -----------------------------------------------------
-            # Group payments by fee_session_id
-            # -----------------------------------------------------
-
-            paid_fee_map = defaultdict(list)
-
-            for payment in paid_fees:
-                paid_fee_map[
-                    payment.fee_session_id
-                ].append(payment)
+            student_payment_map = {
+                fee_id: payment
+                for (student_session_id, fee_id), payment in paid_fees_by_student.items()
+                if student_session_id == student.student_session_id
+            }
 
             # -----------------------------------------------------
             # Separate tuition and one-time fees
@@ -315,13 +314,8 @@ def get_students_fees_api():
             # One transaction can belong to multiple siblings.
             # -----------------------------------------------------
 
-            total_settled_amount = sum(
-                (
-                    payment.paid_amount or ZERO
-                    for payment in paid_fees
-                ),
-                ZERO,
-            )
+            total_settled_amount = ZERO
+            total_overpaid_amount = ZERO
 
             # -----------------------------------------------------
             # Paid tuition / one-time amounts
@@ -332,18 +326,13 @@ def get_students_fees_api():
 
             for fee in class_fees:
 
-                student_fee_records = paid_fee_map.get(
-                    fee.id,
-                    [],
+                balance = calculate_fee_balance(
+                    fee.amount,
+                    student_payment_map.get(fee.id),
                 )
-
-                settled_amount = sum(
-                    (
-                        record.paid_amount or ZERO
-                        for record in student_fee_records
-                    ),
-                    ZERO,
-                )
+                settled_amount = balance["paid_amount"]
+                total_settled_amount += settled_amount
+                total_overpaid_amount += max(-balance["remaining_amount"], ZERO)
 
                 if fee.fee_type == "Tuition Fee":
                     paid_tuition_fee += settled_amount
@@ -361,17 +350,14 @@ def get_students_fees_api():
                 for fee in tuition_fees
             }
 
-            paid_tuition_fee_ids = {
-                fee_id
-                for fee_id, records in paid_fee_map.items()
-                if (
-                    fee_id in tuition_fee_ids
-                    and any(
-                        record.fee_payment_status == "PAID"
-                        for record in records
-                    )
+            paid_tuition_fee_ids = set()
+            for fee in tuition_fees:
+                balance = calculate_fee_balance(
+                    fee.amount,
+                    student_payment_map.get(fee.id),
                 )
-            }
+                if balance["status"] in ("PAID", "OVERPAID"):
+                    paid_tuition_fee_ids.add(fee.id)
 
             paid_months = len(
                 paid_tuition_fee_ids
@@ -391,30 +377,11 @@ def get_students_fees_api():
 
                 fee_amount = fee.amount or ZERO
 
-                student_fee_records = paid_fee_map.get(
-                    fee.id, [],
+                balance = calculate_fee_balance(
+                    fee_amount,
+                    student_payment_map.get(fee.id),
                 )
-
-                # -------------------------------------------------
-                # Total amount already paid for this fee
-                # -------------------------------------------------
-
-                settled_amount = sum(
-                    (
-                        record.paid_amount or ZERO
-                        for record in student_fee_records
-                    ),
-                    ZERO,
-                )
-
-                # -------------------------------------------------
-                # Remaining amount
-                # -------------------------------------------------
-
-                remaining_amount = max(
-                    fee_amount - settled_amount,
-                    ZERO,
-                )
+                remaining_amount = balance["remaining_amount"]
 
                 # Completely paid
                 if remaining_amount <= ZERO:
@@ -465,9 +432,9 @@ def get_students_fees_api():
             # -----------------------------------------------------
 
             payment_dates = [
-                payment.payment_date
-                for payment in paid_fees
-                if payment.payment_date
+                payment["payment_date"]
+                for payment in student_payment_map.values()
+                if payment["payment_date"]
             ]
 
             last_payment_date = (
@@ -505,21 +472,22 @@ def get_students_fees_api():
                 **build_basic_student_record(student),
 
                 # Overall
-                "totalPayable": float(total_payable),
-                "totalSettledAmount": float(total_settled_amount),
+                "totalPayable": json_money(total_payable),
+                "totalSettledAmount": json_money(total_settled_amount),
+                "overpaidAmount": json_money(total_overpaid_amount),
                 "lastPaymentDate": last_payment_date,
 
                 # Due / upcoming
-                "dueAmount": float(due_amount),
-                "upcomingAmount": float(upcoming_amount),
+                "dueAmount": json_money(due_amount),
+                "upcomingAmount": json_money(upcoming_amount),
 
                 # Tuition
-                "totalTuitionFee": float(total_tuition_fee),
-                "paidTuitionFee": float(paid_tuition_fee),
+                "totalTuitionFee": json_money(total_tuition_fee),
+                "paidTuitionFee": json_money(paid_tuition_fee),
 
                 # One-time
-                "totalOneTimeFee": float(total_one_time_fee),
-                "paidOneTimeFee": float(paid_one_time_fee),
+                "totalOneTimeFee": json_money(total_one_time_fee),
+                "paidOneTimeFee": json_money(paid_one_time_fee),
 
                 # Tuition months
                 "totalMonths": total_months,
@@ -562,9 +530,7 @@ def get_students_fees_api():
         # ---------------------------------------------------------
 
         return jsonify({
-            "total_discount_given_by_school": float(
-                total_discount
-            ),
+            "total_discount_given_by_school": json_money(total_discount),
             "students_fee_data": data,
         }), 200
 

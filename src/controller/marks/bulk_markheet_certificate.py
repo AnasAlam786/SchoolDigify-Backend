@@ -9,6 +9,7 @@ from src.model import SchoolSession
 from src.model.ClassAccess import ClassAccess
 from src.model.Roles import Roles
 from src.model.Schools import Schools
+from src.model.Sessions import Sessions
 from src.model.TeachersLogin import TeachersLogin
 from src import db
 
@@ -479,6 +480,41 @@ def prepare_result_for_template(result):
 
 
 
+@bulk_markheet_certificate_bp.route('/api/print_classical_marksheet_front', methods=["GET"])
+@login_required
+@permission_required('get_result')
+def print_classical_marksheet_front():
+    school = (
+        db.session.query(
+            Schools.Logo,
+            Schools.School_Name,
+            Schools.Address,
+            Schools.Phone,
+            Schools.UDISE,
+            Sessions.session.label("school_legacy")
+        )
+        .outerjoin(Sessions, Sessions.id == Schools.school_legacy_id)
+        .filter(Schools.id == session["school_id"])
+        .first()
+    )
+
+    current_session = int(session["session_id"])
+    session_year = f"{current_session}-{str(current_session + 1)[-2:]}"
+
+    html = render_template(
+        'pdf-components/marksheets/classical/classic_front.html',
+        school_logo=session.get("logo") or school.Logo,
+        school_name=school.School_Name,
+        school_address=school.Address,
+        school_phone=school.Phone,
+        school_udise=school.UDISE,
+        school_legacy=school.school_legacy,
+        sesion_year=session_year,
+    )
+
+    return jsonify({"html": html})
+
+
 @bulk_markheet_certificate_bp.route('/api/bulk_download_results', methods=["POST"])
 @login_required
 @permission_required('get_result')  # Assuming same permission as single download
@@ -503,8 +539,14 @@ def bulk_download_results():
     school = (
         db.session.query(
             Schools.Logo,
-            Schools.school_heading_image
+            Schools.school_heading_image,
+            Schools.School_Name,
+            Schools.Address,
+            Schools.Phone,
+            Schools.UDISE,
+            Sessions.session.label("school_legacy")
         )
+        .outerjoin(Sessions, Sessions.id == Schools.school_legacy_id)
         .filter(Schools.id == school_id)
         .first()
     )
@@ -550,11 +592,15 @@ def bulk_download_results():
     session_year = f"{current_session}-{str(current_session + 1)[-2:]}"
 
     # Generate HTML for bulk results
-    html = render_template('pdf-components/tall_result.html', students=students_data, 
+    html = render_template('pdf-components/marksheets/classical/classic_marksheet.html', students=students_data, 
                             attandance_out_of=attandance_out_of, 
                             principle_sign=principal_sign, teacher_sign=teacher_sign, 
                             principal_name=principal_name, teacher_name=teacher_name,
-                            school_logo=school.Logo, school_heading_image=school.school_heading_image,
+                            school_logo=session.get("logo") or school.Logo,
+                            school_heading_image=school.school_heading_image,
+                            school_name=school.School_Name, school_address=school.Address,
+                            school_phone=school.Phone, school_udise=school.UDISE,
+                            school_legacy=school.school_legacy,
                             sesion_year=session_year)
 
     return jsonify({"html": html})

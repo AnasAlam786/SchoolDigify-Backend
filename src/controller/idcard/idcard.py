@@ -6,6 +6,8 @@ import base64
 import binascii
 import calendar
 from datetime import date, datetime, timedelta
+from decimal import Decimal
+from types import SimpleNamespace
 
 from flask import session, Blueprint, jsonify, request
 from sqlalchemy import and_, func, or_
@@ -32,6 +34,10 @@ from src.controller.auth.login_required import login_required
 from src.controller.permissions.permission_required import permission_required
 from src.controller.marks.utils.fetch_marks import result_data
 from src.controller.marks.utils.format_marks import prepare_marks_format
+from src.controller.fees.utils.fee_calculations import (
+    aggregate_fee_allocations,
+    calculate_fee_balance,
+)
 
 AES_KEY = bytes.fromhex(os.environ["QR_CODE_SECRET"])
 cipher = AESGCM(AES_KEY)
@@ -88,6 +94,7 @@ def decrypt_student_id(token):
 
 idcard_bp = Blueprint( 'idcard_bp',   __name__)
 
+@idcard_bp.route('/api/idcard_students', defaults={'class_id': None}, methods=['GET'])
 @idcard_bp.route('/api/idcard_students/<int:class_id>', methods=['GET'])
 @login_required
 @permission_required('idcard')
@@ -96,13 +103,18 @@ def get_students_by_class(class_id):
     current_session = session["session_id"]
     user_id = session["user_id"]
 
-    # Check if user has access to this class
-    has_access = db.session.query(ClassAccess).filter(
+    accessible_class_ids = [row[0] for row in db.session.query(
+        ClassAccess.class_id
+    ).join(
+        ClassData, ClassData.id == ClassAccess.class_id
+    ).filter(
         ClassAccess.staff_id == user_id,
-        ClassAccess.class_id == class_id
-    ).first()
-    
-    if not has_access:
+        ClassData.school_id == school_id
+    ).all()]
+
+    if not accessible_class_ids or (
+        class_id is not None and class_id not in accessible_class_ids
+    ):
         return jsonify({'error': 'Access denied'}), 403
 
     # Query students for the specific class
@@ -126,8 +138,13 @@ def get_students_by_class(class_id):
     ).filter(
         StudentsDB.school_id == school_id,
         StudentSessions.session_id == current_session,
-        ClassData.id == class_id
+        ClassData.id.in_(
+            [class_id] if class_id is not None else accessible_class_ids
+        ),
+        ClassData.school_id == school_id
     ).order_by(
+        ClassData.CLASS.asc(),
+        ClassData.Section.asc(),
         StudentSessions.ROLL.asc()
     ).all()
 
@@ -297,6 +314,32 @@ def verify_student_idcard(token):
         FeeTransaction.payment_date.desc(),
     ).all()
 
+    allocation_records = []
+    for fee_session, fee_structure, fee_head, fee_data, transaction in fee_rows:
+        if not fee_data:
+            continue
+        has_valid_payment = (
+            not fee_data.transaction_id
+            or (
+                transaction
+                and not transaction.is_deleted
+                and transaction.session_id == student_session.session_id
+            )
+        )
+        if has_valid_payment:
+            allocation_records.append(SimpleNamespace(
+                student_session_id=fee_data.student_session_id,
+                fee_session_id=fee_data.fee_session_id,
+                transaction_id=fee_data.transaction_id,
+                paid_amount=fee_data.paid_amount,
+                late_fee=fee_data.late_fee,
+                transaction_paid_amount=transaction.paid_amount if transaction else None,
+                discount=transaction.discount if transaction else None,
+                payment_date=transaction.payment_date if transaction else None,
+                transaction_no=transaction.transaction_no if transaction else None,
+            ))
+
+    payment_totals = aggregate_fee_allocations(allocation_records)
     fee_items = {}
     transaction_data = {}
     for fee_session, fee_structure, fee_head, fee_data, transaction in fee_rows:
@@ -329,6 +372,7 @@ def verify_student_idcard(token):
                 'amount': amount,
                 'dueDate': due_date.strftime('%d-%m-%Y') if due_date else 'N/A',
                 'status': 'UPCOMING' if due_date is None or due_date >= date.today() else 'DUE',
+                'due_status': 'UPCOMING' if due_date is None or due_date >= date.today() else 'DUE',
                 'paid_date': None,
                 'transaction_no': None,
                 'paid_amount': 0.0,
@@ -339,20 +383,24 @@ def verify_student_idcard(token):
             fee_data
             and (
                 not fee_data.transaction_id
-                or (transaction and not transaction.is_deleted)
+                or (
+                    transaction
+                    and not transaction.is_deleted
+                    and transaction.session_id == student_session.session_id
+                )
             )
         )
         if has_valid_payment:
-            paid_amount = float(fee_data.paid_amount or 0)
-            item['paid_amount'] += paid_amount
-            status = fee_data.fee_payment_status
-            status = status.value if hasattr(status, 'value') else str(status)
-            if status == 'PAID' or item['paid_amount'] >= amount:
-                item['status'] = 'PAID'
-                item['amount'] = amount
-            else:
-                item['status'] = 'DUE'
-                item['amount'] = max(amount - item['paid_amount'], 0)
+            balance = calculate_fee_balance(
+                fee_session.amount,
+                payment_totals.get((student_session.id, fee_session_id)),
+            )
+            item['paid_amount'] = float(balance['paid_amount'])
+            item['obligatory_amount'] = float(balance['applicable_obligation'])
+            item['remaining_amount'] = float(balance['remaining_amount'])
+            item['payment_status'] = balance['status']
+            item['status'] = balance['status']
+            item['amount'] = max(float(balance['remaining_amount']), 0)
 
             if transaction and not transaction.is_deleted:
                 item['paid_date'] = (
@@ -361,7 +409,14 @@ def verify_student_idcard(token):
                 )
                 item['transaction_no'] = transaction.transaction_no
 
-            if transaction and not transaction.is_deleted:
+        else:
+            balance = calculate_fee_balance(fee_session.amount)
+            item['obligatory_amount'] = float(balance['applicable_obligation'])
+            item['remaining_amount'] = float(balance['remaining_amount'])
+            item['payment_status'] = balance['status']
+            item['status'] = balance['status']
+
+        if has_valid_payment and transaction and not transaction.is_deleted:
                 txn_id = transaction.id
                 if txn_id not in transaction_data:
                     transaction_data[txn_id] = {
@@ -409,10 +464,19 @@ def verify_student_idcard(token):
         'monthlyFees': [fee for fee in all_fees if fee['fee_type'].lower() == 'tuition fee'],
         'otherFees': [fee for fee in all_fees if fee['fee_type'].lower() != 'tuition fee'],
         'selectedFees': [],
-        'total_due_amount': sum(fee['amount'] for fee in all_fees if fee['status'] == 'DUE'),
+        'total_due_amount': float(sum(
+            (
+                max(Decimal(str(fee['remaining_amount'])), Decimal('0'))
+                for fee in all_fees
+                if fee['due_status'] == 'DUE'
+            ),
+            Decimal('0'),
+        )),
         'total_due_terms': sum(
             1 for fee in all_fees
-            if fee['status'] == 'DUE' and fee['fee_type'].lower() == 'tuition fee'
+            if fee['due_status'] == 'DUE'
+            and fee['remaining_amount'] > 0
+            and fee['fee_type'].lower() == 'tuition fee'
         ),
     }
 

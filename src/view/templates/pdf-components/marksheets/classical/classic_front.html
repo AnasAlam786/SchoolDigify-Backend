@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Marksheets Front Page</title>
+  <style>
+    @page {
+      size: A4 portrait;
+      margin: 0;
+    }
+
+    @media print {
+      .classic-front {
+        margin: 0;
+        page-break-after: auto;
+        break-after: auto;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      .classic-front-frame {
+        box-shadow: none;
+      }
+    }
+
+    html,
+    body {
+      width: 210mm;
+      height: 297mm;
+      margin: 0;
+      padding: 0;
+    }
+
+    .classic-front {
+      width: 210mm;
+      height: 297mm;
+      box-sizing: border-box;
+      overflow: hidden;
+      color: #292929;
+      background: #ffffff;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      page-break-after: auto;
+      break-after: auto;
+    }
+
+    .classic-front-frame {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      height: 100%;
+      box-sizing: border-box;
+      padding: 4mm;
+    }
+
+    .classic-front-frame::before {
+      position: absolute;
+      content: "";
+      inset: 2.2mm;
+      border: 0.6px solid #e6dfd2;
+      pointer-events: none;
+    }
+
+    .classic-front-kicker {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 5mm;
+      padding-bottom: 2.5mm;
+      border-bottom: 1px solid #b79a5a;
+      color: #555555;
+      font-size: 10pt;
+      font-weight: 800;
+      letter-spacing: 1.1px;
+      line-height: 1.35;
+    }
+
+    .classic-front-kicker span:last-child {
+      text-align: right;
+    }
+
+    .classic-front-brand {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 3mm 0 3.5mm;
+      text-align: center;
+    }
+
+    .classic-front-brand-mark {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 0;
+      margin-bottom: 2mm;
+    }
+
+    .classic-front-logo {
+      display: block;
+      width: 23mm;
+      height: 23mm;
+      object-fit: contain;
+    }
+
+    .classic-front-brand-copy {
+      width: 100%;
+      min-width: 0;
+    }
+
+    .classic-front-school-name {
+      max-width: 180mm;
+      margin: 0 auto;
+      color: #232323;
+      font-size: 28pt;
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      overflow-wrap: anywhere;
+    }
+
+    .classic-front-school-caption {
+      margin: 2mm 0 0;
+      color: #9b1d31;
+      font-size: 10pt;
+      font-weight: 700;
+      letter-spacing: 1.4px;
+      line-height: 1.4;
+      text-transform: uppercase;
+    }
+
+    .classic-front-title {
+      padding: 3.2mm 3mm 3.5mm;
+      border-bottom: 1px solid #c7bdab;
+      text-align: center;
+    }
+
+    .classic-front-title-rule {
+      width: 20mm;
+      height: 1.2mm;
+      margin: 0 auto 2mm;
+      background: #9b1d31;
+    }
+
+    .classic-front-title h2 {
+      margin: 0;
+      color: #292929;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 28pt;
+      font-weight: 700;
+      line-height: 1.15;
+      letter-spacing: 2px;
+    }
+
+    .classic-front-title p {
+      margin: 1.8mm 0 0;
+      color: #555555;
+      font-size: 11pt;
+      font-weight: 600;
+      line-height: 1.35;
+      letter-spacing: 0.8px;
+    }
+
+    .classic-front-details {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-auto-rows: minmax(18mm, auto);
+      gap: 2.5mm;
+      margin: 3mm 0 4mm;
+    }
+
+    .classic-front-detail {
+      display: flex;
+      min-width: 0;
+      flex-direction: column;
+      justify-content: center;
+      padding: 2.8mm 3.5mm;
+      border: 1px solid #d9d3c8;
+      border-left: 2px solid #9b1d31;
+      background: #ffffff;
+      box-sizing: border-box;
+    }
+
+    .classic-front-detail-label {
+      display: block;
+      margin-bottom: 1.5mm;
+      color: #8f1e30;
+      font-size: 9pt;
+      font-weight: 800;
+      letter-spacing: 1px;
+      line-height: 1.3;
+      text-transform: uppercase;
+    }
+
+    .classic-front-detail-value {
+      color: #292929;
+      font-size: 12pt;
+      font-weight: 500;
+      line-height: 1.35;
+      overflow-wrap: anywhere;
+    }
+
+    .classic-front-section-title {
+      margin: 0 0 2.5mm;
+      color: #292929;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 15pt;
+      font-weight: 700;
+      line-height: 1.25;
+      letter-spacing: 0.9px;
+      text-align: center;
+      text-transform: uppercase;
+    }
+
+    .classic-front-pillars {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 3mm;
+      margin-bottom: 4mm;
+    }
+
+    .classic-front-pillar {
+      display: flex;
+      min-width: 0;
+      min-height: 34mm;
+      flex-direction: column;
+      align-items: center;
+      padding: 3.2mm 3mm;
+      border: 1px solid #e1dacc;
+      border-top: 2px solid #9b1d31;
+      background: #f8f7f3;
+      box-sizing: border-box;
+      text-align: center;
+    }
+
+    .classic-front-pillar-number {
+      display: block;
+      margin-bottom: 1.3mm;
+      color: #a58a4f;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 12pt;
+      font-weight: 700;
+      line-height: 1.2;
+      letter-spacing: 1px;
+    }
+
+    .classic-front-pillar h3 {
+      margin: 0 0 1.8mm;
+      color: #302e29;
+      font-size: 11.5pt;
+      font-weight: 800;
+      line-height: 1.25;
+      letter-spacing: 0.1px;
+    }
+
+    .classic-front-pillar p {
+      margin: 0;
+      color: #53504a;
+      font-size: 10pt;
+      line-height: 1.4;
+    }
+
+    .classic-front-grading {
+      min-width: 0;
+    }
+
+    .classic-front-grading .classic-front-section-title {
+      margin-bottom: 2mm;
+    }
+
+    .classic-front-grade-table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      font-size: 9.5pt;
+      color: #302e29;
+    }
+
+    .classic-front-grade-table th,
+    .classic-front-grade-table td {
+      padding: 1.7mm 2mm;
+      border: 1px solid #ded6c7;
+      text-align: left;
+      line-height: 1.28;
+      vertical-align: middle;
+      overflow-wrap: break-word;
+      word-break: normal;
+    }
+
+    .classic-front-grade-table th {
+      color: #8f1e30;
+      background: #f8f7f3;
+      border-top: 1.4px solid #b79a5a;
+      border-bottom: 1.4px solid #b79a5a;
+      font-size: 8.5pt;
+      font-weight: 800;
+      letter-spacing: 0.35px;
+      text-transform: uppercase;
+    }
+
+    .classic-front-grade-table th:nth-child(1),
+    .classic-front-grade-table td:nth-child(1) {
+      width: 20%;
+      text-align: center;
+    }
+
+    .classic-front-grade-table th:nth-child(2),
+    .classic-front-grade-table td:nth-child(2) {
+      width: 10%;
+      text-align: center;
+    }
+
+    .classic-front-grade-table th:nth-child(3),
+    .classic-front-grade-table td:nth-child(3) {
+      width: 24%;
+    }
+
+    .classic-front-grade-table th:nth-child(4),
+    .classic-front-grade-table td:nth-child(4) {
+      width: 46%;
+    }
+
+    .classic-front-grade-table tbody tr:nth-child(even) {
+      background: #faf9f6;
+    }
+
+    .classic-front-grade-table tbody tr:nth-child(odd) {
+      background: #ffffff;
+    }
+
+    .classic-front-grade {
+      color: #8f1e30;
+      font-size: 11pt;
+      font-weight: 800;
+      text-align: center !important;
+    }
+
+    .classic-front-note {
+      margin: 1.8mm 0 0;
+      color: #565656;
+      font-size: 9pt;
+      line-height: 1.4;
+      text-align: center;
+    }
+
+    .classic-front-quote {
+      display: flex;
+      min-width: 0;
+      min-height: 22mm;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      margin-top: 3mm;
+      padding: 2mm 6mm 2.5mm;
+      border: 1px solid #d9d3c8;
+      border-top: 2px solid #9b1d31;
+      background: #faf9f6;
+      box-sizing: border-box;
+      text-align: center;
+    }
+
+    .classic-front-quote-mark {
+      color: #9b1d31;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 27pt;
+      line-height: 0.75;
+    }
+
+    .classic-front-quote p {
+      margin: 1.5mm 0 0;
+      color: #302e29;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 14pt;
+      font-style: italic;
+      line-height: 1.35;
+    }
+
+    .classic-front-footer {
+      margin-top: auto;
+      padding-top: 3mm;
+      border-top: 1px solid #b79a5a;
+      color: #8f1e30;
+      font-size: 9pt;
+      font-weight: 800;
+      letter-spacing: 1px;
+      line-height: 1.4;
+      text-align: center;
+      text-transform: uppercase;
+    }
+  </style>
+</head>
+
+<body class="print-document">
+  <section class="classic-front">
+    <div class="classic-front-frame">
+      <div class="classic-front-kicker">
+        <span>ACADEMIC SESSION {{ sesion_year }}</span>
+        <span>STUDENT PROGRESS REPORT</span>
+      </div>
+
+      <header class="classic-front-brand">
+        {% if school_logo %}
+        <div class="classic-front-brand-mark">
+          <img class="classic-front-logo" src="{{ school_logo }}" alt="School logo">
+        </div>
+        {% endif %}
+
+        <div class="classic-front-brand-copy">
+          <h1 class="classic-front-school-name">{{ school_name or 'Our School' }}</h1>
+          <p class="classic-front-school-caption">Learning with purpose · Growing with values</p>
+        </div>
+      </header>
+
+      <div class="classic-front-details">
+        <div class="classic-front-detail">
+          <span class="classic-front-detail-label">School address</span>
+          <div class="classic-front-detail-value">{{ school_address or 'Address not provided' }}</div>
+        </div>
+
+        <div class="classic-front-detail">
+          <span class="classic-front-detail-label">Phone</span>
+          <div class="classic-front-detail-value">{{ school_phone or 'Not provided' }}</div>
+        </div>
+
+        <div class="classic-front-detail">
+          <span class="classic-front-detail-label">UDISE code</span>
+          <div class="classic-front-detail-value">{{ school_udise or 'Not provided' }}</div>
+        </div>
+
+        <div class="classic-front-detail">
+          <span class="classic-front-detail-label">School legacy</span>
+          <div class="classic-front-detail-value">
+            {% if school_legacy %}Serving learners since {{ school_legacy }}{% else %}Legacy information not provided{%
+            endif %}
+          </div>
+        </div>
+      </div>
+
+
+      <div class="classic-front-title">
+        <div class="classic-front-title-rule"></div>
+        <h2>PROGRESS REPORT</h2>
+        <p>A RECORD OF LEARNING, EFFORT AND GROWTH</p>
+      </div>
+
+      <div class="classic-front-pillars">
+        <div class="classic-front-pillar">
+          <span class="classic-front-pillar-number">01</span>
+          <h3>Learn with Curiosity</h3>
+          <p>Build strong foundations, ask thoughtful questions and discover the joy of learning.</p>
+        </div>
+
+        <div class="classic-front-pillar">
+          <span class="classic-front-pillar-number">02</span>
+          <h3>Grow with Character</h3>
+          <p>Practice kindness, responsibility and respect in the classroom and beyond.</p>
+        </div>
+
+        <div class="classic-front-pillar">
+          <span class="classic-front-pillar-number">03</span>
+          <h3>Reach Your Potential</h3>
+          <p>Celebrate progress, develop confidence and make the most of every opportunity.</p>
+        </div>
+      </div>
+
+      <section class="classic-front-grading">
+        <h2 class="classic-front-section-title">Grading System</h2>
+
+        <table class="classic-front-grade-table">
+          <thead>
+            <tr>
+              <th>Marks Range</th>
+              <th>Grade</th>
+              <th>Achievement</th>
+              <th>Learning Support</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <tr>
+              <td>80–100%</td>
+              <td class="classic-front-grade">A</td>
+              <td>Excellent</td>
+              <td>Enrichment and advanced activities</td>
+            </tr>
+            <tr>
+              <td>60 to &lt;80%</td>
+              <td class="classic-front-grade">B</td>
+              <td>Very Good</td>
+              <td>Regular practice and independent learning</td>
+            </tr>
+            <tr>
+              <td>45 to &lt;60%</td>
+              <td class="classic-front-grade">C</td>
+              <td>Good</td>
+              <td>Reinforce concepts through practice</td>
+            </tr>
+            <tr>
+              <td>33 to &lt;45%</td>
+              <td class="classic-front-grade">D</td>
+              <td>Satisfactory</td>
+              <td>Guided revision of core concepts</td>
+            </tr>
+            <tr>
+              <td>Below 33%</td>
+              <td class="classic-front-grade">E</td>
+              <td>Needs Improvement</td>
+              <td>Focused support with teacher guidance</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p class="classic-front-note">For foundational-stage learners, interpret these bands alongside teacher observations and developmental progress.</p>
+      </section>
+
+      <aside class="classic-front-quote">
+        <span class="classic-front-quote-mark">“</span>
+        <p>Learning opens doors; character gives us the courage to walk through them.</p>
+      </aside>
+
+      <footer class="classic-front-footer">
+        Every learner matters · Every effort counts · Every day is a new beginning
+      </footer>
+    </div>
+  </section>
+</body>
+
+</html>

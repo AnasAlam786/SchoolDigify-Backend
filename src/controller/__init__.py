@@ -14,6 +14,7 @@ from .admit_card.get_admit_cards_api import get_admit_cards_api_bp
 
 
 from .attendance.get_attendance_data_api import get_attendance_data_api_bp
+from .attendance.attendance_report_api import attendance_report_api_bp
 from .attendance.mark_attendance_api import mark_attendance_api_bp
 from .attendance.holiday_manager import holiday_manager_api_bp
 from .attendance.utils.messages_api import get_message_api_bp
@@ -107,6 +108,7 @@ def register_blueprints(app):
     app.register_blueprint(update_student_bp)
 
     app.register_blueprint(get_attendance_data_api_bp)
+    app.register_blueprint(attendance_report_api_bp)
     app.register_blueprint(mark_attendance_api_bp)
     app.register_blueprint(holiday_manager_api_bp)
     app.register_blueprint(get_message_api_bp)

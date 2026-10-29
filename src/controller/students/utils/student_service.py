@@ -196,6 +196,7 @@ class StudentService:
 
             return new_student.id, None
         except IntegrityError as e:
+            print(e)
             db.session.rollback()
             return None, "Database integrity error. Possible duplicate data."
         except Exception as e:
