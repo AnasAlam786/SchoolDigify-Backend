@@ -159,6 +159,7 @@ def get_student_attendance_month_api():
 
     current_session = session["session_id"]
     school_id = session["school_id"]
+    today = datetime.today().date()
 
     student_record = (
         db.session.query(
@@ -235,6 +236,9 @@ def get_student_attendance_month_api():
         'unmarked': 0
     }
     for record in records:
+        if record['date'] > today.isoformat():
+            continue
+
         key = record['status'].lower()
         if key == 'half_day':
             monthly_summary['half_day'] += 1
@@ -285,7 +289,8 @@ def get_student_attendance_month_api():
     session_attendance_map = {row.date: row.status for row in session_attendance_rows}
     session_holiday_dates = {row.date for row in session_holiday_rows}
 
-    total_session_days = (session_end - session_start).days + 1
+    summary_end = min(session_end, today)
+    total_session_days = max(0, (summary_end - session_start).days + 1)
     session_summary = {
         'present': 0,
         'absent': 0,
