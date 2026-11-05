@@ -283,6 +283,8 @@ def prepare_marks_format(result):
     # PART 6: CALCULATE GRAND TOTAL
     # -----------------------------------------------------
 
+
+
     grand_total_subject_marks = {}
 
     for subject in subjects:
@@ -315,8 +317,13 @@ def prepare_marks_format(result):
     # Save the grand-total row
     grand_total_name = "G. Total"
 
+    grand_total_weightage = sum(
+        number_or_zero(exam.get("weightage"))
+        for exam in exams
+    )
+
     marks[grand_total_name] = {
-        "weightage": summary.get("grand_max_total"),
+        "weightage": grand_total_weightage,
         "exam_total": summary.get("grand_total"),
         "percentage": summary.get("overall_percentage"),
         "subject_marks_dict": grand_total_subject_marks,

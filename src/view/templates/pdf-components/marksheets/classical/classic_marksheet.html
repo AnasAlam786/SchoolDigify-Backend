@@ -11,6 +11,12 @@
       src: url("{{ url_for('static', filename='Bastliga One.ttf', _external=True) }}") format('truetype');
     }
 
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
+
     /* =========================
    PRINT STYLES (A4 PAGING)
    ========================= */
@@ -31,7 +37,7 @@
         width: 210mm;
         height: 297mm;
         margin: 0;
-        box-sizing: border-box;
+        /* box-sizing: border-box; */
       }
 
       .student-result:last-child {
@@ -59,7 +65,7 @@
       box-sizing: border-box;
       position: relative;
       overflow: hidden;
-      padding: 4mm;
+      padding: 3mm;
       print-color-adjust: exact;
       -webkit-print-color-adjust: exact;
     }
@@ -67,7 +73,7 @@
     .student-result::before {
       position: absolute;
       content: "";
-      inset: 2.2mm;
+      inset: 3mm;
       border: 0.6px solid #e6dfd2;
       pointer-events: none;
     }
@@ -140,7 +146,11 @@
 
     .detail-block {
       padding: 0 20px;
-      font-size: 20px;
+      font-size: 17px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      /* vertical centering */
     }
 
     .detail-block td {
@@ -305,11 +315,9 @@
               </div>
             </div>
 
-            <!-- Student Image -->
-            <img class="logo-img student-image" style="object-fit: cover; object-position: top; border-radius: 30%;"
-              src="{{ 'https://lh3.googleusercontent.com/d/' + student_data['IMAGE'] + '=s600'
-                      if student_data['IMAGE']
-                      else 'https://cdn.pixabay.com/photo/2016/04/22/04/57/graduation-1345143_1280.png' }}">
+            <!-- Right Logo -->
+            <img class="logo-img" src="{{ session['logo'] }}">
+
           </div>
 
         </div>
@@ -317,41 +325,50 @@
 
 
       <div class="detail-block">
-        <table style="width: 100%; border-collapse: collapse;">
-          <tr>
-            <td><strong>Class:</strong></td>
-            <td>{{student_data["CLASS"]}}</td>
-            <td><strong>Roll no:</strong></td>
-            <td>{{student_data["ROLL"]}}</td>
-          </tr>
+        <!-- First table + student image side by side -->
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+          <table style="flex: 1; border-collapse: collapse;">
+            <tr>
+              <td><strong>Class:</strong></td>
+              <td>{{student_data["CLASS"]}}</td>
+              <td><strong>Roll no:</strong></td>
+              <td>{{student_data["ROLL"]}}</td>
+            </tr>
 
-          <tr>
-            <td><strong>Name:</strong></td>
-            <td>{{student_data["STUDENTS_NAME"]}}</td>
-            <td><strong>PEN:</strong></td>
-            <td>{{student_data["PEN"]}}</td>
-          </tr>
+            <tr>
+              <td><strong>Name:</strong></td>
+              <td>{{student_data["STUDENTS_NAME"]}}</td>
+              <td><strong>PEN:</strong></td>
+              <td>{{student_data["PEN"]}}</td>
+            </tr>
 
-          <tr>
-            <td><strong>Gender:</strong></td>
-            <td>{{student_data["GENDER"]}}</td>
-            <td><strong>DOB:</strong></td>
-            <td>{{student_data["DOB"]}}</td>
-          </tr>
+            <tr>
+              <td><strong>Gender:</strong></td>
+              <td>{{student_data["GENDER"]}}</td>
+              <td><strong>DOB:</strong></td>
+              <td>{{student_data["DOB"]}}</td>
+            </tr>
 
-          <tr>
-            <td><strong>Father:</strong></td>
-            <td>{{student_data["FATHERS_NAME"]}}</td>
-            <td><strong>Mother:</strong></td>
-            <td>{{student_data["MOTHERS_NAME"]}}</td>
-          </tr>
+            <tr>
+              <td><strong>Father:</strong></td>
+              <td>{{student_data["FATHERS_NAME"]}}</td>
+              <td><strong>Mother:</strong></td>
+              <td>{{student_data["MOTHERS_NAME"]}}</td>
+            </tr>
 
-          <tr>
-            <td><strong>Phone:</strong></td>
-            <td>{{student_data["PHONE"]}}</td>
-            <td colspan="2"></td>
-          </tr>
-        </table>
+            <tr>
+              <td><strong>Phone:</strong></td>
+              <td>{{student_data["PHONE"]}}</td>
+              <td colspan="2"></td>
+            </tr>
+          </table>
+
+          <img class="student-image"
+            style="width: 130px; height: 130px; flex-shrink: 0; object-fit: cover; object-position: top; border-radius: 30%;"
+            src="{{ 'https://lh3.googleusercontent.com/d/' + student_data['IMAGE'] + '=s600'
+              if student_data['IMAGE']
+              else 'https://cdn.pixabay.com/photo/2016/04/22/04/57/graduation-1345143_1280.png' }}">
+        </div>
         <table style="width: 100%; border-collapse: collapse;">
           <tr>
             <td style="text-align: left; vertical-align: top; width: 15%;"><strong>Address:</strong></td>
@@ -365,34 +382,42 @@
 
         <table
           style="width: 100%; height: 100%; border-collapse: collapse; text-align: center; border: 1px solid #c7c7c7;">
-          <thead>
-            <tr>
-              <th class="light-border" style="padding: 10px; font-size: 25px;">Subjects</th>
-              {% for exam_data in exam_columns %}
-              {% set exam_name = exam_data.name %}
-              {% if "G. Total" in exam_name or "Grand" in exam_name %}
-              <th class="red light-border grand-total-header" style="font-size: 18px;">
-                {{ exam_name }}
-                <div class="exam-base-text">Out of {{ exam_data.weightage }}</div>
-              </th>
-              {% elif "Total" in exam_name or "Grades" in exam_name %}
-              <th class="red light-border term-total-header" style="font-size: 18px;">
-                {{ exam_name }}
-                <div class="exam-base-text">Out of {{ exam_data.weightage }}</div>
-              </th>
-              {% else %}
-              <th class="red light-border" style="font-size: 18px;">
-                {{ exam_name }}
-                <div class="exam-base-text">Out of {{ exam_data.weightage }}</div>
-              </th>
+
+          <tr>
+            <th class="light-border" style="padding: 10px; font-size: 25px;">Subjects</th>
+            {% for exam_data in exam_columns %}
+            {% set exam_name = exam_data.name %}
+            {% if "G. Total" in exam_name or "Grand" in exam_name %}
+            <th class="red light-border grand-total-header" style="font-size: 18px;">
+              {{ exam_name }}
+              {% if exam_data.weightage is not none and exam_data.weightage != '' %}
+              <div class="exam-base-text">Out of {{ exam_data.weightage }}</div>
               {% endif %}
-              {% endfor %}
-            </tr>
+            </th>
+            {% elif "Total" in exam_name or "Grades" in exam_name %}
+            <th class="red light-border term-total-header" style="font-size: 18px;">
+              {{ exam_name }}
+              {% if exam_data.weightage is not none and exam_data.weightage != '' %}
+              <div class="exam-base-text">Out of {{ exam_data.weightage }}</div>
+              {% endif %}
+            </th>
+            {% else %}
+            <th class="red light-border" style="font-size: 18px;">
+              {{ exam_name }}
+              {% if exam_data.weightage is not none and exam_data.weightage != '' %}
+              <div class="exam-base-text">Out of {{ exam_data.weightage }}</div>
+              {% endif %}
+            </th>
+            {% endif %}
+            {% endfor %}
+          </tr>
           </thead>
+
+
           <tbody>
             {% for subject in subjects %}
             <tr class="text-center subject-row" style="font-size: 21px; font-weight: 500;">
-              <th class="light-border text-start" style="font-size: 22px; color: black">{{ subject.name }}</th>
+              <th class="light-border text-start" style="font-size: 20px; color: black">{{ subject.name }}</th>
               {% for exam_data in exam_columns %}
               {% set exam_name = exam_data.name %}
               {% if "G. Total" in exam_name or "Grand" in exam_name %}
@@ -422,7 +447,14 @@
               <th>G.Total</th>
               {% for exam_data in exam_columns %}
               <td class="light-border text-center">
+                {% if "G. Total" in exam_data.name or "Grand" in exam_data.name %}
                 {{ exam_data.exam_total }}
+                <span style="font-size: 0.7em; opacity: 0.7; font-weight: 400;">
+                  / {{ student.summary.grand_max_total }}
+                </span>
+                {% else %}
+                {{ exam_data.exam_total }}
+                {% endif %}
               </td>
               {% endfor %}
             </tr>
@@ -466,7 +498,7 @@
 
   <div style="text-align: center;">
     <div style="color: green; font-size: 28px; font-weight: 800; margin-bottom: 4px;">
-      {{ student_data["Attendance"] }}<span style="color: black">/{{ attandance_out_of }}</span>
+      {{ student_data["Attendance"] }}<span style="color: black">/{{ student_data.get("working_days") if student_data.get("working_days") is not none else "NA" }}</span>
     </div>
     <div style="font-size: 14px; letter-spacing: 0.5px;">ATTENDANCE</div>
   </div>

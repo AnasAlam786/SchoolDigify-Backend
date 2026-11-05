@@ -15,6 +15,7 @@ from src import db
 
 
 from .utils.calc_grades import get_grade
+from src.controller.marks.utils.get_attendance_for_marksheet import get_attendance_for_marksheet
 from src.controller.permissions.permission_required import permission_required
 from src.controller.auth.login_required import login_required
 
@@ -535,6 +536,11 @@ def bulk_download_results():
 
     school_id = session["school_id"]
     current_session_id = session["session_id"]
+    students_data = get_attendance_for_marksheet(
+        students_data,
+        current_session_id,
+        school_id,
+    )
 
     school = (
         db.session.query(
@@ -580,20 +586,11 @@ def bulk_download_results():
             teacher_sign = sign
             teacher_name = name.split(" ")[0]
 
-    working_days = (
-        db.session.query(SchoolSession.working_days)
-        .filter(SchoolSession.school_id == school_id,
-                SchoolSession.session_id == current_session_id)
-        .scalar()
-    )
-    attandance_out_of = working_days if working_days else "N/A"
-
     current_session = int(current_session_id)
     session_year = f"{current_session}-{str(current_session + 1)[-2:]}"
 
     # Generate HTML for bulk results
     html = render_template('pdf-components/marksheets/classical/classic_marksheet.html', students=students_data, 
-                            attandance_out_of=attandance_out_of, 
                             principle_sign=principal_sign, teacher_sign=teacher_sign, 
                             principal_name=principal_name, teacher_name=teacher_name,
                             school_logo=session.get("logo") or school.Logo,

@@ -11,6 +11,7 @@ from src import db
 
 from src.controller.marks.utils.fetch_marks import result_data
 from src.controller.marks.utils.format_marks import prepare_marks_format
+from src.controller.marks.utils.get_attendance_for_marksheet import get_attendance_for_marksheet
 from src.model.ClassData import ClassData
 from src.model.TeachersLogin import TeachersLogin
 
@@ -59,7 +60,7 @@ def show_marks_api():
             "IMAGE", "PEN", "PHONE", "GENDER", "ADDRESS",
         ],
         "ClassData": ["CLASS"],
-        "StudentSessions": ["ROLL", "class_id", "Attendance"]
+        "StudentSessions": ["ROLL", "class_id", "Attendance"],
     }
 
     try:
@@ -74,6 +75,7 @@ def show_marks_api():
             prepare_marks_format(result)
             for result in student_marks_data
         ]
+        student_marks_data = get_attendance_for_marksheet(student_marks_data, current_session_id, school_id)
 
     except Exception as e:
         return jsonify({"message": f"Error fetching marks data: {str(e)}"}), 500
