@@ -19,6 +19,7 @@ if not FERNET_KEY:
 
 fernet = Fernet(FERNET_KEY)
 
+
 def create_encrypted_text_type(fernet_instance):
     class EncryptedText(TypeDecorator):
         impl = Text  # Underlying database type is Text
