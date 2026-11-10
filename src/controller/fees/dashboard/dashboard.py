@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, session
+from flask import Blueprint, jsonify, request, session
 
 from src import db
 from src.controller.auth.login_required import login_required
@@ -12,7 +12,7 @@ from src.controller.fees.utils.fee_summary import (
 fees_dashboard_api_bp = Blueprint('fees_dashboard_api_bp', __name__)
 
 
-def _dashboard_response(get_data, response_key):
+def _dashboard_response(get_data, response_key, **data_kwargs):
     try:
         current_session = session.get("session_id")
         school_id = session.get("school_id")
@@ -20,7 +20,7 @@ def _dashboard_response(get_data, response_key):
             return jsonify({"error": "Invalid or expired session"}), 401
 
         return jsonify({
-            response_key: get_data(current_session, school_id),
+            response_key: get_data(current_session, school_id, **data_kwargs),
         }), 200
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
@@ -34,7 +34,24 @@ def _dashboard_response(get_data, response_key):
 @permission_required('pay_fees')
 @fees_dashboard_api_bp.get("/api/fee-dashboard/summary")
 def fees_dashboard_summary():
-    return _dashboard_response(get_fee_summary, "summary")
+    raw_class_ids = request.args.getlist("class_ids")
+    try:
+        class_ids = [
+            int(class_id.strip())
+            for value in raw_class_ids
+            for class_id in value.split(",")
+            if class_id.strip()
+        ] or None
+    except ValueError:
+        return jsonify({"error": "class_ids must contain integers"}), 400
+
+    search_query = request.args.get("search_query", "").strip() or None
+    return _dashboard_response(
+        get_fee_summary,
+        "summary",
+        class_ids=class_ids,
+        search_query=search_query,
+    )
 
 
 @login_required

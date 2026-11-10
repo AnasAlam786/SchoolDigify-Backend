@@ -1,8 +1,8 @@
 # src/controller/fees/get_fee_api.py
 
-from flask import session, jsonify, Blueprint
+from flask import session, jsonify, Blueprint, request
 
-from sqlalchemy import or_, select, func, case, and_
+from sqlalchemy import or_, func, case, and_, cast, String
 from src.controller.permissions.permission_required import permission_required
 from src.model import (ClassData, FeeData, FeeHeads, FeeSessionData, FeeStructure, FeeTransaction, RTEInfo, StudentsDB, StudentSessions)
 from src import db
@@ -68,6 +68,25 @@ def get_students_fees_api():
         today = date.today()
 
         ZERO = Decimal("0")
+        page_size = 10
+        try:
+            page = int(request.args.get("page", 1))
+            class_id = request.args.get("class_id", "All").strip()
+            search = request.args.get("search", "").strip().lower()
+            sort_by = request.args.get("sort_by", "class-roll")
+            sort_dir = request.args.get("sort_dir", "asc")
+            if page < 1:
+                raise ValueError
+            if class_id != "All":
+                class_id = int(class_id)
+            if len(search) > 200:
+                return jsonify({"error": "Search text is too long."}), 400
+            if sort_by not in {
+                "class-roll", "student-name", "highest-due", "lowest-due", "due-months",
+            } or sort_dir not in {"asc", "desc"}:
+                return jsonify({"error": "Invalid student sort option."}), 400
+        except (TypeError, ValueError):
+            return jsonify({"error": "Invalid page or class filter."}), 400
 
         # ---------------------------------------------------------
         # 2. Get students in current session
@@ -78,7 +97,7 @@ def get_students_fees_api():
             ClassAccess.staff_id == user_id
         )
 
-        students = (
+        students_query = (
             db.session.query(
                 StudentsDB.id,
                 StudentsDB.STUDENTS_NAME,
@@ -92,8 +111,7 @@ def get_students_fees_api():
                 ClassData.CLASS,
 
                 func.coalesce(
-                    RTEInfo.is_RTE,
-                    False
+                    RTEInfo.is_RTE, False
                 ).label("is_RTE"),
             )
             .join(
@@ -113,10 +131,49 @@ def get_students_fees_api():
                 StudentSessions.session_id == current_session_id,
                 StudentSessions.class_id.in_(authorized_class_ids),
             )
-            .all()
         )
 
-        if not students:
+        if class_id != "All":
+            students_query = students_query.filter(StudentSessions.class_id == class_id)
+
+        if search:
+            searchable_columns = (
+                StudentsDB.STUDENTS_NAME,
+                StudentsDB.FATHERS_NAME,
+                StudentsDB.SR,
+                StudentSessions.ROLL,
+                StudentsDB.PHONE,
+            )
+            for token in search.split():
+                students_query = students_query.filter(or_(
+                    *[
+                        func.lower(cast(column, String)).like(f"%{token}%")
+                        for column in searchable_columns
+                    ]
+                ))
+
+        student_count = students_query.order_by(None).count()
+        page_offset = (page - 1) * page_size
+        has_more_from_query = False
+        database_page_loaded = False
+
+        if sort_by == "class-roll":
+            class_order = ClassData.id.asc() if sort_dir == "asc" else ClassData.id.desc()
+            roll_order = StudentSessions.ROLL.asc() if sort_dir == "asc" else StudentSessions.ROLL.desc()
+            rows = (
+                students_query
+                .order_by(class_order, roll_order, StudentSessions.id.asc())
+                .limit(page_size + 1)
+                .offset(page_offset)
+                .all()
+            )
+            has_more_from_query = len(rows) > page_size
+            students = rows[:page_size]
+            database_page_loaded = True
+        else:
+            students = students_query.all()
+
+        if student_count == 0 and not search and class_id == "All":
             return jsonify({
                 "ERROR_CODE":"NO_STUDENTS",
                 "error": "No students have been added for this session yet. Add students to get started."
@@ -345,11 +402,6 @@ def get_students_fees_api():
 
             total_months = len(tuition_fees)
 
-            tuition_fee_ids = {
-                fee.id
-                for fee in tuition_fees
-            }
-
             paid_tuition_fee_ids = set()
             for fee in tuition_fees:
                 balance = calculate_fee_balance(
@@ -498,40 +550,44 @@ def get_students_fees_api():
                 "feeStatus": fee_status,
             })
 
-        # ---------------------------------------------------------
-        # 7. Total discount given by school
-        #
-        # This queries FeeTransaction directly.
-        # Therefore a transaction shared by siblings is counted
-        # exactly once.
-        # ---------------------------------------------------------
-
-        total_discount = (
-            db.session.query(
-                func.coalesce(
-                    func.sum(FeeTransaction.discount),
-                    0,
-                )
-            )
-            .filter(
-                FeeTransaction.school_id == school_id,
-                FeeTransaction.session_id == current_session_id,
-
-                # NULL = not deleted
-                func.coalesce(
-                    FeeTransaction.is_deleted,
-                    False, ) == False,
-            )
-            .scalar()
-        ) or ZERO
 
         # ---------------------------------------------------------
-        # 8. Return response
+        # 8. Sort and return one page
         # ---------------------------------------------------------
+
+        def sort_value(student):
+            if sort_by == "student-name":
+                return (str(student.get("STUDENTS_NAME") or "").casefold(),)
+            if sort_by == "highest-due":
+                return (-float(student.get("dueAmount") or 0),)
+            if sort_by == "lowest-due":
+                return (float(student.get("dueAmount") or 0),)
+            if sort_by == "due-months":
+                return (-int(student.get("dueMonths") or 0),)
+
+            try:
+                class_order = int(student.get("class_id") or 0)
+            except (TypeError, ValueError):
+                class_order = 0
+            try:
+                roll_order = int(student.get("ROLL") or 0)
+            except (TypeError, ValueError):
+                roll_order = 0
+            return (class_order, roll_order)
+
+        if database_page_loaded:
+            page_data = data
+            has_more = has_more_from_query
+        else:
+            data.sort(key=sort_value, reverse=sort_dir == "desc")
+            page_data = data[page_offset:page_offset + page_size]
+            has_more = page_offset + len(page_data) < student_count
 
         return jsonify({
-            "total_discount_given_by_school": json_money(total_discount),
-            "students_fee_data": data,
+            "students_fee_data": page_data,
+            "students_count": student_count,
+            "page": page,
+            "has_more": has_more,
         }), 200
 
     # -------------------------------------------------------------

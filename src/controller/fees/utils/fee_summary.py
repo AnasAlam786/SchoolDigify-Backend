@@ -1,6 +1,6 @@
 from datetime import date, timedelta, datetime
 from decimal import Decimal
-from sqlalchemy import exists, func, or_
+from sqlalchemy import and_, cast, exists, func, or_, String
 from src.model import (
     FeeTransaction, FeeData, FeeSessionData,
     StudentSessions, ClassData, FeeStructure, RTEInfo,
@@ -93,27 +93,203 @@ def get_daily_collections(session_id, school_id):
     return serializable_daily_collections
 
 
-def get_fee_summary(session_id, school_id, class_ids=None):
+def get_fee_summary(session_id, school_id, class_ids=None, search_query=None):
+
     today = date.today()
     yesterday = today - timedelta(days=1)
     start_of_week = today - timedelta(days=today.weekday())
     start_of_month = today.replace(day=1)
     start_of_year = today.replace(month=1, day=1)
 
+    students_query = (
+        db.session.query(
+            StudentSessions.id.label("student_session_id"),
+            StudentSessions.class_id.label("class_id"),
+        )
+        .join(StudentsDB, StudentsDB.id == StudentSessions.student_id)
+        .filter(
+            StudentSessions.session_id == session_id,
+            StudentsDB.school_id == school_id,
+            ~exists().where(
+                RTEInfo.student_id == StudentSessions.student_id,
+                RTEInfo.is_RTE.is_(True),
+            ),
+        )
+    )
+    if class_ids:
+        students_query = students_query.filter(StudentSessions.class_id.in_(class_ids))
+
+    if search_query:
+        search_columns = (
+            StudentsDB.STUDENTS_NAME,
+            StudentsDB.FATHERS_NAME,
+            StudentsDB.PHONE,
+            StudentsDB.SR,
+            StudentsDB.ADMISSION_NO,
+            StudentSessions.ROLL,
+        )
+        for token in search_query.split():
+            search_term = f"%{token.lower()}%"
+            students_query = students_query.filter(or_(
+                *[
+                    func.lower(cast(column, String)).like(search_term)
+                    for column in search_columns
+                ]
+            ))
+
+    student_rows = students_query.all()
+
+    total_student_count = (
+        db.session.query(func.count(StudentSessions.id))
+        .join(StudentsDB, StudentsDB.id == StudentSessions.student_id)
+        .filter(
+            StudentSessions.session_id == session_id,
+            StudentsDB.school_id == school_id,
+        )
+    ).scalar()
+
+    student_ids_by_class = {}
+    student_session_ids = []
+    for student in student_rows:
+        student_ids_by_class.setdefault(student.class_id, []).append(
+            student.student_session_id
+        )
+        student_session_ids.append(student.student_session_id)
+
+    fee_rows = []
+    payment_rows = []
+    if student_session_ids:
+        fee_rows = (
+            db.session.query(
+                FeeSessionData.id.label("fee_session_id"),
+                FeeSessionData.class_id,
+                FeeSessionData.amount,
+                FeeSessionData.custom_due_date,
+                FeeStructure.due_day,
+                FeeStructure.due_month,
+                FeeStructure.year_increment,
+            )
+            .join(FeeStructure, FeeStructure.id == FeeSessionData.structure_id)
+            .filter(
+                FeeSessionData.session_id == session_id,
+                FeeStructure.school_id == school_id,
+            )
+        )
+
+        if class_ids:
+            fee_rows = fee_rows.filter(FeeSessionData.class_id.in_(class_ids))
+
+        fee_rows = fee_rows.all()
+
+        payment_rows = (
+            db.session.query(
+                FeeData.student_session_id,
+                FeeData.fee_session_id,
+                FeeData.transaction_id,
+                FeeData.paid_amount,
+                FeeData.late_fee,
+                FeeTransaction.paid_amount.label("transaction_paid_amount"),
+                FeeTransaction.discount,
+                FeeTransaction.payment_date,
+                FeeTransaction.transaction_no,
+            )
+            .outerjoin(FeeTransaction, FeeTransaction.id == FeeData.transaction_id)
+            .filter(
+                FeeData.student_session_id.in_(student_session_ids),
+                or_(
+                    FeeTransaction.id.is_(None),
+                    and_(
+                        FeeTransaction.school_id == school_id,
+                        FeeTransaction.session_id == session_id,
+                        or_(FeeTransaction.is_deleted.is_(False), FeeTransaction.is_deleted.is_(None)),
+                    ),
+                ),
+            )
+            .all()
+        )
+
+    paid_by_pair = aggregate_fee_allocations(payment_rows)
+    fees_by_class = {}
+    for fee in fee_rows:
+        fees_by_class.setdefault(fee.class_id, []).append(fee)
+
+    outstanding = ZERO
+    for class_id, student_session_ids_for_class in student_ids_by_class.items():
+        for fee in fees_by_class.get(class_id, []):
+            due_date = fee.custom_due_date
+            if due_date is None:
+                due_date = date(
+                    int(session_id) + int(fee.year_increment or 0),
+                    int(fee.due_month or 1),
+                    int(fee.due_day or 1),
+                )
+            if isinstance(due_date, datetime):
+                due_date = due_date.date()
+            if due_date > today:
+                continue
+
+            for student_session_id in student_session_ids_for_class:
+                balance = calculate_fee_balance(
+                    fee.amount,
+                    paid_by_pair.get((student_session_id, fee.fee_session_id)),
+                )
+                outstanding += max(balance["remaining_amount"], ZERO)
+
     summary_data = {
         "today": ZERO,
+        "today_count": 0,
         "yesterday": ZERO,
         "this_week": ZERO,
         "this_month": ZERO,
         "this_year": ZERO,
         "total": ZERO,
+        "outstanding": outstanding,
+        "total_student_count": total_student_count,
     }
 
-    for collection in _get_daily_collection_rows(session_id, school_id):
-        transaction_date = collection.payment_date
-        total_amount = Decimal(str(collection.total_amount or 0))
+    allocations_by_transaction = {}
+    for payment in payment_rows:
+        if payment.transaction_id is None or payment.payment_date is None:
+            continue
+        transaction = allocations_by_transaction.setdefault(
+            payment.transaction_id,
+            {
+                "payment_date": payment.payment_date,
+                "allocated_amount": ZERO,
+                "transaction_paid_amount": payment.transaction_paid_amount,
+                "discount": payment.discount,
+            },
+        )
+        transaction["allocated_amount"] += Decimal(str(payment.paid_amount or 0))
+
+    daily_collections = {}
+    for transaction in allocations_by_transaction.values():
+        allocated_amount = transaction["allocated_amount"]
+        discount = Decimal(str(transaction["discount"] or 0))
+        transaction_paid_amount = transaction["transaction_paid_amount"]
+        transaction_gross = (
+            Decimal(str(transaction_paid_amount)) + discount
+            if transaction_paid_amount is not None
+            else allocated_amount
+        )
+        discount_share = (
+            discount * allocated_amount / transaction_gross
+            if transaction_gross > ZERO else ZERO
+        )
+        total_amount = allocated_amount - discount_share
+        transaction_date = transaction["payment_date"]
+        daily = daily_collections.setdefault(
+            transaction_date,
+            {"total_amount": ZERO, "transaction_count": 0},
+        )
+        daily["total_amount"] += total_amount
+        daily["transaction_count"] += 1
+
+    for transaction_date, collection in daily_collections.items():
+        total_amount = collection["total_amount"]
         if transaction_date == today:
             summary_data["today"] += total_amount
+            summary_data["today_count"] += collection["transaction_count"]
         if transaction_date == yesterday:
             summary_data["yesterday"] += total_amount
         if start_of_week <= transaction_date <= today:
@@ -125,7 +301,7 @@ def get_fee_summary(session_id, school_id, class_ids=None):
         summary_data["total"] += total_amount
 
     return {
-        key: round(float(value), 2)
+        key: round(float(value), 2) if isinstance(value, Decimal) else value
         for key, value in summary_data.items()
     }
 

@@ -1,6 +1,7 @@
 
 from flask import jsonify, session, Blueprint, request, current_app
-from sqlalchemy import case, exists, func
+from sqlalchemy import case, exists, func, true
+from sqlalchemy.dialects.postgresql import aggregate_order_by
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import aliased
 
@@ -191,6 +192,84 @@ def get_students_stats():
         db.session.rollback()
         current_app.logger.exception("Failed to load student statistics")
         return jsonify({"error": "Unable to load student statistics."}), 500
+
+
+
+@get_students_data_api_bp.route('/api/get_school_roll_gaps', methods=['GET'])
+@login_required
+@permission_required('students_stats')
+def get_school_roll_gaps():
+    try:
+        class_roll_bounds = db.session.query(
+            ClassData.id.label("class_id"),
+            ClassData.CLASS.label("class_name"),
+            func.max(StudentSessions.ROLL).label("max_roll"),
+        ).join(
+            StudentSessions,
+            StudentSessions.class_id == ClassData.id,
+        ).join(
+            StudentsDB,
+            StudentsDB.id == StudentSessions.student_id,
+        ).filter(
+            StudentsDB.school_id == session["school_id"],
+            ClassData.school_id == session["school_id"],
+            StudentSessions.session_id == session["session_id"],
+            StudentSessions.ROLL >= 1,
+        ).group_by(
+            ClassData.id,
+            ClassData.CLASS,
+        ).subquery()
+
+        roll_numbers = func.generate_series(
+            1, class_roll_bounds.c.max_roll,
+        ).table_valued(
+            "roll",
+        ).render_derived(
+            name="roll_numbers",
+        ).lateral()
+
+        assigned_roll_exists = db.session.query(
+            StudentSessions.id,
+        ).join(
+            StudentsDB,
+            StudentsDB.id == StudentSessions.student_id,
+        ).filter(
+            StudentsDB.school_id == session["school_id"],
+            StudentSessions.session_id == session["session_id"],
+            StudentSessions.class_id == class_roll_bounds.c.class_id,
+            StudentSessions.ROLL == roll_numbers.c.roll,
+        ).exists()
+
+        gaps = db.session.query(
+            class_roll_bounds.c.class_name.label("className"),
+            func.array_agg(
+                aggregate_order_by(
+                    roll_numbers.c.roll,
+                    roll_numbers.c.roll,
+                )
+            ).label("missing"),
+        ).select_from(
+            class_roll_bounds.join(
+                roll_numbers,
+                true(),
+            )
+        ).filter(
+            ~assigned_roll_exists,
+        ).group_by(
+            class_roll_bounds.c.class_id,
+            class_roll_bounds.c.class_name,
+        ).order_by(
+            class_roll_bounds.c.class_name,
+        ).all()
+
+        return jsonify({"gaps": [row._asdict() for row in gaps]})
+
+    except SQLAlchemyError:
+        db.session.rollback()
+        current_app.logger.exception("Failed to load school roll gaps")
+        return jsonify({"error": "Unable to load school roll gaps."}), 500
+
+
 
 
 @get_students_data_api_bp.route('/api/get_students_print_data', methods=['GET'])
