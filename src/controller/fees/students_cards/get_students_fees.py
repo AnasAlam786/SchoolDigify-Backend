@@ -71,14 +71,23 @@ def get_students_fees_api():
         page_size = 10
         try:
             page = int(request.args.get("page", 1))
-            class_id = request.args.get("class_id", "All").strip()
+            raw_class_ids = request.args.getlist("class_ids") or request.args.getlist("class_id")
+            class_tokens = [
+                token.strip()
+                for value in raw_class_ids
+                for token in value.split(",")
+                if token.strip()
+            ]
+            if any(token.casefold() == "all" for token in class_tokens):
+                class_ids = None
+            else:
+                class_ids = list(dict.fromkeys(int(token) for token in class_tokens)) or None
             search = request.args.get("search", "").strip().lower()
             sort_by = request.args.get("sort_by", "class-roll")
             sort_dir = request.args.get("sort_dir", "asc")
+            fetch_all = request.args.get("fetch_all", "false").lower() in ("true", "1", "yes")
             if page < 1:
                 raise ValueError
-            if class_id != "All":
-                class_id = int(class_id)
             if len(search) > 200:
                 return jsonify({"error": "Search text is too long."}), 400
             if sort_by not in {
@@ -133,8 +142,8 @@ def get_students_fees_api():
             )
         )
 
-        if class_id != "All":
-            students_query = students_query.filter(StudentSessions.class_id == class_id)
+        if class_ids is not None:
+            students_query = students_query.filter(StudentSessions.class_id.in_(class_ids))
 
         if search:
             searchable_columns = (
@@ -157,7 +166,7 @@ def get_students_fees_api():
         has_more_from_query = False
         database_page_loaded = False
 
-        if sort_by == "class-roll":
+        if sort_by == "class-roll" and not fetch_all:
             class_order = ClassData.id.asc() if sort_dir == "asc" else ClassData.id.desc()
             roll_order = StudentSessions.ROLL.asc() if sort_dir == "asc" else StudentSessions.ROLL.desc()
             rows = (
@@ -173,7 +182,7 @@ def get_students_fees_api():
         else:
             students = students_query.all()
 
-        if student_count == 0 and not search and class_id == "All":
+        if student_count == 0 and not search and class_ids is None:
             return jsonify({
                 "ERROR_CODE":"NO_STUDENTS",
                 "error": "No students have been added for this session yet. Add students to get started."
@@ -575,7 +584,13 @@ def get_students_fees_api():
                 roll_order = 0
             return (class_order, roll_order)
 
-        if database_page_loaded:
+        
+        if fetch_all:
+            data.sort(key=sort_value, reverse=sort_dir == "desc")
+            page_data = data
+            has_more = False
+
+        elif database_page_loaded:
             page_data = data
             has_more = has_more_from_query
         else:

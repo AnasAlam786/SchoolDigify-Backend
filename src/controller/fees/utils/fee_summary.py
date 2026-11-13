@@ -434,3 +434,173 @@ def get_class_analysis(session_id, school_id):
         })
     return result
 
+
+
+def get_transactions_data(
+    session_id, school_id, start_date=None, end_date=None, offset=0, limit=None,
+    include_total=False,
+):
+    transaction_query = (
+        db.session.query(FeeTransaction.id)
+        .filter(
+            FeeTransaction.school_id == school_id,
+            FeeTransaction.session_id == session_id,
+            FeeTransaction.payment_date.isnot(None),
+            FeeTransaction.id.in_(
+                db.session.query(FeeData.transaction_id).distinct()
+            ),
+            or_(
+                FeeTransaction.is_deleted.is_(False),
+                FeeTransaction.is_deleted.is_(None),
+            ),
+        )
+    )
+    if start_date is not None:
+        transaction_query = transaction_query.filter(
+            FeeTransaction.payment_date >= start_date
+        )
+    if end_date is not None:
+        transaction_query = transaction_query.filter(
+            FeeTransaction.payment_date <= end_date
+        )
+    total_count = transaction_query.count() if include_total else None
+    transaction_query = transaction_query.order_by(
+        FeeTransaction.payment_date.desc(),
+        FeeTransaction.seq_no.desc(),
+        FeeTransaction.id.desc(),
+    ).offset(offset)
+    if limit is not None:
+        transaction_query = transaction_query.limit(limit)
+
+    transaction_ids = [row[0] for row in transaction_query.all()]
+    if not transaction_ids:
+        return ([], total_count) if include_total else []
+
+    rows = (
+        db.session.query(
+            FeeTransaction.id.label("transaction_id"),
+            FeeTransaction.transaction_no,
+            FeeTransaction.seq_no,
+            FeeTransaction.paid_amount.label("transaction_paid_amount"),
+            FeeTransaction.discount,
+            FeeTransaction.payment_date,
+            FeeTransaction.payment_mode,
+            FeeTransaction.remark,
+            FeeTransaction.created_at,
+
+            FeeData.id.label("fee_data_id"),
+            FeeData.student_session_id,
+            FeeData.fee_session_id,
+            FeeData.fee_payment_status,
+            FeeData.paid_amount.label("allocated_amount"),
+            FeeData.late_fee,
+
+            StudentsDB.STUDENTS_NAME.label("student_name"),
+            StudentsDB.FATHERS_NAME.label("father_name"),
+            StudentsDB.PHONE.label("student_phone"),
+
+            StudentSessions.ROLL.label("roll"),
+            ClassData.id.label("class_id"),
+            ClassData.CLASS.label("class_name"),
+
+            FeeSessionData.amount.label("fee_amount"),
+            FeeStructure.period_name,
+            FeeStructure.fee_type,
+            FeeStructure.fee_type_id,
+
+        )
+        .join(FeeData, FeeData.transaction_id == FeeTransaction.id)
+        .join(StudentSessions, StudentSessions.id == FeeData.student_session_id)
+        .join(StudentsDB, StudentsDB.id == StudentSessions.student_id)
+        .join(ClassData, ClassData.id == StudentSessions.class_id)
+        .join(FeeSessionData, FeeSessionData.id == FeeData.fee_session_id)
+        .join(FeeStructure, FeeStructure.id == FeeSessionData.structure_id)
+        .filter(
+            FeeTransaction.school_id == school_id,
+            FeeTransaction.session_id == session_id,
+            FeeTransaction.id.in_(transaction_ids),
+        )
+        .order_by(
+            FeeTransaction.payment_date.desc(),
+            FeeTransaction.seq_no.desc(),
+            FeeTransaction.id.desc(),
+            FeeStructure.sequence_number,
+            FeeData.id,
+        )
+        .all()
+    )
+
+    transactions = {}
+
+    for row in rows:
+
+        transaction = transactions.setdefault(
+            row.transaction_id,
+            {
+                "id": row.transaction_id,
+                "transaction_no": row.transaction_no,
+                "seq_no": row.seq_no,
+                "payment_date": row.payment_date.isoformat(),
+                "created_at": row.created_at.isoformat() if row.created_at else None,
+                "payment_mode": row.payment_mode,
+                "remark": row.remark,
+                "paid_amount": round(float(row.transaction_paid_amount or 0), 2),
+                "discount": round(float(row.discount or 0), 2),
+                "phone": row.student_phone,
+                "total_allocated_amount": ZERO,
+                "students": {},
+            },
+        )
+
+        student = transaction["students"].setdefault(
+            row.student_session_id,
+            {
+                "student_session_id": row.student_session_id,
+                "student_name": row.student_name,
+                "father_name": row.father_name,
+                "phone": row.student_phone,
+                "roll": row.roll,
+                "class_id": row.class_id,
+                "class_name": row.class_name,
+                "total_allocated_amount": ZERO,
+                "fees": [],
+            },
+        )
+
+        allocated_amount = Decimal(str(row.allocated_amount or 0))
+
+        student["total_allocated_amount"] += allocated_amount
+        transaction["total_allocated_amount"] += allocated_amount
+
+        student["fees"].append({
+            "fee_data_id": row.fee_data_id,
+            "fee_session_id": row.fee_session_id,
+            "period_name": row.period_name,
+            "fee_type": row.fee_type,
+            "fee_type_id": row.fee_type_id,
+            "fee_amount": round(float(row.fee_amount or 0), 2),
+            "paid_amount": round(float(allocated_amount), 2),
+            "late_fee": round(float(row.late_fee or 0), 2),
+            "payment_status": getattr(
+                row.fee_payment_status, "value", row.fee_payment_status
+            ),
+        })
+
+    result = []
+
+    for transaction in transactions.values():
+
+        transaction["total_allocated_amount"] = round(
+            float(transaction["total_allocated_amount"]), 2
+        )
+
+        transaction["students"] = list(transaction["students"].values())
+
+        for student in transaction["students"]:
+            student["total_allocated_amount"] = round(
+                float(student["total_allocated_amount"]), 2
+            )
+
+        result.append(transaction)
+
+    return (result, total_count) if include_total else result

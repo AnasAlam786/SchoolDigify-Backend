@@ -1,3 +1,5 @@
+from datetime import date
+
 from flask import Blueprint, jsonify, request, session
 
 from src import db
@@ -7,20 +9,27 @@ from src.controller.fees.utils.fee_summary import (
     get_daily_collections,
     get_fee_summary,
     get_class_analysis,
+    get_transactions_data
 )
 
 fees_dashboard_api_bp = Blueprint('fees_dashboard_api_bp', __name__)
 
 
-def _dashboard_response(get_data, response_key, **data_kwargs):
+def _dashboard_response(get_data, response_key, response_formatter=None, **data_kwargs):
     try:
         current_session = session.get("session_id")
         school_id = session.get("school_id")
         if not current_session or not school_id:
             return jsonify({"error": "Invalid or expired session"}), 401
 
+        data = get_data(current_session, school_id, **data_kwargs)
+        additional_data = {}
+        if response_formatter:
+            data, additional_data = response_formatter(data)
+
         return jsonify({
-            response_key: get_data(current_session, school_id, **data_kwargs),
+            response_key: data,
+            **additional_data,
         }), 200
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
@@ -66,3 +75,41 @@ def fees_dashboard_daily_collections():
 @fees_dashboard_api_bp.get("/api/fee-dashboard/class-analysis")
 def fees_dashboard_class_analysis():
     return _dashboard_response(get_class_analysis, "class_analysis")
+
+
+@login_required
+@permission_required('pay_fees')
+@fees_dashboard_api_bp.get("/api/fee-dashboard/transactions-data")
+def fees_dashboard_transactions_data():
+    try:
+        offset = int(request.args.get("offset", "0"))
+        if offset < 0:
+            raise ValueError("offset must be a non-negative integer")
+
+        start_date = request.args.get("start_date")
+        end_date = request.args.get("end_date")
+        start_date = date.fromisoformat(start_date) if start_date else None
+        end_date = date.fromisoformat(end_date) if end_date else None
+        if start_date and end_date and start_date > end_date:
+            raise ValueError("start_date must be on or before end_date")
+    except ValueError as error:
+        return jsonify({"error": str(error)}), 400
+
+    return _dashboard_response(
+        get_transactions_data,
+        "transactions_data",
+        response_formatter=lambda page: (
+            page[0][:10],
+            {
+                "has_more": len(page[0]) > 10,
+                "offset": offset,
+                "limit": 10,
+                "total_count": page[1],
+            },
+        ),
+        start_date=start_date,
+        end_date=end_date,
+        offset=offset,
+        limit=11,
+        include_total=True,
+    )
