@@ -118,8 +118,11 @@
 
       <div style="display: flex; align-items: center; justify-content: center; width: 100%; position: relative;">
         <span style="font-size: 30px; font-weight: bold;"> <u>Admission Form</u></span>
-        <span style="position: absolute; right: 10px;"><strong>Form No:</strong> {{ "%03d"|format(student.ADMISSION_NO %
-          1000) }}</span>
+        {% if student.ADMISSION_NO is not none %}
+            <span style="position: absolute; right: 10px;">
+                <strong>Form No:</strong> {{ "%03d"|format(student.ADMISSION_NO % 1000) }}
+            </span>
+        {% endif %}
       </div>
 
       <!-- Personal Information Start -->

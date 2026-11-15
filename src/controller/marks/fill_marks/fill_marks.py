@@ -117,6 +117,8 @@ def get_subjects_and_exams_by_class(class_id):
             .all()
         )
 
+        
+
         if not subjects or not exams:
             errors = []
 

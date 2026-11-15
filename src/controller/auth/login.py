@@ -41,14 +41,15 @@ def login():
             "debug": str(e)
         }), 500
 
-    user, role = user_data
 
-    if not user:
+
+    if not user_data:
         return jsonify({
             "success": False,
             "message": "No user found with this email"
         }), 404
     try:
+        user, _ = user_data
         decrypted_password = Fernet(FERNET_KEY).decrypt(user.Password).decode()
     except Exception:
         return jsonify({

@@ -50,6 +50,8 @@ def create_admission_form_api():
             .scalar_subquery()
         )
 
+        print(f"Admission session subquery for student_id {student_id}: {admission_session_subquery}")
+
         # 3. Main Data Query (Preserves optional StudentSessions via Outer Join)
         student_data = (
             db.session.query(
@@ -60,7 +62,7 @@ def create_admission_form_api():
                 (StudentsDB.id == StudentSessions.student_id)
                 & (StudentSessions.session_id == admission_session_subquery)
             )
-            .join(ClassData, ClassData.id == StudentsDB.admission_class_id)
+            .outerjoin(ClassData, ClassData.id == StudentsDB.admission_class_id)
             .join(Schools, Schools.id == StudentsDB.school_id)
             .filter(
                 Schools.id == school_id,
@@ -68,6 +70,8 @@ def create_admission_form_api():
             )
             .first()
         )
+
+        print(f"Queried student data for student_id {student_id}: {student_data}")
 
         if not student_data:
             logger.warning("Admission form request failed: Student ID %s not found in School ID %s", student_id, school_id)
@@ -87,7 +91,7 @@ def create_admission_form_api():
                     ClassData.CLASS.label('admission_class')
                 )
                 .join(StudentSessions, StudentsDB.id == StudentSessions.student_id)
-                .join(ClassData, ClassData.id == StudentsDB.admission_class_id)
+                .outerjoin(ClassData, ClassData.id == StudentsDB.admission_class_id)
                 .filter(
                     StudentsDB.PHONE == phone_number,
                     StudentsDB.id != student_obj.id,

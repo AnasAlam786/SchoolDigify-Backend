@@ -88,8 +88,10 @@ def student_modal_data_api():
 
     
     # Convert to dict for JSON response
+    
     students_data = []
     for s in student:
+        admission_session_id = f"{s.admission_session_id}-{s.admission_session_id + 1}" if s.admission_session_id is not None else None
         students_data.append({
             "id": s.id,
             "STUDENTS_NAME": s.STUDENTS_NAME,
@@ -128,7 +130,7 @@ def student_modal_data_api():
             "CLASS": s.CLASS,
             "ROLL": s.ROLL,
             "APAAR": s.APAAR,
-            "admission_session_id": f'{s.admission_session_id}-{s.admission_session_id+1}',
+            "admission_session_id": admission_session_id,
 
             "is_RTE": s.is_RTE,
             "account_number": s.account_number,

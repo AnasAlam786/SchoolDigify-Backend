@@ -144,9 +144,9 @@ def get_students_by_class(class_id):
         ClassData.school_id == school_id
     ).order_by(
         ClassData.CLASS.asc(),
-        ClassData.Section.asc(),
         StudentSessions.ROLL.asc()
     ).all()
+
 
     # Get school data
     school = db.session.query(
@@ -195,6 +195,7 @@ def get_students_by_class(class_id):
             'class_roll': f"{student.CLASS} - {student.ROLL}",
             'session_year': session_year
         })
+
 
     return jsonify({
         'students_data': students_data,
