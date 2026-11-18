@@ -8,6 +8,7 @@ from sqlalchemy import inspect
 
 
 
+from src.controller.students.utils.admission_form_schema import AdmissionFormModel
 from src.model.StudentsDB import StudentsDB
 from src.model.ClassData import ClassData
 from src.model.ClassAccess import ClassAccess
@@ -135,6 +136,13 @@ def edit_student(student_id):
         if isinstance(value, (date, datetime)):
             student_data[key] = value.strftime("%d-%m-%Y")
 
+    # Determine required fields from Pydantic model
+    REQUIRED_FIELDS = [
+        field_name
+        for field_name, field_info in AdmissionFormModel.model_fields.items()
+        if field_info.is_required()
+    ]
+
 
     return jsonify({
         "student": student_data,
@@ -142,5 +150,6 @@ def edit_student(student_id):
         "admission_sessions": admission_sessions,
         "current_session": current_session,
         "has_other_sessions": has_other_session_records,
+        "required_fields": REQUIRED_FIELDS,
         **get_enum_options()
     })

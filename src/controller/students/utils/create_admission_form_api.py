@@ -50,7 +50,6 @@ def create_admission_form_api():
             .scalar_subquery()
         )
 
-        print(f"Admission session subquery for student_id {student_id}: {admission_session_subquery}")
 
         # 3. Main Data Query (Preserves optional StudentSessions via Outer Join)
         student_data = (
@@ -71,7 +70,7 @@ def create_admission_form_api():
             .first()
         )
 
-        print(f"Queried student data for student_id {student_id}: {student_data}")
+        # print(f"Queried student data for student_id {student_id}: {student_data}")
 
         if not student_data:
             logger.warning("Admission form request failed: Student ID %s not found in School ID %s", student_id, school_id)

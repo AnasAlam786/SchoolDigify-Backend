@@ -146,7 +146,12 @@
 
           <tr>
             <td><strong>SR No:</strong></td>
-            <td>{{ student.SR }}</td>
+            {% if student.SR %}
+              <td>{{ student.SR }}</td>
+            {% else %}
+              <td>N/A</td>
+            {% endif %}
+
             <td><strong>PEN No:</strong></td>
             {% if student.PEN %}
             <td>{{ student.PEN }}</td>
@@ -171,20 +176,35 @@
 
           <tr>
             <td><strong>Date of Birth:</strong></td>
-            <td>{{ student.DOB }}</td>
+            {% if student.DOB %}
+              <td>{{ student.DOB }}</td>
+            {% else %}
+              <td>N/A</td>
+            {% endif %}
+
             <td><strong>Aadhaar No:</strong></td>
             {% if student.AADHAAR %}
-            <td>{{ "********" + student.AADHAAR[-4:] }}</td>
+              <td>{{ "********" + student.AADHAAR[-4:] }}</td>
             {% else %}
-            <td>N/A</td>
+              <td>N/A</td>
             {% endif %}
           </tr>
 
           <tr>
             <td><strong>Admission No:</strong></td>
-            <td>{{ student.ADMISSION_NO }}</td>
+
+            {% if student.ADMISSION_NO %}
+              <td>{{ student.ADMISSION_NO }}</td>
+            {% else %}
+              <td>N/A</td>
+            {% endif %}
+
             <td><strong>Admission Date:</strong></td>
-            <td>{{ student.ADMISSION_DATE }}</td>
+            {% if student.ADMISSION_DATE %}
+              <td>{{ student.ADMISSION_DATE }}</td>
+            {% else %}
+              <td>N/A</td>
+            {% endif %}
           </tr>
 
           <tr>
@@ -207,24 +227,33 @@
 
           <tr>
             <td><strong>Caste:</strong></td>
-            <td>{{ student.Caste_Type }}</td>
+            {% if student.Caste_Type %}
+              <td>{{ student.Caste_Type }}</td>
+            {% else %}
+              <td>N/A</td>
+            {% endif %}
+
             <td><strong>Religion:</strong></td>
-            <td>{{ student.RELIGION }}</td>
+            {% if student.RELIGION %}
+              <td>{{ student.RELIGION }}</td>
+            {% else %}
+              <td>N/A</td>
+            {% endif %}
           </tr>
 
           <tr>
             <td><strong>Height:</strong></td>
             {% if student.Height %}
-            <td>{{ student.Height }} cm</td>
+              <td>{{ student.Height }} cm</td>
             {% else %}
-            <td>N/A</td>
+              <td>N/A</td>
             {% endif %}
 
             <td><strong>Weight:</strong></td>
             {% if student.Weight %}
-            <td>{{ student.Weight }} kg</td>
+              <td>{{ student.Weight }} kg</td>
             {% else %}
-            <td>N/A</td>
+              <td>N/A</td>
             {% endif %}
           </tr>
 

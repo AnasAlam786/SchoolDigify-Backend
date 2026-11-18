@@ -157,7 +157,7 @@
             <td><strong>Aadhar:</strong></td>
             <td>{% if student.AADHAAR %}{{ student.AADHAAR }}{% endif %}</td>
             <td><strong>DOB:</strong></td>
-            <td>{{ student.dob }}</td>
+            <td>{% if student.dob %}{{ student.dob }}{% endif %}</td>
           </tr>
 
           <tr>

@@ -52,7 +52,7 @@ def create_watsapp_message_api():
         🧑 Student Name: {student.STUDENTS_NAME}
         🏫 Class: {class_data.CLASS}
         🎓 Roll No: {current_session.ROLL}
-        📅 Admission Date: {student.ADMISSION_DATE.strftime('%d-%m-%Y')}
+        {f"📅 Admission Date: {student.ADMISSION_DATE.strftime('%d-%m-%Y')}" if student.ADMISSION_DATE else ""}
 
         Welcome to our school family! We look forward to a bright and successful academic journey together. If you have any questions, feel free to contact us.
 

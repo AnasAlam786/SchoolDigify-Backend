@@ -55,13 +55,13 @@ class AdmissionFormModel(BaseModel):
         
     # ------------------------- Academic Info -------------------------
     admitted_as_new: bool = Field(..., description="Indicates if admitted as new")
-    admission_session_id: int = Field(ge=2000, le=2100)
+    admission_session_id: Optional[int] = Field(None, ge=2000, le=2100)
     admission_class_id: Optional[int] = Field(None, gt=0)
     class_id: int = Field(gt=0)
     ROLL: conint(gt=0) = Field(...) # type: ignore
     SR: conint(gt=0) = Field(...) # type: ignore
-    ADMISSION_NO: conint(gt=0) = Field(...) # type: ignore
-    ADMISSION_DATE: str = Field(...)
+    ADMISSION_NO: Optional[conint(gt=0)] = Field(None) # type: ignore
+    ADMISSION_DATE: Optional[str] = Field(None)
     PEN: Optional[constr(max_length=11, min_length=11)] = Field(None) # type: ignore
     APAAR: Optional[constr(max_length=12, min_length=12)] = Field(None) # type: ignore
 

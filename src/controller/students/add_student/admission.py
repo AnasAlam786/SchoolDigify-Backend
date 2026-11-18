@@ -3,7 +3,7 @@
 from flask import jsonify, session, Blueprint
 from sqlalchemy import func
 
-from src.model.Sessions import Sessions
+from src.controller.students.utils.admission_form_schema import AdmissionFormModel
 from src.model.StudentsDB import StudentsDB
 from src.model.ClassData import ClassData
 from src.model.StudentsDB import StudentsDB
@@ -93,6 +93,14 @@ def admission_data():
 
     current_date = datetime.now().strftime("%d-%m-%Y")
 
+    # Determine required fields from Pydantic model
+    REQUIRED_FIELDS = [
+        field_name
+        for field_name, field_info in AdmissionFormModel.model_fields.items()
+        if field_info.is_required()
+    ]
+
+
     response = {
         "mode": "add",
         "student": None,
@@ -104,6 +112,7 @@ def admission_data():
         "default_sr": max_sr + 1,
         "default_admission_date": current_date,
         "is_admitted_new": True,
+        "required_fields": REQUIRED_FIELDS,
         **get_enum_options()
     }
 
